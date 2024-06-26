@@ -1,0 +1,13 @@
+@font-face {
+    font-family: 'saxMono';
+    src: url('saxMono.eot');
+    src: url('saxMono.eot?#iefix') format('embedded-opentype'),
+        url('saxMono.woff2') format('woff2'),
+        url('saxMono.woff') format('woff'),
+        url('saxMono.svg#saxMono') format('svg');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+

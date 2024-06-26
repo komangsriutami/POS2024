@@ -1,0 +1,12 @@
+@font-face {
+    font-family: 'Good Grief PB';
+    src: url('GoodGriefPB-Regular.eot');
+    src: local('Good Grief PB'), local('GoodGriefPB-Regular'),
+        url('GoodGriefPB-Regular.eot?#iefix') format('embedded-opentype'),
+        url('GoodGriefPB-Regular.woff2') format('woff2'),
+        url('GoodGriefPB-Regular.woff') format('woff'),
+        url('GoodGriefPB-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
