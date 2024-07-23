@@ -5,9 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class ReturPenjualan extends Model
 {
+    use DynamicConnectionTrait;
     //tb_return_penjualan_obat
     /* 
 		Model 	: Untuk Setting Promo 

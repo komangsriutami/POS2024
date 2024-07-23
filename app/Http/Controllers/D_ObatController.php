@@ -45,9 +45,11 @@ use App\Imports\GolonganObatImport;
 use App\Imports\HJStaticImport;
 use App\Exports\DataObatExport;
 use App\Exports\DataObatExport2;
+use App\Traits\DynamicConnectionTrait;
 
 class D_ObatController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -57,13 +59,13 @@ class D_ObatController extends Controller
     */
     public function index()
     {
-        $golongan_obats = MasterGolonganObat::where('is_deleted', 0)->pluck('keterangan', 'id');
+        $golongan_obats = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('keterangan', 'id');
         $golongan_obats->prepend('-- Pilih Golongan Obat --','');
 
-        $penandaan_obats = MasterPenandaanObat::where('is_deleted', 0)->pluck('nama', 'id');
+        $penandaan_obats = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $penandaan_obats->prepend('-- Pilih Penandaan Obat --','');
 
-        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $produsens->prepend('-- Pilih Produsen --','');
 
         return view('data_obat.index')->with(compact('golongan_obats', 'penandaan_obats', 'produsens'));
@@ -79,15 +81,15 @@ class D_ObatController extends Controller
     */
     public function list_data_obat(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $apotek = MasterApotek::find(session('id_apotek_active'));
-        $apoteker = User::find($apotek->id_apoteker);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $id_role_active = session('id_role_active');
         $hak_akses = 0;
@@ -99,10 +101,10 @@ class D_ObatController extends Controller
             $hak_akses = 1;
         }
 
-        $apoteks = MasterApotek::where('is_deleted', 0)->whereNotIn('id', [$apotek->id])->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->whereNotIn('id', [$apotek->id])->get();
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.id','tb_m_stok_harga_'.$inisial.'.harga_beli','tb_m_stok_harga_'.$inisial.'.hb_ppn_avg', 'tb_m_stok_harga_'.$inisial.'.harga_jual','tb_m_stok_harga_'.$inisial.'.harga_beli_ppn','tb_m_stok_harga_'.$inisial.'.is_status_harga','tb_m_stok_harga_'.$inisial.'.is_disabled','tb_m_stok_harga_'.$inisial.'.id_obat','tb_m_stok_harga_'.$inisial.'.stok_akhir', 'tb_m_obat.nama', 'tb_m_obat.barcode', 'tb_m_obat.isi_tab', 'tb_m_obat.isi_strip', 'tb_m_obat.rak', 'tb_m_obat.untung_jual', 'tb_m_obat.sku'])
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.id','tb_m_stok_harga_'.$inisial.'.harga_beli','tb_m_stok_harga_'.$inisial.'.hb_ppn_avg', 'tb_m_stok_harga_'.$inisial.'.harga_jual','tb_m_stok_harga_'.$inisial.'.harga_beli_ppn','tb_m_stok_harga_'.$inisial.'.is_status_harga','tb_m_stok_harga_'.$inisial.'.is_disabled','tb_m_stok_harga_'.$inisial.'.id_obat','tb_m_stok_harga_'.$inisial.'.stok_akhir', 'tb_m_obat.nama', 'tb_m_obat.barcode', 'tb_m_obat.isi_tab', 'tb_m_obat.isi_strip', 'tb_m_obat.rak', 'tb_m_obat.untung_jual', 'tb_m_obat.sku'])
                     ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
                     ->where(function($query) use($inisial, $request){
                         $query->where('tb_m_stok_harga_'.$inisial.'.is_deleted','=','0');
@@ -138,10 +140,17 @@ class D_ObatController extends Controller
             foreach($apoteks as $obj) {
                 $i++;
                 $inisial = strtolower($obj->nama_singkat);
-                $cek_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
-                $info .= $obj->nama_singkat.' : '.$cek_->stok_akhir;
-                if($i != count($apoteks)) {
-                    $info .= ' | ';
+                $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                if(isset($cek_)) {
+                    $info .= $obj->nama_singkat.' : '.$cek_->stok_akhir;
+                    if($i != count($apoteks)) {
+                        $info .= ' | ';
+                    }
+                } else {
+                    $info .= $obj->nama_singkat.' : data tidak ditemukan';
+                    if($i != count($apoteks)) {
+                        $info .= ' | ';
+                    }
                 }
             }
             $info .= '</small>';
@@ -228,7 +237,7 @@ class D_ObatController extends Controller
             }
             $btn .= '<a href="'.url('/data_obat/stok_obat/'.$data->id_obat).'" title="Stok Obat" class="btn btn-info"><span data-toggle="tooltip" data-placement="top" title="Stok Obat"><i class="fa fa-prescription-bottle-alt"></i></span></a>';
             $btn .= '<a href="'.url('/data_obat/histori_harga/'.$data->id_obat).'" title="Histori Harga" class="btn btn-secondary"><span data-toggle="tooltip" data-placement="top" title="Histori Harga"><i class="fa fa-history"></i></span></a>';
-            $btn .= '<a href="'.url('/data_obat/histori_all/'.$data->id_obat).'" title="Histori All" class="btn btn-warning"><span data-toggle="tooltip" data-placement="top" title="Histori All"><i class="fa fa-clone"></i></span></a>';
+            /*$btn .= '<a href="'.url('/data_obat/histori_all/'.$data->id_obat).'" title="Histori All" class="btn btn-warning"><span data-toggle="tooltip" data-placement="top" title="Histori All"><i class="fa fa-clone"></i></span></a>';*/
 
             if($hak_akses == 1) {
                     $btn .= '<a href="'.url('/data_obat/penyesuaian_stok/'.$data->id_obat).'" class="btn"  style="background-color: #8BC34A; color:#fff;" onClick="#" data-toggle="tooltip" data-placement="top" title="Penyesuaian Stok"><i class="fa fa-flag"></i></a>';
@@ -255,22 +264,22 @@ class D_ObatController extends Controller
     */
     public function edit($id)
     {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         $id_apotek = session('id_apotek_active');
-        $apotek = MasterApotek::find($id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
-        $outlet = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+        $outlet = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
 
-        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $produsens->prepend('-- Pilih Produsen --','');
 
-        $satuans = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $golongan_obats = MasterGolonganObat::where('is_deleted', 0)->pluck('keterangan', 'id');
+        $golongan_obats = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('keterangan', 'id');
         $golongan_obats->prepend('-- Pilih Golongan Obat --','');
 
-        $penandaan_obats = MasterPenandaanObat::where('is_deleted', 0)->pluck('nama', 'id');
+        $penandaan_obats = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $penandaan_obats->prepend('-- Pilih Penandaan Obat --','');
 
         return view('data_obat.edit')->with(compact('obat', 'produsens', 'satuans', 'golongan_obats', 'penandaan_obats', 'outlet'));
@@ -298,11 +307,11 @@ class D_ObatController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         $id_apotek = session('id_apotek_active');
-        $apotek = MasterApotek::find($id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
-        $outlet = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+        $outlet = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
         $harga_beli_awal = $outlet->harga_beli;
         $harga_jual_awal = $outlet->harga_jual;
         $validator = $obat->validate();
@@ -315,8 +324,8 @@ class D_ObatController extends Controller
 
                 // update harga obat
                 $inisial = strtolower($apotek->nama_singkat);
-                DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
-                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
             } 
 
             echo json_encode(array('status' => 1));
@@ -325,29 +334,29 @@ class D_ObatController extends Controller
 
     public function sycn_harga_obat_all() {
 
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $data = DB::table('tb_histori_harga_'.$inisial.'')
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')
                 ->where('created_by', 1)
                 ->get();
 
                 foreach($data as $key) {
-                    $cek = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $key->id_obat)->first();
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $key->id_obat)->first();
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id_obat', $key->id_obat)
                         ->update(['is_status_harga' => 0, 'harga_jual' =>$key->harga_jual_awal, 'status_harga_by' => Auth::id(), 'status_harga_at' => date('Y-m-d H:i:s')]);
 
                     $data_histori_ = array('id_obat' => $key->id, 'harga_beli_awal' => $cek->harga_beli_ppn, 'harga_beli_akhir' => $cek->harga_beli_ppn, 'harga_jual_awal' => $key->harga_jual_akhir, 'harga_jual_akhir' => $key->harga_jual_awal, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
-                    DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                    DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                 }
 
                 echo "berhasil reload";
         exit();
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $data = DB::table('tb_histori_stok_'.$inisial.'')
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->select([DB::raw('COUNT(id)  AS jumlah'), 'id_obat', 'id_jenis_transaksi', 'id_transaksi'])
                     ->groupBy('id_obat', 'id_jenis_transaksi', 'id_transaksi');
 
@@ -357,21 +366,21 @@ class D_ObatController extends Controller
         exit();*/
         /*$i=0;
         foreach ($data as $key => $val) {
-            $cek_ = MasterObat::find($val->id_obat);
+            $cek_ = MasterObat::on($this->getConnectionName())->find($val->id_obat);
             if(!empty($cek_)) {
                 if($cek_->harga_beli != $val->harga_beli OR $cek_->harga_jual != $val->harga_jual) {
                     $i++;
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id', $val->id)
                     ->update(['harga_beli' => $cek_->harga_beli, 'harga_jual' => $cek_->harga_jual, 'is_sync' => 1, 'sync_by' => Auth::id(), 'sync_at' => date('Y-m-d H:i:s')]);
 
                     // add histori perubahan data harga obat
                     $data_histori_ = array('id_obat' => $val->id_obat, 'harga_beli_awal' => $val->harga_beli, 'harga_beli_akhir' => $cek_->harga_beli, 'harga_jual_awal' => $val->harga_beli, 'harga_jual_akhir' => $cek_->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-                    DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                    DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                 } 
             } else {
-                DB::table('tb_m_stok_harga_'.$inisial.'')
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id', $val->id)
                     ->update(['is_deleted' => 1, 'deleted_by' => Auth::user()->id, 'deleted_at' => date('Y-m-d H:i:s')]);
             }
@@ -385,27 +394,27 @@ class D_ObatController extends Controller
     }
 
     /*public function sycn_harga_obat_all() {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $data = DB::table('tb_m_stok_harga_'.$inisial.'')->get();
+        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->get();
         $i=0;
         foreach ($data as $key => $val) {
-            $cek_ = MasterObat::find($val->id_obat);
+            $cek_ = MasterObat::on($this->getConnectionName())->find($val->id_obat);
             if(!empty($cek_)) {
                 if($cek_->harga_beli != $val->harga_beli OR $cek_->harga_jual != $val->harga_jual) {
                     $i++;
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id', $val->id)
                     ->update(['harga_beli' => $cek_->harga_beli, 'harga_jual' => $cek_->harga_jual, 'is_sync' => 1, 'sync_by' => Auth::id(), 'sync_at' => date('Y-m-d H:i:s')]);
 
                     // add histori perubahan data harga obat
                     $data_histori_ = array('id_obat' => $val->id_obat, 'harga_beli_awal' => $val->harga_beli, 'harga_beli_akhir' => $cek_->harga_beli, 'harga_jual_awal' => $val->harga_beli, 'harga_jual_akhir' => $cek_->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-    	   			DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+    	   			DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                 } 
             } else {
-                DB::table('tb_m_stok_harga_'.$inisial.'')
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id', $val->id)
                     ->update(['is_deleted' => 1, 'deleted_by' => Auth::user()->id, 'deleted_at' => date('Y-m-d H:i:s')]);
             }
@@ -419,23 +428,23 @@ class D_ObatController extends Controller
     }*/
 
     public function sycn_harga_obat(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $val = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id)->first();
-        $cek_ = MasterObat::find($request->id);
+        $val = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id)->first();
+        $cek_ = MasterObat::on($this->getConnectionName())->find($request->id);
 
         $i=0;
         if($cek_->harga_beli != $val->harga_beli OR $cek_->harga_jual != $val->harga_jual) {
         	$i++;
-            DB::table('tb_m_stok_harga_'.$inisial.'')
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
             ->where('id', $val->id)
             ->update(['harga_beli' => $cek_->harga_beli, 'harga_jual' => $cek_->harga_jual, 'is_sync' => 1, 'sync_by' => Auth::id(), 'sync_at' => date('Y-m-d H:i:s')]);
 
             // add histori perubahan data harga obat
             $data_histori_ = array('id_obat' => $val->id_obat, 'harga_beli_awal' => $val->harga_beli, 'harga_beli_akhir' => $cek_->harga_beli, 'harga_jual_awal' => $val->harga_beli, 'harga_jual_akhir' => $cek_->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-   			DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+   			DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
         } 
 
         if($i > 0) {
@@ -447,9 +456,9 @@ class D_ObatController extends Controller
 
     public function disabled_obat(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        DB::table('tb_m_stok_harga_'.$inisial.'')
+        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->update(['is_disabled' => 1, 'disabled_by' => Auth::id(), 'disabled_at' => date('Y-m-d H:i:s')]);
 
@@ -457,10 +466,10 @@ class D_ObatController extends Controller
     }
 
     public function stok_obat($id) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok_harga = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
-        $obat = MasterObat::find($id);
+        $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         $jenis_transasksis      = MasterJenisTransaksi::pluck('nama', 'id');
         $jenis_transasksis->prepend('-- Pilih Jenis Transaksi --','');
         return view('data_obat.stok_obat')->with(compact('obat', 'stok_harga', 'jenis_transasksis'));
@@ -475,15 +484,15 @@ class D_ObatController extends Controller
     */
     public function list_data_stok_obat(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_histori_stok_'.$inisial.'')->select([
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 
                     'tb_histori_stok_'.$inisial.'.*', 
                     'users.nama as oleh',
@@ -506,7 +515,9 @@ class D_ObatController extends Controller
                         $query->whereDate('tb_histori_stok_'.$inisial.'.created_at','<=', $tgl_akhir);
                     }
 
-                })->orderBy('tb_histori_stok_'.$inisial.'.id');
+                })
+                //->whereYear('tb_histori_stok_'.$inisial.'.created_at', 2024)
+                ->orderBy('tb_histori_stok_'.$inisial.'.id');
         
         $datatables = Datatables::of($data);
         return $datatables
@@ -533,13 +544,13 @@ class D_ObatController extends Controller
             $sign_by = '';
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
                 if($data->id_jenis_transaksi == 26) {
-                    $retur = ReturPembelian::find($data->id_transaksi);
-                    $check = TransaksiPembelianDetail::find($retur->id_detail_nota);
+                    $retur = ReturPembelian::on($this->getConnectionName())->find($data->id_transaksi);
+                    $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($retur->id_detail_nota);
                     $id_nota = ' | IDNota : '.$check->nota->id.' | No.Faktur : '.$check->nota->no_faktur;
                     $string = '<b>'.$check->nota->suplier->nama.'</b>';
                     $sign_by = $check->nota->sign_by;
                 } else {
-                    $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                    $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                     $id_nota = ' | IDNota : '.$check->nota->id.' | No.Faktur : '.$check->nota->no_faktur;
                     $string = '<b>'.$check->nota->suplier->nama.'</b>';
                     $sign_by = $check->nota->sign_by;
@@ -549,11 +560,11 @@ class D_ObatController extends Controller
                     $sign_by = 'Belum diTTD';
                 }
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Masuk dari '.$check->nota->apotek_asal->nama_singkat.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_keluar_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Tujuan ke '.$check->nota->apotek_tujuan->nama_singkat.'</b>';
                 $sign_by = $check->nota->sign_by;
@@ -561,22 +572,27 @@ class D_ObatController extends Controller
                     $sign_by = 'Belum diTTD';
                 }
             } else if (in_array($data->id_jenis_transaksi, $data_penjualan_)) {
-                $check = TransaksiPenjualanDetail::find($data->id_transaksi);
-                if($check->nota->is_kredit == 1) {
-                    $string = '<b>Vendor : '.$check->nota->vendor->nama.'</b>';
+                $tahun = date('Y', strtotime($data->created_at));
+                if($tahun!=date('Y')) {
+                    $id_nota = '| Detail belum bisa ditampilkan.';
                 } else {
-                    $string = '<b>Member : - </b>';
+                    $check = TransaksiPenjualanDetail::on($this->getConnectionName())->find($data->id_transaksi);
+                    if($check->nota->is_kredit == 1) {
+                        $string = '<b>Vendor : '.$check->nota->vendor->nama.'</b>';
+                    } else {
+                        $string = '<b>Member : - </b>';
+                    }
+                    $id_nota = ' | IDNota : '.$check->nota->id;
                 }
-                $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_po_)) {
-                $check = TransaksiPODetail::find($data->id_transaksi);
+                $check = TransaksiPODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_td_)) {
-                $check = TransaksiTDDetail::find($data->id_transaksi);
+                $check = TransaksiTDDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else  if(in_array($data->id_jenis_transaksi, array(26))) {
-                $retur = ReturPembelian::find($data->id_transaksi);
-                $check = TransaksiPembelianDetail::find($retur->id_detail_nota);
+                $retur = ReturPembelian::on($this->getConnectionName())->find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($retur->id_detail_nota);
                 $id_nota = ' | IDNota : '.$check->nota->id.' | No.Faktur : '.$check->nota->no_faktur;
                 $string = '<b>'.$check->nota->suplier->nama.'</b>';
                 $sign_by = $check->nota->sign_by;
@@ -635,7 +651,7 @@ class D_ObatController extends Controller
             $data_ = array(2, 12, 13, 14, 26, 27, 30, 31);
             if (in_array($data->id_jenis_transaksi, $data_))
             {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 //$ed = '('.$data->batch.')<br>';
                 if($check->tgl_batch == '' OR $check->tgl_batch == null OR $check->tgl_batch == '0') {
                     $ed = '-';
@@ -657,7 +673,7 @@ class D_ObatController extends Controller
             $data_tf_ = array(3, 7, 16, 28, 29, 32, 33, 4, 8, 17);
 
             if (in_array($data->id_jenis_transaksi, $data_tf_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 
 
                 if($check->is_status == 1) {
@@ -678,17 +694,17 @@ class D_ObatController extends Controller
     }
 
     public function histori_harga($id) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok_harga = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
-        $obat = MasterObat::find($id);
-        $apoteks = MasterApotek::where('is_deleted', 0)->whereNotIn('id',[$apotek->id])->get();
+        $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->whereNotIn('id',[$apotek->id])->get();
 
         $list_hpp = array();
         foreach ($apoteks as $key => $val) {
-            $apotek = MasterApotek::find($val->id);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($val->id);
             $inisial = strtolower($apotek->nama_singkat);
-            $getHpp = DB::table('tb_m_stok_harga_'.$inisial)
+            $getHpp = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $obat->id)
                         ->first();
             $d_ = array();
@@ -714,7 +730,7 @@ class D_ObatController extends Controller
     */
     public function list_data_histori_harga(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
@@ -722,12 +738,12 @@ class D_ObatController extends Controller
         $order_dir = $order[0]['dir'];
 
         if(isset($request->id_apotek)) {
-            $apotek = MasterApotek::find($request->id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($request->id_apotek);
             $inisial = strtolower($apotek->nama_singkat);
         }
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_histori_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_histori_harga_'.$inisial.'.*', 'users.nama as oleh'])
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_histori_harga_'.$inisial.'.*', 'users.nama as oleh'])
                 ->join('users', 'users.id', '=', 'tb_histori_harga_'.$inisial.'.created_by')
                 ->where('tb_histori_harga_'.$inisial.'.id_obat', $request->id_obat);
         
@@ -784,7 +800,7 @@ class D_ObatController extends Controller
 
     public function export_data_obat_stok(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         return Excel::download(new DataObatExport($inisial), 'data_stok_'.$inisial.'.xlsx');
@@ -804,8 +820,8 @@ class D_ObatController extends Controller
 
                 $sheet->appendRow(1, $headings);
 
-                DB::statement(DB::raw('set @rownum = 0'));
-                $data = DB::table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*', 'tb_m_obat.nama', 'tb_m_obat.barcode', 'tb_m_obat.isitab', 'tb_m_obat.isistrip'])
+                DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+                $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*', 'tb_m_obat.nama', 'tb_m_obat.barcode', 'tb_m_obat.isitab', 'tb_m_obat.isistrip'])
                     ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->where('tb_m_stok_harga_'.$inisial.'.is_disabled', 0)
@@ -852,7 +868,7 @@ class D_ObatController extends Controller
         if(is_null($id_produsen)) {
             $id_produsen = '';
         }
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         return Excel::download(new DataObatExport2($inisial, $id_penandaan_obat, $id_golongan_obat, $id_produsen), 'data_obat_'.$inisial.'.xlsx');
@@ -862,15 +878,15 @@ class D_ObatController extends Controller
         if(Auth::user()->is_admin!=1) {
             echo "under maintenance"; exit();
         } else {
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_harga = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
-            $obat = MasterObat::find($id);
+            $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
+            $obat = MasterObat::on($this->getConnectionName())->find($id);
             return view('data_obat.penyesuaian_stok')->with(compact('obat', 'stok_harga'));
         }
     }
 
-    /*$data = DB::table('tb_histori_stok_'.$inisial.'')->select([
+    /*$data = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 
                     'tb_histori_stok_'.$inisial.'.*', 
                     'users.nama as oleh',
@@ -946,7 +962,7 @@ class D_ObatController extends Controller
         $order_dir = $order[0]['dir'];
 
         $super_admin = session('super_admin');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = PenyesuaianStok::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
         ->join('users', 'users.id', '=', 'tb_penyesuaian_stok_obat.created_by')
         ->where(function($query) use($request, $super_admin){
@@ -989,14 +1005,14 @@ class D_ObatController extends Controller
     {
         ini_set('memory_limit', '-1'); 
         
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->select([
                             'tb_m_stok_harga_'.$inisial.'.*', 
                             'tb_m_obat.nama', 
-                            'tb_m_obat.barcode', 
+                            'tb_m_obat.sku', 
                             'tb_m_obat.isi_tab', 
                             'tb_m_obat.isi_strip', 
                             'tb_m_obat.rak'
@@ -1013,7 +1029,7 @@ class D_ObatController extends Controller
                     $no++;
                     $collection[] = array(
                         $no,
-                        $rekap->barcode,
+                        $rekap->sku,
                         $rekap->nama,
                         $rekap->isi_strip,
                         $rekap->isi_tab,
@@ -1034,7 +1050,7 @@ class D_ObatController extends Controller
 
                     public function headings(): array
                     {
-                        return ['No', 'Barcode', 'Nama Obat', 'Isi/strip', 'Isi/tab', 'Rak', 'Harga Beli', 'Harga Beli + PPN', 'Harga Jual', 'Stok'];
+                        return ['No', 'SKU', 'Nama Obat', 'Isi/strip', 'Isi/tab', 'Rak', 'Harga Beli', 'Harga Beli + PPN', 'Harga Jual', 'Stok'];
                     } 
 
                     public function columnWidths(): array
@@ -1086,10 +1102,10 @@ class D_ObatController extends Controller
     }
 
     public function list_persediaan(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $awal = DB::table('tb_histori_stok_'.$inisial.'')
+        $awal = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->select([
                         DB::raw('MIN(tb_histori_stok_'.$inisial.'.id) as id'),
                         'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1109,7 +1125,7 @@ class D_ObatController extends Controller
                     })
                     ->groupBy('id_obat');
 
-        $akhir = DB::table('tb_histori_stok_'.$inisial.'')
+        $akhir = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->select([
                         DB::raw('MAX(tb_histori_stok_'.$inisial.'.id) as id'),
                         'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1129,7 +1145,7 @@ class D_ObatController extends Controller
                     })
                     ->groupBy('id_obat');
 
-        $p_plus = DB::table('tb_histori_stok_'.$inisial.'')
+        $p_plus = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->select([
                         DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_plus'),
                         'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1150,7 +1166,7 @@ class D_ObatController extends Controller
                     })
                     ->groupBy('id_obat');
 
-        $p_min = DB::table('tb_histori_stok_'.$inisial.'')
+        $p_min = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->select([
                         DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_min'),
                         'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1171,7 +1187,7 @@ class D_ObatController extends Controller
                     })
                     ->groupBy('id_obat');
 
-        $penjualan = DB::table('tb_detail_nota_penjualan')
+        $penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                     ->select([
                         DB::raw('SUM(jumlah-jumlah_cn) as total_jual'),
                         'id_obat'
@@ -1194,7 +1210,7 @@ class D_ObatController extends Controller
                     })
                     ->groupBy('id_obat');
 
-        $pembelian = DB::table('tb_detail_nota_pembelian')
+        $pembelian = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
                     ->select([
                         DB::raw('SUM(jumlah) as total_beli'),
                         'id_obat'
@@ -1217,7 +1233,7 @@ class D_ObatController extends Controller
                     })
                     ->groupBy('id_obat');
 
-        $transfer = DB::table('tb_detail_nota_transfer_outlet')
+        $transfer = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                     ->select([
                         DB::raw('SUM(jumlah) as total_transfer'),
                         'id_obat'
@@ -1240,8 +1256,8 @@ class D_ObatController extends Controller
                     })
                     ->groupBy('id_obat');
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_m_stok_harga_'.$inisial.'')
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->select([DB::raw('@rownum  := @rownum  + 1 AS no'),
                         'tb_m_stok_harga_'.$inisial.'.id',
                         'tb_m_stok_harga_'.$inisial.'.id_obat',
@@ -1360,10 +1376,10 @@ class D_ObatController extends Controller
     }
 
     public function cari_stok($act, $id) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $cek = DB::table('tb_histori_stok_'.$inisial.'')
+        $cek = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->select([
                         'tb_histori_stok_'.$inisial.'.*'
                     ])
@@ -1388,7 +1404,7 @@ class D_ObatController extends Controller
     public function reload_export_persediaan(Request $request) {
         ini_set('memory_limit', '-1'); 
 
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $obat = MasterObat::select(DB::raw('MAX(id) as id_obat_last'))->where('is_deleted', 0)->first();
         $max_id_obat = $obat->id_obat_last;
@@ -1433,7 +1449,7 @@ class D_ObatController extends Controller
                         }
 
                         if(empty($rekap->id_histori_akhir)) {
-                            $cari_data_awal = DB::table('tb_histori_stok_'.$inisial.'')
+                            $cari_data_awal = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                                                     ->select([
                                                         DB::raw('tb_histori_stok_'.$inisial.'.*')
                                                     ])
@@ -1447,7 +1463,7 @@ class D_ObatController extends Controller
                                                     ->orderBy('id', 'ASC')
                                                     ->first();
 
-                            $cari_data_akhir = DB::table('tb_histori_stok_'.$inisial.'')
+                            $cari_data_akhir = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                                                     ->select([
                                                         DB::raw('tb_histori_stok_'.$inisial.'.*')
                                                     ])
@@ -1501,7 +1517,7 @@ class D_ObatController extends Controller
                         }
                     } else {
                         if(empty($rekap->id_histori_akhir)) {
-                            $cari_data_awal = DB::table('tb_histori_stok_'.$inisial.'')
+                            $cari_data_awal = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                                                     ->select([
                                                         DB::raw('tb_histori_stok_'.$inisial.'.*')
                                                     ])
@@ -1515,7 +1531,7 @@ class D_ObatController extends Controller
                                                     ->orderBy('id', 'DESC')
                                                     ->first();
 
-                            $cari_data_akhir = DB::table('tb_histori_stok_'.$inisial.'')
+                            $cari_data_akhir = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                                                     ->select([
                                                         DB::raw('tb_histori_stok_'.$inisial.'.*')
                                                     ])
@@ -1675,7 +1691,7 @@ class D_ObatController extends Controller
                 echo 1;
             }
         } else {
-            $awal = DB::table('tb_histori_stok_'.$inisial.'')
+            $awal = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                         ->select([
                             DB::raw('MIN(tb_histori_stok_'.$inisial.'.id) as id'),
                             'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1695,7 +1711,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $akhir = DB::table('tb_histori_stok_'.$inisial.'')
+            $akhir = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                         ->select([
                             DB::raw('MAX(tb_histori_stok_'.$inisial.'.id) as id'),
                             'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1715,7 +1731,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $p_plus = DB::table('tb_histori_stok_'.$inisial.'')
+            $p_plus = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                         ->select([
                             DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_plus'),
                             'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1736,7 +1752,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $p_min = DB::table('tb_histori_stok_'.$inisial.'')
+            $p_min = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                         ->select([
                             DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_min'),
                             'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1757,7 +1773,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $penjualan = DB::table('tb_detail_nota_penjualan')
+            $penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                         ->select([
                             DB::raw('SUM(jumlah) as total_jual'),
                             'id_obat'
@@ -1780,7 +1796,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $retur = DB::table('tb_histori_stok_'.$inisial.'')
+            $retur = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                         ->select([
                             DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_retur'),
                             'tb_histori_stok_'.$inisial.'.id_obat'
@@ -1801,7 +1817,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $pembelian = DB::table('tb_detail_nota_pembelian')
+            $pembelian = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
                         ->select([
                             DB::raw('SUM(jumlah) as total_beli'),
                             'id_obat'
@@ -1824,7 +1840,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $transfer_keluar = DB::table('tb_detail_nota_transfer_outlet')
+            $transfer_keluar = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                         ->select([
                             DB::raw('SUM(jumlah) as total_transfer'),
                             'id_obat'
@@ -1847,7 +1863,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $transfer_masuk = DB::table('tb_detail_nota_transfer_outlet')
+            $transfer_masuk = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                         ->select([
                             DB::raw('SUM(jumlah) as total_transfer'),
                             'id_obat'
@@ -1870,7 +1886,7 @@ class D_ObatController extends Controller
                         })
                         ->groupBy('id_obat');
 
-            $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
+            $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                         ->select([
                             'tb_m_stok_harga_'.$inisial.'.id',
                             'tb_m_stok_harga_'.$inisial.'.id_obat',
@@ -1915,7 +1931,7 @@ class D_ObatController extends Controller
     }
 
     public function clear_cache_persediaan(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_data_'.$apotek->id);
         Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
@@ -1928,7 +1944,7 @@ class D_ObatController extends Controller
         //exit();
         ini_set('memory_limit', '-1'); 
         
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
@@ -2030,7 +2046,7 @@ class D_ObatController extends Controller
     }
 
     public function reload_data_pembelian() {
-        $det_pembelians = DB::table('tb_detail_nota_pembelian') 
+        $det_pembelians = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian') 
                                 ->select([
                                     'tb_detail_nota_pembelian.*', 
                                     'tb_nota_pembelian.ppn',
@@ -2047,7 +2063,7 @@ class D_ObatController extends Controller
                                 ])
                                 ->join('tb_nota_pembelian', 'tb_nota_pembelian.id', '=', 'tb_detail_nota_pembelian.id_nota');
 
-        $data_ = DB::table(DB::raw("({$det_pembelians->toSql()}) as x"))
+        $data_ = DB::connection($this->getConnectionName())->table(DB::raw("({$det_pembelians->toSql()}) as x"))
             ->select(['*'])
             ->whereRaw('total_new > total_harga_')
             ->get();
@@ -2055,7 +2071,7 @@ class D_ObatController extends Controller
         $i = 0;
         foreach ($data_ as $key => $val) {
             $hb_ppn = $val->harga_beli+(($val->ppn/100)*$val->harga_beli);
-            DB::table('tb_detail_nota_pembelian')
+            DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
                 ->where('id', $val->id)
                 ->update(['total_harga' => $val->total_new, 'harga_beli_ppn' => $hb_ppn]);
             $i++;
@@ -2067,12 +2083,12 @@ class D_ObatController extends Controller
 
     public function reload_data_histori() {
         $id_apotek = 1;
-        $apotek = MasterApotek::find($id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
-        $det_historis = DB::table('tb_histori_stok_'.$inisial.'')->whereIn('id_jenis_transaksi', [1, 2, 3, 4, 14, 15, 16, 17])->get();
+        $det_historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->whereIn('id_jenis_transaksi', [1, 2, 3, 4, 14, 15, 16, 17])->get();
         $i = 0;
         foreach ($det_historis as $key => $val) {
-            DB::table('tb_histori_all_'.$inisial.'')
+            DB::connection($this->getConnectionName())->table('tb_histori_all_'.$inisial.'')
                 ->where('id_obat', $val->id_obat)
                 ->where('id_jenis_transaksi', $val->id_jenis_transaksi)
                 ->where('id_transaksi', $val->id_transaksi)
@@ -2088,7 +2104,7 @@ class D_ObatController extends Controller
         $last_id_obat = $obat->id;
         $last_id_obat_ex = 0;
         $id_apotek = $id;
-        $cek = DB::table('tb_bantu_update')->orderBy('id', 'DESC')->first();
+        $cek = DB::connection($this->getConnectionName())->table('tb_bantu_update')->orderBy('id', 'DESC')->first();
         if(!empty($cek)) {
             $last_id_obat_ex = $cek->last_id_obat_after;
             if($last_id_obat_ex >= $last_id_obat) {
@@ -2096,25 +2112,25 @@ class D_ObatController extends Controller
             } else {
                 $id_apotek = $cek->id_apotek;
             }
-            $apotek = MasterApotek::find($cek->id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($cek->id_apotek);
             $inisial = strtolower($apotek->nama_singkat);
         } else {
-            $apotek = MasterApotek::find($id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
             $inisial = strtolower($apotek->nama_singkat);
         }
 
         $last_id_obat_ex = $last_id_obat_ex+1;
         $last_id_obat_after = $last_id_obat_ex+200-1;
-        DB::table('tb_bantu_update')
+        DB::connection($this->getConnectionName())->table('tb_bantu_update')
             ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after, 'id_apotek' => $id_apotek]);
         
-        $data = DB::table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
+        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
         $i=0;
         $last_id_obat_after = 0;
         $data_ = array();
         foreach ($data as $key => $val) {
             # data pembelian obat keseluruhan
-            $det_pembelians = DB::table('tb_detail_nota_pembelian') 
+            $det_pembelians = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian') 
                                 ->select(['tb_detail_nota_pembelian.*', 'tb_nota_pembelian.ppn'])
                                 ->join('tb_nota_pembelian', 'tb_nota_pembelian.id', '=', 'tb_detail_nota_pembelian.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2147,7 +2163,7 @@ class D_ObatController extends Controller
             }
 
             # data pembelian obat dihapus
-            $det_pembelian_hapuss = DB::table('tb_detail_nota_pembelian')
+            $det_pembelian_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
                                 ->select(['tb_detail_nota_pembelian.*', 'tb_nota_pembelian.ppn'])
                                 ->join('tb_nota_pembelian', 'tb_nota_pembelian.id', '=', 'tb_detail_nota_pembelian.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2180,7 +2196,7 @@ class D_ObatController extends Controller
             }
 
             # data pembelian obat retur
-           /* $det_pembelian_returs = DB::table('tb_detail_nota_pembelian')
+           /* $det_pembelian_returs = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
                                 ->select(['tb_detail_nota_pembelian.*', 'tb_nota_pembelian.ppn'])
                                 ->join('tb_nota_pembelian', 'tb_nota_pembelian.id', '=', 'tb_detail_nota_pembelian.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2214,7 +2230,7 @@ class D_ObatController extends Controller
 
             // -----------------------------------------------------------------------------------
             # data penjualan obat keseluruhan
-            $det_penjualans = DB::table('tb_detail_nota_penjualan')
+            $det_penjualans = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                                 ->select(['tb_detail_nota_penjualan.*'])
                                 ->join('tb_nota_penjualan', 'tb_nota_penjualan.id', '=', 'tb_detail_nota_penjualan.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2242,7 +2258,7 @@ class D_ObatController extends Controller
             }
 
             # data penjualan obat dihapus
-            $det_penjualan_hapuss = DB::table('tb_detail_nota_penjualan')
+            $det_penjualan_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                                 ->select(['tb_detail_nota_penjualan.*'])
                                 ->join('tb_nota_penjualan', 'tb_nota_penjualan.id', '=', 'tb_detail_nota_penjualan.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2271,7 +2287,7 @@ class D_ObatController extends Controller
             }
 
             # data penjualan obat retur
-            /*$det_penjualan_returs = DB::table('tb_detail_nota_penjualan')
+            /*$det_penjualan_returs = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                                 ->select(['tb_detail_nota_penjualan.*'])
                                 ->join('tb_nota_penjualan', 'tb_nota_penjualan.id', '=', 'tb_detail_nota_penjualan.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2301,7 +2317,7 @@ class D_ObatController extends Controller
 
             // -----------------------------------------------------------------------------------
             # data transfer masuk obat keseluruhan
-            $det_transfer_masuks = DB::table('tb_detail_nota_transfer_outlet')
+            $det_transfer_masuks = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                 ->select(['tb_detail_nota_transfer_outlet.*'])
                                 ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2329,7 +2345,7 @@ class D_ObatController extends Controller
             }
 
             # data transfer masuk obat dihapus
-            $det_transfer_masuk_hapuss = DB::table('tb_detail_nota_transfer_outlet')
+            $det_transfer_masuk_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                 ->select(['tb_detail_nota_transfer_outlet.*'])
                                 ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2358,7 +2374,7 @@ class D_ObatController extends Controller
             }
 
             /*# data transfer masuk obat retur
-            $det_transfer_masuk_returs = DB::table('tb_detail_nota_transfer_outlet')
+            $det_transfer_masuk_returs = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                 ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                 ->where('id_obat', $val->id_obat)
                                 ->where('id_apotek_tujuan', $apotek->id)
@@ -2367,7 +2383,7 @@ class D_ObatController extends Controller
 
             // -----------------------------------------------------------------------------------
             # data transfer keluar obat keseluruhan
-            $det_transfer_keluars = DB::table('tb_detail_nota_transfer_outlet')
+            $det_transfer_keluars = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                 ->select(['tb_detail_nota_transfer_outlet.*'])
                                 ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2395,7 +2411,7 @@ class D_ObatController extends Controller
             }
 
             # data transfer keluar obat dihapus
-            $det_transfer_keluar_hapuss = DB::table('tb_detail_nota_transfer_outlet')
+            $det_transfer_keluar_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                 ->select(['tb_detail_nota_transfer_outlet.*'])
                                 ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                 ->where('id_obat', $val->id_obat)
@@ -2424,7 +2440,7 @@ class D_ObatController extends Controller
             }
 
            /* # data transfer masuk obat retur
-            $det_transfer_keluar_returs = DB::table('tb_detail_nota_transfer_outlet')
+            $det_transfer_keluar_returs = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                 ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                 ->where('id_obat', $val->id_obat)
                                 ->where('id_apotek_nota', $apotek->id)
@@ -2433,7 +2449,7 @@ class D_ObatController extends Controller
 
 
             # history lain-lain 
-            $det_historis = DB::table('tb_histori_stok_'.$inisial.'')->where('id_obat', $val->id_obat)->whereNotIn('id_jenis_transaksi', [1, 2, 3, 4, 14, 15, 16, 17])->get();
+            $det_historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_obat', $val->id_obat)->whereNotIn('id_jenis_transaksi', [1, 2, 3, 4, 14, 15, 16, 17])->get();
 
             foreach ($det_historis as $key => $val) {
                 $new_arr = array();
@@ -2460,10 +2476,10 @@ class D_ObatController extends Controller
         }
 
         if($i > 0) {
-            DB::table('tb_histori_all_lv')
+            DB::connection($this->getConnectionName())->table('tb_histori_all_lv')
                 ->insert($data_);
 
-            DB::table('tb_bantu_update')
+            DB::connection($this->getConnectionName())->table('tb_bantu_update')
                 ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after]);
 
             echo 1;
@@ -2473,10 +2489,10 @@ class D_ObatController extends Controller
     }
 
     public function histori_all($id) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok_harga = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
-        $obat = MasterObat::find($id);
+        $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         $jenis_transasksis      = MasterJenisTransaksi::pluck('nama', 'id');
         $jenis_transasksis->prepend('-- Pilih Jenis Transaksi --','');
 
@@ -2492,15 +2508,15 @@ class D_ObatController extends Controller
     */
     public function list_data_histori_all(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_histori_all_'.$inisial.'')->select([
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_all_'.$inisial.'')->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 
                     'tb_histori_all_'.$inisial.'.*', 
                     'users.nama as oleh',
@@ -2550,19 +2566,19 @@ class D_ObatController extends Controller
             $data_po_ = array(18, 19, 20, 21);
             $data_td_ = array(22, 23, 24, 25);
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>'.$check->nota->suplier->nama.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Masuk dari '.$check->nota->apotek_asal->nama_singkat.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_keluar_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Tujuan ke '.$check->nota->apotek_tujuan->nama_singkat.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_penjualan_)) {
-                $check = TransaksiPenjualanDetail::find($data->id_transaksi);
+                $check = TransaksiPenjualanDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 if($check->nota->is_kredit == 1) {
                     $string = '<b>Vendor : '.$check->nota->vendor->nama.'</b>';
                 } else {
@@ -2570,10 +2586,10 @@ class D_ObatController extends Controller
                 }
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_po_)) {
-                $check = TransaksiPODetail::find($data->id_transaksi);
+                $check = TransaksiPODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_td_)) {
-                $check = TransaksiTDDetail::find($data->id_transaksi);
+                $check = TransaksiTDDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             }
 
@@ -2668,18 +2684,18 @@ class D_ObatController extends Controller
     }
 
     public function edit_harga_beli($id) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         
-        $obat = MasterObat::find($id);
-        $sh = DB::table('tb_m_stok_harga_'.$inisial.'')->select(['*'])->where('id_obat', $obat->id)->first();
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
+        $sh = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select(['*'])->where('id_obat', $obat->id)->first();
 
         return view('data_obat.edit_harga_beli')->with(compact('obat', 'sh'));
     }
 
     public function list_edit_harga_beli(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
@@ -2687,7 +2703,7 @@ class D_ObatController extends Controller
         $order_dir = $order[0]['dir'];
 
 
-        $apoteker = User::find($apotek->id_apoteker);
+        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $id_role_active = session('id_role_active');
         $hak_akses = 0;
@@ -2699,8 +2715,8 @@ class D_ObatController extends Controller
             $hak_akses = 1;
         }
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_histori_stok_'.$inisial.'')->select([
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 
                     'tb_histori_stok_'.$inisial.'.*', 
                     'users.nama as oleh',
@@ -2739,7 +2755,7 @@ class D_ObatController extends Controller
             $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
 
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $hb = $check->harga_beli;
                 $ppn = $check->nota->ppn;
@@ -2747,7 +2763,7 @@ class D_ObatController extends Controller
                 $harga_jual = 0;
                 $harga_transfer = 0;
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $hb = 0;
                 $ppn = 0;
                 $harga_beli_ppn = $check->harga_outlet;
@@ -2771,11 +2787,11 @@ class D_ObatController extends Controller
             $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
 
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>'.$check->nota->suplier->nama.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Masuk dari '.$check->nota->apotek_asal->nama_singkat.'</b>';
             } 
@@ -2792,7 +2808,7 @@ class D_ObatController extends Controller
             $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
     
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $hb = $check->harga_beli;
                 $ppn = $check->nota->ppn;
@@ -2800,7 +2816,7 @@ class D_ObatController extends Controller
                 $harga_jual = null;
                 $harga_transfer = null;
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $hb = null;
                 $ppn = null;
                 $harga_beli_ppn = $check->harga_outlet;
@@ -2889,17 +2905,17 @@ class D_ObatController extends Controller
     }
 
     public function gunakan_hb(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok_harga = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
+        $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
 
         $harga_sebelumnya = $stok_harga->harga_beli_ppn;
 
-        if(DB::table('tb_m_stok_harga_'.$inisial.'')
+        if(DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id_obat', $request->id_obat)
                     ->update(['harga_beli' => $request->hb, 'harga_beli_ppn' => $request->hb_ppn, 'id_histori_hb' => $request->id, 'id_histori_hb_ppn' => $request->id])){
 
-            DB::table('tb_histori_stok_'.$inisial.'')
+            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->where('id_obat', $request->id_obat)
                     ->where('sisa_stok', '>', 0)
                     ->where('hb_ppn', $harga_sebelumnya)
@@ -2912,21 +2928,21 @@ class D_ObatController extends Controller
     }
 
     public function edit_harga_beli_ppn($id) {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
 
         return view('data_obat.edit_harga_beli_ppn')->with(compact('obat'));
     }
 
     public function list_edit_harga_beli_ppn(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $apoteker = User::find($apotek->id_apoteker);
+        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $id_role_active = session('id_role_active');
         $hak_akses = 0;
@@ -2939,8 +2955,8 @@ class D_ObatController extends Controller
         }
 
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_histori_all_'.$inisial.'')->select([
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_all_'.$inisial.'')->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 
                     'tb_histori_all_'.$inisial.'.*', 
                     'users.nama as oleh',
@@ -2984,19 +3000,19 @@ class D_ObatController extends Controller
             $data_po_ = array(18, 19, 20, 21);
             $data_td_ = array(22, 23, 24, 25);
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>'.$check->nota->suplier->nama.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Masuk dari '.$check->nota->apotek_asal->nama_singkat.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_keluar_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Tujuan ke '.$check->nota->apotek_tujuan->nama_singkat.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_penjualan_)) {
-                $check = TransaksiPenjualanDetail::find($data->id_transaksi);
+                $check = TransaksiPenjualanDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 if($check->nota->is_kredit == 1) {
                     $string = '<b>Vendor : '.$check->nota->vendor->nama.'</b>';
                 } else {
@@ -3004,10 +3020,10 @@ class D_ObatController extends Controller
                 }
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_po_)) {
-                $check = TransaksiPODetail::find($data->id_transaksi);
+                $check = TransaksiPODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_td_)) {
-                $check = TransaksiTDDetail::find($data->id_transaksi);
+                $check = TransaksiTDDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             }
 
@@ -3102,9 +3118,9 @@ class D_ObatController extends Controller
     }
 
     public function gunakan_hb_ppn(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok_harga = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
+        $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
 
         $data_pembelian_ = array(2, 12, 13, 14, 26, 27, 30, 31);
         $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
@@ -3116,11 +3132,11 @@ class D_ObatController extends Controller
 
         $harga_sebelumnya = $stok_harga->harga_beli_ppn;
 
-        if(DB::table('tb_m_stok_harga_'.$inisial.'')
+        if(DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id_obat', $request->id_obat)
                     ->update(['harga_beli_ppn' => $harga, 'id_histori_hb_ppn' => $request->id])){
 
-            DB::table('tb_histori_stok_'.$inisial.'')
+            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->where('id_obat', $request->id_obat)
                     ->where('sisa_stok', '>', 0)
                     ->where('hb_ppn', $harga_sebelumnya)
@@ -3133,21 +3149,21 @@ class D_ObatController extends Controller
     }
 
     public function edit_harga_jual($id) {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         return view('data_obat.edit_harga_jual')->with(compact('obat'));
     }
 
     public function list_edit_harga_jual(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_histori_all_'.$inisial.'')->select([
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_all_'.$inisial.'')->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 
                     'tb_histori_all_'.$inisial.'.*', 
                     'users.nama as oleh',
@@ -3197,19 +3213,19 @@ class D_ObatController extends Controller
             $data_po_ = array(18, 19, 20, 21);
             $data_td_ = array(22, 23, 24, 25);
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>'.$check->nota->suplier->nama.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Masuk dari '.$check->nota->apotek_asal->nama_singkat.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_tf_keluar_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
                 $string = '<b>Tujuan ke '.$check->nota->apotek_tujuan->nama_singkat.'</b>';
             } else if (in_array($data->id_jenis_transaksi, $data_penjualan_)) {
-                $check = TransaksiPenjualanDetail::find($data->id_transaksi);
+                $check = TransaksiPenjualanDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 if($check->nota->is_kredit == 1) {
                     $string = '<b>Vendor : '.$check->nota->vendor->nama.'</b>';
                 } else {
@@ -3217,10 +3233,10 @@ class D_ObatController extends Controller
                 }
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_po_)) {
-                $check = TransaksiPODetail::find($data->id_transaksi);
+                $check = TransaksiPODetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             } else if (in_array($data->id_jenis_transaksi, $data_td_)) {
-                $check = TransaksiTDDetail::find($data->id_transaksi);
+                $check = TransaksiTDDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 $id_nota = ' | IDNota : '.$check->nota->id;
             }
 
@@ -3316,18 +3332,18 @@ class D_ObatController extends Controller
 
 
     public function lihat_stok_tersedia($id) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         
-        $obat = MasterObat::find($id);
-        $sh = DB::table('tb_m_stok_harga_'.$inisial.'')->select(['*'])->where('id_obat', $obat->id)->first();
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
+        $sh = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select(['*'])->where('id_obat', $obat->id)->first();
 
         return view('data_obat.lihat_stok_tersedia')->with(compact('obat', 'sh'));
     }
 
     public function list_lihat_stok_tersedia(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
@@ -3348,8 +3364,8 @@ class D_ObatController extends Controller
         }
         $avg = number_format($avg,2,".","");
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_histori_stok_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_histori_stok_'.$inisial.'.*'])
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_histori_stok_'.$inisial.'.*'])
                 ->where(function($query) use($request, $inisial){
                     $query->where('tb_histori_stok_'.$inisial.'.id_obat', $request->id_obat);
                     $query->whereIn('tb_histori_stok_'.$inisial.'.id_jenis_transaksi', [2,3,11,9]);
@@ -3371,11 +3387,11 @@ class D_ObatController extends Controller
 
 
     public function gunakan_hj(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok_harga = DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
+        $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
 
-        if(DB::table('tb_m_stok_harga_'.$inisial.'')
+        if(DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id_obat', $request->id_obat)
                     ->update(['harga_jual' => $request->hj, 'id_histori_hj' => $request->id])){
             echo 1;
@@ -3396,25 +3412,25 @@ class D_ObatController extends Controller
             
         }*/
         
-        //$apotek = MasterApotek::find(session('id_apotek_active'));
+        //$apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         //$inisial = strtolower($apotek->nama_singkat);
         $inisial = 'hw';
 
-        $datas = DB::table('tb_bantu_sh_hw')->get();
+        $datas = DB::connection($this->getConnectionName())->table('tb_bantu_sh_hw')->get();
 
         $data_update = 0;
         $data_skip = 0;
         foreach ($datas as $key => $val) {
-            $cek = DB::table('tb_m_stok_harga_'.$inisial)->where('nama', 'LIKE', '%'.$val->nama.'%')->first();
+            $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('nama', 'LIKE', '%'.$val->nama.'%')->first();
             if($cek) {
                 if($cek->harga_beli_ppn != 0) {
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id', $cek->id)
                     ->update(['harga_beli_ppn' => $cek->harga_beli_ppn]);
                 }
 
                 if($cek->harga_jual != 0) {
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id', $cek->id)
                     ->update(['harga_jual' => $cek->harga_jual]);
                 }
@@ -3434,10 +3450,10 @@ class D_ObatController extends Controller
     }
 
     public function perbaikan_data(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $data_ = DB::table('tb_histori_stok_'.$inisial.'')
+        $data_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->where('id_obat', $request->id_obat)
                     ->orderBy('id', 'ASC')
                     ->get();
@@ -3446,7 +3462,7 @@ class D_ObatController extends Controller
         $id_skip = array();
         foreach ($data_ as $key => $val) {
             if (!in_array($val->id, $id_skip)) {
-                $cek_ = DB::table('tb_histori_stok_'.$inisial.'')
+                $cek_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                             ->where('id_obat', $request->id_obat)
                             ->where('id_jenis_transaksi', $val->id_jenis_transaksi)
                             ->where('id_transaksi', $val->id_transaksi)
@@ -3455,7 +3471,7 @@ class D_ObatController extends Controller
                             ->get();
                 if(count($cek_) > 0) {
                     foreach ($cek_ as $x => $obj) {
-                        DB::table('tb_histori_stok_'.$inisial.'')
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                             ->where('id', $obj->id)
                             ->delete();
                         $id_skip[] = $obj->id;
@@ -3465,7 +3481,7 @@ class D_ObatController extends Controller
         }
 
         # sesuaikan datanya
-        $data_ = DB::table('tb_histori_stok_'.$inisial.'')
+        $data_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->select(['tb_histori_stok_'.$inisial.'.*', 'a.act'])
                     ->join('tb_m_jenis_transaksi as a', 'a.id', '=', 'tb_histori_stok_'.$inisial.'.id_jenis_transaksi')
                     ->where('id_obat', $request->id_obat)
@@ -3486,21 +3502,21 @@ class D_ObatController extends Controller
 
                     if($val->id_jenis_transaksi == 7) {
                         # Revisi Transfer Masuk
-                        $last_ = DB::table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [3,7])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
+                        $last_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [3,7])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
                         if($last_->jumlah == $val->jumlah) {
                             $stok_awal = $stok_akhir;
                             $stok_akhir_new = $stok_akhir+0;
                         }
                     } else if($val->id_jenis_transaksi == 13) {
                         # Revisi Pembelian (Minus)
-                        $last_ = DB::table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [2,13])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
+                        $last_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [2,13])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
                         if($last_->jumlah == $val->jumlah) {
                             $stok_awal = $stok_akhir;
                             $stok_akhir_new = $stok_akhir+0;
                         }
                     } else if($val->id_jenis_transaksi == 20)  {
                         # Revisi Penjualan Operasional (Minus)
-                        $last_ = DB::table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [18,20])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
+                        $last_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [18,20])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
                         if($last_->jumlah == $val->jumlah) {
                             $stok_awal = $stok_akhir;
                             $stok_akhir_new = $stok_akhir+0;
@@ -3514,14 +3530,14 @@ class D_ObatController extends Controller
 
                     if($val->id_jenis_transaksi == 8) {
                         # Revisi Transfer keluar
-                        $last_ = DB::table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [3,8])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
+                        $last_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [3,8])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
                         if($last_->jumlah == $val->jumlah) {
                             $stok_awal = $stok_akhir;
                             $stok_akhir_new = $stok_akhir-0;
                         }
                     } else if($val->id_jenis_transaksi == 12) {
                         # Revisi Pembelian (Plus)
-                        $last_ = DB::table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [2,12])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
+                        $last_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [2,12])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
                         if($last_->jumlah == $val->jumlah) {
                            // $jumlah = 0;
                             $stok_awal = $stok_akhir;
@@ -3529,7 +3545,7 @@ class D_ObatController extends Controller
                         }
                     } else if($val->id_jenis_transaksi == 19) {
                         # Revisi Penjualan Operasional (Plus)
-                        $last_ = DB::table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [18,19])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
+                        $last_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [18,19])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->first();
                         if($last_->jumlah == $val->jumlah) {
                             $stok_awal = $stok_akhir;
                             $stok_akhir_new = $stok_akhir-0;
@@ -3537,12 +3553,12 @@ class D_ObatController extends Controller
                     } else if($val->id_jenis_transaksi == 16) {
                         # Hapus Transfer Masuk (Double)
                         # cek ada gk history transaksi yang masuk dengan id tersebut
-                        $cek = DB::table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [7, 3])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->count();
+                        $cek = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_transaksi', $val->id_transaksi)->whereIn('id_jenis_transaksi', [7, 3])->orderBy('id', 'DESC')->where('id', '!=',  $val->id)->count();
                         if($cek < 1) {
                             $jumlah = $val->jumlah;
                             $stok_awal = $stok_akhir;
                             $stok_akhir_new = $stok_akhir+$val->jumlah;
-                            DB::table('tb_histori_stok_'.$inisial.'')
+                            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                             ->where('id', $val->id)
                             ->delete();
                         }
@@ -3553,7 +3569,7 @@ class D_ObatController extends Controller
                     $stok_akhir_new = $val->jumlah;
                 }
 
-                DB::table('tb_histori_stok_'.$inisial.'')->where('id', $val->id)->update(['stok_akhir' => $stok_akhir_new, 'stok_awal' => $stok_awal, 'jumlah' => $jumlah]);
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id', $val->id)->update(['stok_akhir' => $stok_akhir_new, 'stok_awal' => $stok_awal, 'jumlah' => $jumlah]);
                 $stok_akhir = $stok_akhir_new;
                 $stok_awal = $stok_awal;
             } else {
@@ -3564,7 +3580,7 @@ class D_ObatController extends Controller
         }
 
         if($i > 0) {
-            DB::table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->update(['stok_akhir' => $stok_akhir, 'stok_awal' => $stok_awal]);
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->update(['stok_akhir' => $stok_akhir, 'stok_awal' => $stok_awal]);
         }
 
         echo $i;
@@ -3572,20 +3588,20 @@ class D_ObatController extends Controller
 
     public function set_status_harga_outlet(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok = DB::table('tb_m_stok_harga_'.$inisial.'')
+        $stok = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->first();
 
 
         if($request->nilai == 1) {
-            DB::table('tb_m_stok_harga_'.$inisial.'')
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->update(['is_status_harga' => $request->nilai, 'status_harga_by' => Auth::id(), 'status_harga_at' => date('Y-m-d H:i:s')]);
         } else {
-            $obat = MasterObat::find($stok->id_obat);
-            DB::table('tb_m_stok_harga_'.$inisial.'')
+            $obat = MasterObat::on($this->getConnectionName())->find($stok->id_obat);
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->update(['is_status_harga' => $request->nilai, 'status_harga_by' => Auth::id(), 'status_harga_at' => date('Y-m-d H:i:s'), 'harga_jual' => $obat->harga_jual]);
         }
@@ -3594,20 +3610,20 @@ class D_ObatController extends Controller
     }
 
     public function reload_hpp_from_another_outlet() {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-      /*  $obats = MasterObat::where('is_deleted', 0)->get();*/
-        $obats = DB::table('tb_m_stok_harga_'.$inisial.'')
+      /*  $obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->get();*/
+        $obats = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('harga_beli_ppn',0)
                     ->get();
         $i = 0;
         foreach ($obats as $key => $val) {
-                $cek2 = DB::table('tb_m_stok_harga_pg')
+                $cek2 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_pg')
                         ->where('id_obat', $val->id_obat)
                         ->first();
 
                 if(!empty($cek2)) {
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('id_obat', $val->id_obat)
                     ->update(['harga_beli_ppn' => $cek2->harga_beli_ppn, 'updated_by' => Auth::id(), 'updated_at' => date('Y-m-d H:i:s')]);
                     $i++;
@@ -3620,9 +3636,9 @@ class D_ObatController extends Controller
     }
 
     public function reload_data_histori_transaksi(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $historis = DB::table('tb_histori_stok_'.$inisial)->where('id_obat', $request->id)->where('is_reload_histori', 0)->get();
+        $historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id_obat', $request->id)->where('is_reload_histori', 0)->get();
         $data_pembelian_ = array(2, 12, 13);
         $data_tf_masuk_ = array(3, 7);
         $data_tf_keluar_ = array(4, 8);
@@ -3633,7 +3649,7 @@ class D_ObatController extends Controller
         $data_po_ = array(18, 19, 20, 21);
         $data_td_ = array(22, 23, 24, 25);
 
-        DB::table('tb_m_stok_harga_'.$inisial)
+        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $request->id)
                         ->update(['hb_ppn' => 0, 'hb_ppn_avg' => 0, 'is_reload_histori' => 0]);
 
@@ -3643,7 +3659,7 @@ class D_ObatController extends Controller
             $i++;
 
             if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                 # jika data pertama
                 if($i == 1) {
@@ -3652,34 +3668,34 @@ class D_ObatController extends Controller
                     $hb_ppn_avg = $hb_ppn;
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                     $last_stok = $data->stok_akhir;
                 } else {
-                    $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                    $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                     $hb_ppn = $check->harga_beli_ppn;
                     $hb = $check->harga_beli;
                     $hb_ppn_avg = (($cek_obat_->hb_ppn_avg * $last_stok) + ($data->jumlah*$hb_ppn))/($data->jumlah + $last_stok);
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                     $last_stok = $data->stok_akhir;
                 }
             } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                 # jika data pertama
                 if($i == 1) {
@@ -3688,17 +3704,17 @@ class D_ObatController extends Controller
                     $hb_ppn_avg = $hb_ppn;
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                     $last_stok = $data->stok_akhir;
                 } else {
-                    $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                    $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                     $hb_ppn = $check->harga_outlet;
                     $hb = $cek_obat_->harga_beli;
                     if($cek_obat_->harga_beli > $hb_ppn) {
@@ -3713,23 +3729,23 @@ class D_ObatController extends Controller
                     }*/
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                     $last_stok = $data->stok_akhir;
                 }
             } else if (in_array($data->id_jenis_transaksi, $data_penjualan_)) {
-                $check = TransaksiPenjualanDetail::find($data->id_transaksi);
-                $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                $check = TransaksiPenjualanDetail::on($this->getConnectionName())->find($data->id_transaksi);
+                $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
 
                 # jika data pertama
                 if($i == 1) {
-                    $last_pembelian = TransaksiPembelianDetail::where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
+                    $last_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
                                         ->join('tb_nota_pembelian as b','b.id','=','tb_detail_nota_pembelian.id_nota')
                                         ->whereDate('b.tgl_nota','<', $data->created_at)
                                         ->where('tb_detail_nota_pembelian.is_deleted', 0)
@@ -3742,7 +3758,7 @@ class D_ObatController extends Controller
                         $hb = $last_pembelian->harga_beli;
                         $hb_ppn_avg = $hb_ppn;
                     } else {
-                        $last_tf_masuk = TransaksiTODetail::where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
+                        $last_tf_masuk = TransaksiTODetail::on($this->getConnectionName())->where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
                                         ->join('tb_nota_transfer_outlet as b','b.id','=','tb_detail_nota_transfer_outlet.id_nota')
                                         ->whereDate('b.tgl_nota','<', $data->created_at)
                                         ->where('tb_detail_nota_transfer_outlet.is_deleted', 0)
@@ -3768,12 +3784,12 @@ class D_ObatController extends Controller
                     } 
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
 
@@ -3784,10 +3800,10 @@ class D_ObatController extends Controller
 
                     $last_stok = $data->stok_akhir;
                 } else {
-                    $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                    $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $cek_obat_->hb_ppn_avg, 'hb_ppn_avg' => $cek_obat_->hb_ppn_avg]);
 
@@ -3798,7 +3814,7 @@ class D_ObatController extends Controller
                     $last_stok = $data->stok_akhir;
                 }
             } else  if (in_array($data->id_jenis_transaksi, $data_tf_keluar_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
+                $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                 # jika data pertama
                 if($i == 1) {
@@ -3807,17 +3823,17 @@ class D_ObatController extends Controller
                     $hb_ppn_avg = $hb_ppn;
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                     $last_stok = $data->stok_akhir;
                 } else {
-                    $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                    $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                     //$hb_ppn = $check->harga_outlet;
                     $hb_ppn = $cek_obat_->hb_ppn_avg;
                     $hb = $cek_obat_->hb;
@@ -3827,18 +3843,18 @@ class D_ObatController extends Controller
                     $hb_ppn_avg = (($cek_obat_->hb_ppn_avg * $last_stok) + ($data->jumlah*$hb_ppn))/($data->jumlah + $last_stok);
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                     $last_stok = $data->stok_akhir;
                 }
             } else  if (in_array($data->id_jenis_transaksi, $data_penjualan_op_)) {
-                $check = TransaksiPODetail::find($data->id_transaksi);
+                $check = TransaksiPODetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                 # jika data pertama
                 if($i == 1) {
@@ -3847,18 +3863,18 @@ class D_ObatController extends Controller
                     $hb_ppn_avg = $hb_ppn;
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
 
                     $last_stok = $data->stok_akhir;
                 } else {
-                    $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                    $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                     $hb_ppn = $check->harga_jual;
                     $hb = $cek_obat_->harga_beli;
                     if($cek_obat_->harga_beli > $hb_ppn) {
@@ -3867,21 +3883,21 @@ class D_ObatController extends Controller
                     $hb_ppn_avg = (($cek_obat_->hb_ppn_avg * $last_stok) + ($data->jumlah*$hb_ppn))/($data->jumlah + $last_stok);
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                     $last_stok = $data->stok_akhir;
                 }
             } else {
-                $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
 
                 if(empty($cek_obat_) OR $cek_obat_->hb_ppn == null) {
-                    $last_pembelian = TransaksiPembelianDetail::where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
+                    $last_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
                                         ->join('tb_nota_pembelian as b','b.id','=','tb_detail_nota_pembelian.id_nota')
                                         ->whereDate('b.tgl_nota','<', $data->created_at)
                                         ->where('tb_detail_nota_pembelian.is_deleted', 0)
@@ -3894,7 +3910,7 @@ class D_ObatController extends Controller
                         $hb = $last_pembelian->harga_beli;
                         $hb_ppn_avg = $hb_ppn;
                     } else {
-                        $last_tf_masuk = TransaksiTODetail::where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
+                        $last_tf_masuk = TransaksiTODetail::on($this->getConnectionName())->where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
                                         ->join('tb_nota_transfer_outlet as b','b.id','=','tb_detail_nota_transfer_outlet.id_nota')
                                         ->whereDate('b.tgl_nota','<', $data->created_at)
                                         ->where('tb_detail_nota_transfer_outlet.is_deleted', 0)
@@ -3925,12 +3941,12 @@ class D_ObatController extends Controller
                 }
 
                 # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                DB::table('tb_histori_stok_'.$inisial)
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                     ->where('id', $data->id)
                     ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg]);
 
                 # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                DB::table('tb_m_stok_harga_'.$inisial)
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                     ->where('id_obat', $data->id_obat)
                     ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
 
@@ -3948,14 +3964,14 @@ class D_ObatController extends Controller
 
     public function template_data(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->select([
                             'tb_m_stok_harga_'.$inisial.'.*', 
                             'tb_m_obat.nama', 
-                            'tb_m_obat.barcode', 
+                            'tb_m_obat.sku', 
                             'tb_m_obat.untung_jual'
                     ])
                     ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
@@ -3971,7 +3987,7 @@ class D_ObatController extends Controller
                     $collection[] = array(
                         $no,
                         $rekap->id_obat,
-                        $rekap->barcode,
+                        $rekap->sku,
                         $rekap->nama,
                         $rekap->untung_jual,
                         "Rp ".number_format($rekap->harga_beli_ppn,2),
@@ -3990,7 +4006,7 @@ class D_ObatController extends Controller
 
                     public function headings(): array
                     {
-                        return ['No', 'ID', 'Barcode', 'Nama Obat', 'Margin',  'HB+PPN', 'Harga Jual', 'SH? (1 = jika ya)', 'Harga Jual Update (format number tanpa Rp)'];
+                        return ['No', 'ID', 'SKU', 'Nama Obat', 'Margin',  'HB+PPN', 'Harga Jual', 'SH? (1 = jika ya)', 'Harga Jual Update (format number tanpa Rp)'];
                     } 
 
                     public function columnWidths(): array
@@ -4033,8 +4049,8 @@ class D_ObatController extends Controller
 
     public function reload_data_histori_data() {
         ini_set('memory_limit', '-1'); 
-        $obats = MasterObat::where('is_deleted', 0)->whereBetween('id', [101, 200])->get();
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->whereBetween('id', [101, 200])->get();
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $id_apotek = $apotek->id;
         $inisial = strtolower($apotek->nama_singkat);
         $data_pembelian_ = array(2, 12, 13, 14, 26, 27, 30, 31);
@@ -4050,12 +4066,12 @@ class D_ObatController extends Controller
 
         $j = 0;
         foreach ($obats as $key => $val) {
-            $historis = DB::table('tb_histori_stok_'.$inisial.'')
+            $historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                     ->where('id_obat', $val->id)
                     ->get();
 
 
-            DB::table('tb_m_stok_harga_'.$inisial)
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                                 ->where('id_obat', $val->id)
                                 ->update(['hb_ppn' => 0, 'hb_ppn_avg' => 0, 'is_reload_histori' => 0]);
 
@@ -4065,7 +4081,7 @@ class D_ObatController extends Controller
                 $i++;
 
                 if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                    $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                    $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                     # jika data pertama
                     if($i == 1) {
@@ -4074,17 +4090,17 @@ class D_ObatController extends Controller
                         $hb_ppn_avg = $hb_ppn;
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                         $last_stok = $data->stok_akhir;
                     } else {
-                        $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                        $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                         $hb_ppn = $check->harga_beli_ppn;
                         $hb = $check->harga_beli;
                         $x = ($data->jumlah + $last_stok);
@@ -4095,18 +4111,18 @@ class D_ObatController extends Controller
                         } 
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                         $last_stok = $data->stok_akhir;
                     }
                 } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                    $check = TransaksiTODetail::find($data->id_transaksi);
+                    $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                     # jika data pertama
                     if($i == 1) {
@@ -4115,17 +4131,17 @@ class D_ObatController extends Controller
                         $hb_ppn_avg = $hb_ppn;
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                         $last_stok = $data->stok_akhir;
                     } else {
-                        $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                        $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                         $hb_ppn = $check->harga_outlet;
                         $hb = $cek_obat_->harga_beli;
                         if($cek_obat_->harga_beli > $hb_ppn) {
@@ -4140,23 +4156,23 @@ class D_ObatController extends Controller
                         }*/
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                         $last_stok = $data->stok_akhir;
                     }
                 } else if (in_array($data->id_jenis_transaksi, $data_penjualan_)) {
-                    $check = TransaksiPenjualanDetail::find($data->id_transaksi);
-                    $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                    $check = TransaksiPenjualanDetail::on($this->getConnectionName())->find($data->id_transaksi);
+                    $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
 
                     # jika data pertama
                     if($i == 1) {
-                        $last_pembelian = TransaksiPembelianDetail::where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
+                        $last_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
                                             ->join('tb_nota_pembelian as b','b.id','=','tb_detail_nota_pembelian.id_nota')
                                             ->whereDate('b.tgl_nota','<', $data->created_at)
                                             ->where('tb_detail_nota_pembelian.is_deleted', 0)
@@ -4169,7 +4185,7 @@ class D_ObatController extends Controller
                             $hb = $last_pembelian->harga_beli;
                             $hb_ppn_avg = $hb_ppn;
                         } else {
-                            $last_tf_masuk = TransaksiTODetail::where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
+                            $last_tf_masuk = TransaksiTODetail::on($this->getConnectionName())->where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
                                             ->join('tb_nota_transfer_outlet as b','b.id','=','tb_detail_nota_transfer_outlet.id_nota')
                                             ->whereDate('b.tgl_nota','<', $data->created_at)
                                             ->where('tb_detail_nota_transfer_outlet.is_deleted', 0)
@@ -4195,12 +4211,12 @@ class D_ObatController extends Controller
                         } 
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
 
@@ -4211,10 +4227,10 @@ class D_ObatController extends Controller
 
                         $last_stok = $data->stok_akhir;
                     } else {
-                        $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                        $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $cek_obat_->hb_ppn_avg, 'hb_ppn_avg' => $cek_obat_->hb_ppn_avg, 'is_reload_histori' => 1]);
 
@@ -4225,7 +4241,7 @@ class D_ObatController extends Controller
                         $last_stok = $data->stok_akhir;
                     }
                 } else  if (in_array($data->id_jenis_transaksi, $data_tf_keluar_)) {
-                    $check = TransaksiTODetail::find($data->id_transaksi);
+                    $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                     # jika data pertama
                     if($i == 1) {
@@ -4234,17 +4250,17 @@ class D_ObatController extends Controller
                         $hb_ppn_avg = $hb_ppn;
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                         $last_stok = $data->stok_akhir;
                     } else {
-                        $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                        $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                         //$hb_ppn = $check->harga_outlet;
                         $hb_ppn = $cek_obat_->hb_ppn_avg;
                         $hb = $cek_obat_->hb;
@@ -4254,18 +4270,18 @@ class D_ObatController extends Controller
                         $hb_ppn_avg = (($cek_obat_->hb_ppn_avg * $last_stok) + ($data->jumlah*$hb_ppn))/($data->jumlah + $last_stok);
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                         $last_stok = $data->stok_akhir;
                     }
                 } else if (in_array($data->id_jenis_transaksi, $data_penjualan_op_)) {
-                    $check = TransaksiPODetail::find($data->id_transaksi);
+                    $check = TransaksiPODetail::on($this->getConnectionName())->find($data->id_transaksi);
 
                     # jika data pertama
                     if($i == 1) {
@@ -4274,18 +4290,18 @@ class D_ObatController extends Controller
                         $hb_ppn_avg = $hb_ppn;
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
 
                         $last_stok = $data->stok_akhir;
                     } else {
-                        $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                        $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                         $hb_ppn = $check->harga_jual;
                         $hb = $cek_obat_->harga_beli;
                         if($cek_obat_->harga_beli > $hb_ppn) {
@@ -4294,28 +4310,28 @@ class D_ObatController extends Controller
                         $hb_ppn_avg = (($cek_obat_->hb_ppn_avg * $last_stok) + ($data->jumlah*$hb_ppn))/($data->jumlah + $last_stok);
 
                         # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                        DB::table('tb_histori_stok_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id', $data->id)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                         # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                        DB::table('tb_m_stok_harga_'.$inisial)
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                             ->where('id_obat', $data->id_obat)
                             ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
                         $last_stok = $data->stok_akhir;
                     }
                 } else {
-                    $cek_obat_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                    $cek_obat_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                     $last_stok = $data->stok_akhir;
                     $created_at = $data->created_at;
                     if($created_at == '' OR $created_at == null) {
                         if($data->id_jenis_transaksi == 11) {
-                            $so = SettingStokOpnam::find($data->id_transaksi);
+                            $so = SettingStokOpnam::on($this->getConnectionName())->find($data->id_transaksi);
                             $created_at = $so->created_at;
                         }
                     }
 
-                    $last_pembelian = TransaksiPembelianDetail::where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
+                    $last_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->where('tb_detail_nota_pembelian.id_obat', $data->id_obat)
                                         ->join('tb_nota_pembelian as b','b.id','=','tb_detail_nota_pembelian.id_nota')
                                         ->whereDate('b.tgl_nota','<', $created_at)
                                         ->where('tb_detail_nota_pembelian.is_deleted', 0)
@@ -4326,7 +4342,7 @@ class D_ObatController extends Controller
                     if(!empty($last_pembelian)) {
                         if($last_pembelian->harga_beli_ppn == '0.00' OR $last_pembelian->harga_beli_ppn == null) {
                             if($last_pembelian->harga_beli == '0.00' OR $last_pembelian->harga_beli == null) {
-                                $get_hist = DB::table('tb_histori_stok_'.$inisial)->where('id_obat', $data->id_obat)->where('hb_ppn', '!=', 0)->first();
+                                $get_hist = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id_obat', $data->id_obat)->where('hb_ppn', '!=', 0)->first();
                                 $hb_ppn = $get_hist->hb_ppn;
                                 $hb = $get_hist->hb_ppn;
                             } else {
@@ -4350,7 +4366,7 @@ class D_ObatController extends Controller
                             }
                         }
                     } else {
-                        $last_tf_masuk = TransaksiTODetail::where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
+                        $last_tf_masuk = TransaksiTODetail::on($this->getConnectionName())->where('tb_detail_nota_transfer_outlet.id_obat', $data->id_obat)
                                         ->join('tb_nota_transfer_outlet as b','b.id','=','tb_detail_nota_transfer_outlet.id_nota')
                                         ->whereDate('b.tgl_nota','<', $created_at)
                                         ->where('tb_detail_nota_transfer_outlet.is_deleted', 0)
@@ -4381,12 +4397,12 @@ class D_ObatController extends Controller
                     }*/
 
                     # set hb_ppn di tb_histori_stok_{{apotek}} = hb_ppn
-                    DB::table('tb_histori_stok_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                         ->where('id', $data->id)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'is_reload_histori' => 1]);
 
                     # set harga_beli_ppn di tb_m_stok_harga_{{apotek}} = hb_ppn & hb_ppn_avg = hb_ppn_avg
-                    DB::table('tb_m_stok_harga_'.$inisial)
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
                         ->where('id_obat', $data->id_obat)
                         ->update(['hb_ppn' => $hb_ppn, 'hb_ppn_avg' => $hb_ppn_avg, 'hb' => $hb, 'is_reload_histori' => 1]);
 
@@ -4419,7 +4435,7 @@ class D_ObatController extends Controller
         $tgl_akhir_baru = $akhir.' 23:59:59';
 
         $super_admin = session('super_admin');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = PenyesuaianStok::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
         ->join('users', 'users.id', '=', 'tb_penyesuaian_stok_obat.created_by')
         ->where(function($query) use($request, $super_admin, $tgl_awal_baru, $tgl_akhir_baru){
@@ -4464,7 +4480,7 @@ class D_ObatController extends Controller
 
     public function export_data_penyesuaian_stok(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $awal = $request->tgl_awal;
@@ -4473,7 +4489,7 @@ class D_ObatController extends Controller
         $tgl_akhir_baru = $akhir.' 23:59:59';
 
         $super_admin = session('super_admin');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $rekaps = PenyesuaianStok::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
         ->join('users', 'users.id', '=', 'tb_penyesuaian_stok_obat.created_by')
         ->where(function($query) use($request, $super_admin, $tgl_awal_baru, $tgl_akhir_baru){
@@ -4559,21 +4575,21 @@ class D_ObatController extends Controller
             if($file_data->getClientMimeType() == "text/csv"){
 
                 try {
-                    DB::beginTransaction();
+                    DB::connection($this->getConnectionName())->beginTransaction(); 
 
                     $import = new HJStaticImport();
                     $exl = Excel::import($import,$file_data);
                     
                     if($import->importstatus['status']){
-                        DB::commit();
+                        DB::connection($this->getConnectionName())->commit();
                         return json_encode(["status"=>1, "message"=>"Berhasil import data [ berhasil import : ".$import->importstatus['berhasil']." | gagal import : ".$import->importstatus['gagal']]);
                     } else {
-                        DB::rollBack();
+                        DB::connection($this->getConnectionName())->rollback();
                         return json_encode(["status"=>2, "message"=>"Gagal import data"]);
                     }            
 
                 } catch (Exception $e) {
-                    DB::rollBack();
+                    DB::connection($this->getConnectionName())->rollback();
                     return json_encode(["status"=>2, "message"=>"Gagal import data. ".$e->getMessage()]);
                 }                
 

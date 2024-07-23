@@ -45,7 +45,7 @@ class HistoriCron extends Command
         $last_id_obat_ex = 0;
         $id_apotek = 1;
         $skip = 0;
-        $cek = DB::table('tb_bantu_update')->orderBy('id', 'DESC')->first();
+        $cek = DB::connection($this->getConnectionName())->table('tb_bantu_update')->orderBy('id', 'DESC')->first();
         if(!empty($cek)) {
             $last_id_obat_ex = $cek->last_id_obat_after;
             if($last_id_obat_ex >= $last_id_obat) {
@@ -58,30 +58,30 @@ class HistoriCron extends Command
                 $last_id_obat_ex = $last_id_obat_ex+1;
                 $last_id_obat_after = $last_id_obat_ex+250-1;
             }
-            $apotek = MasterApotek::find($cek->id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($cek->id_apotek);
             if(!empty($apotek)) {
                 $inisial = strtolower($apotek->nama_singkat);
             } else {
                 $skip = 1;
             }
         } else {
-            $apotek = MasterApotek::find($id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
             $inisial = strtolower($apotek->nama_singkat);
             $last_id_obat_ex = $last_id_obat_ex+1;
             $last_id_obat_after = $last_id_obat_ex+250-1;
         }
 
         if($skip != 1) {
-            DB::table('tb_bantu_update')
+            DB::connection($this->getConnectionName())->table('tb_bantu_update')
                 ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after, 'id_apotek' => $id_apotek]);
             
-            $data = DB::table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
+            $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
             $i=0;
             $data_ = array();
             $now = date('Y-m-d');
             foreach ($data as $key => $val) {
                 # data pembelian obat keseluruhan
-                $det_pembelians = DB::table('tb_detail_nota_pembelian') 
+                $det_pembelians = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian') 
                                     ->select(['tb_detail_nota_pembelian.*', 'tb_nota_pembelian.ppn'])
                                     ->leftJoin('tb_nota_pembelian', 'tb_nota_pembelian.id', '=', 'tb_detail_nota_pembelian.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -114,7 +114,7 @@ class HistoriCron extends Command
                 }
 
                 # data pembelian obat dihapus
-                $det_pembelian_hapuss = DB::table('tb_detail_nota_pembelian')
+                $det_pembelian_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
                                     ->select(['tb_detail_nota_pembelian.*', 'tb_nota_pembelian.ppn'])
                                     ->leftJoin('tb_nota_pembelian', 'tb_nota_pembelian.id', '=', 'tb_detail_nota_pembelian.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -149,7 +149,7 @@ class HistoriCron extends Command
 
                 // -----------------------------------------------------------------------------------
                 # data penjualan obat keseluruhan
-                $det_penjualans = DB::table('tb_detail_nota_penjualan')
+                $det_penjualans = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                                     ->select(['tb_detail_nota_penjualan.*'])
                                     ->leftJoin('tb_nota_penjualan', 'tb_nota_penjualan.id', '=', 'tb_detail_nota_penjualan.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -178,7 +178,7 @@ class HistoriCron extends Command
                 }
 
                 # data penjualan obat dihapus
-                $det_penjualan_hapuss = DB::table('tb_detail_nota_penjualan')
+                $det_penjualan_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                                     ->select(['tb_detail_nota_penjualan.*'])
                                     ->leftJoin('tb_nota_penjualan', 'tb_nota_penjualan.id', '=', 'tb_detail_nota_penjualan.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -209,7 +209,7 @@ class HistoriCron extends Command
 
                 // -----------------------------------------------------------------------------------
                 # data transfer masuk obat keseluruhan
-                $det_transfer_masuks = DB::table('tb_detail_nota_transfer_outlet')
+                $det_transfer_masuks = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                     ->select(['tb_detail_nota_transfer_outlet.*'])
                                     ->leftJoin('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -238,7 +238,7 @@ class HistoriCron extends Command
                 }
 
                 # data transfer masuk obat dihapus
-                $det_transfer_masuk_hapuss = DB::table('tb_detail_nota_transfer_outlet')
+                $det_transfer_masuk_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                     ->select(['tb_detail_nota_transfer_outlet.*'])
                                     ->leftJoin('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -269,7 +269,7 @@ class HistoriCron extends Command
 
                 // -----------------------------------------------------------------------------------
                 # data transfer keluar obat keseluruhan
-                $det_transfer_keluars = DB::table('tb_detail_nota_transfer_outlet')
+                $det_transfer_keluars = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                     ->select(['tb_detail_nota_transfer_outlet.*'])
                                     ->leftJoin('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -298,7 +298,7 @@ class HistoriCron extends Command
                 }
 
                 # data transfer keluar obat dihapus
-                $det_transfer_keluar_hapuss = DB::table('tb_detail_nota_transfer_outlet')
+                $det_transfer_keluar_hapuss = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
                                     ->select(['tb_detail_nota_transfer_outlet.*'])
                                     ->leftJoin('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
                                     ->where('id_obat', $val->id_obat)
@@ -328,7 +328,7 @@ class HistoriCron extends Command
                 }
 
                 # history lain-lain 
-                $det_historis = DB::table('tb_histori_stok_'.$inisial.'')
+                $det_historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                                     ->where('id_obat', $val->id_obat)
                                     ->whereNotIn('id_jenis_transaksi', [1, 2, 3, 4, 14, 15, 16, 17])
                                     ->whereDate('created_at', '<', $now)
@@ -359,7 +359,7 @@ class HistoriCron extends Command
 
             if($i > 0) {
                 foreach (array_chunk($data_,50) as $t) {
-                   DB::table('tb_histori_all_'.$inisial.'')
+                   DB::connection($this->getConnectionName())->table('tb_histori_all_'.$inisial.'')
                     ->insert($t);
                 }
                 

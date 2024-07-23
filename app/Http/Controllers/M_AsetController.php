@@ -9,9 +9,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class M_AsetController extends Controller
 {
+    use DynamicConnectionTrait;
     /**
      * Display a listing of the resource.
      *
@@ -29,7 +31,7 @@ class M_AsetController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterAset::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_aset.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_m_aset.is_deleted', '=', '0');
@@ -71,6 +73,7 @@ class M_AsetController extends Controller
     public function create()
     {
         $aset = new MasterAset();
+        $aset->setDynamicConnection();
 
         $jenis_asets = collect([['id' => 1, 'nama' => 'Aset Tetap'], ['id' => 2, 'nama' => 'Aset Tak Berwujud']])->pluck('nama', 'id');
         $jenis_asets->prepend('-- Pilih Jenis Aset --','');
@@ -87,6 +90,7 @@ class M_AsetController extends Controller
     public function store(Request $request)
     {
         $aset = new MasterAset();
+        $aset->setDynamicConnection();
         $aset->fill($request->except('_token'));
 
         $validator = $aset->validate();
@@ -123,7 +127,7 @@ class M_AsetController extends Controller
      */
     public function edit($id)
     {
-        $aset = MasterAset::find($id);
+        $aset = MasterAset::on($this->getConnectionName())->find($id);
         $jenis_asets = collect([['id' => 1, 'nama' => 'Aset Tetap'], ['id' => 2, 'nama' => 'Aset Tak Berwujud']])->pluck('nama', 'id');
         $jenis_asets->prepend('-- Pilih Jenis Aset --','');
 
@@ -139,7 +143,7 @@ class M_AsetController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $aset = MasterAset::find($id);
+        $aset = MasterAset::on($this->getConnectionName())->find($id);
         $aset->fill($request->except('_token'));
 
         $validator = $aset->validate();
@@ -161,7 +165,7 @@ class M_AsetController extends Controller
      */
     public function destroy($id)
     {
-        $aset = MasterAset::find($id);
+        $aset = MasterAset::on($this->getConnectionName())->find($id);
         $aset->is_deleted = 1;
         $aset->deleted_at = date('Y-m-d H:i:s');
         $aset->deleted_by = Auth::user()->id;

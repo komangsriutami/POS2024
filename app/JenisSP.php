@@ -4,8 +4,11 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Validator;
+use App\Traits\DynamicConnectionTrait;
+
 class JenisSP extends Model
 {
+    use DynamicConnectionTrait;
     protected $table = 'tb_m_jenis_sp';
     public $primaryKey = 'id';
     public  $timestamps = false;

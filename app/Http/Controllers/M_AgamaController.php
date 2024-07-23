@@ -10,8 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class M_AgamaController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -39,7 +42,7 @@ class M_AgamaController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterAgama::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_agama.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_agama.is_deleted','=','0');
@@ -74,6 +77,7 @@ class M_AgamaController extends Controller
     public function create()
     {
         $agama = new MasterAgama;
+        $agama->setDynamicConnection();
 
         return view('agama.create')->with(compact('agama'));
     }
@@ -88,6 +92,7 @@ class M_AgamaController extends Controller
     public function store(Request $request)
     {
         $agama = new MasterAgama;
+        $agama->setDynamicConnection();
         $agama->fill($request->except('_token'));
 
         $validator = $agama->validate();
@@ -123,7 +128,7 @@ class M_AgamaController extends Controller
     */
     public function edit($id)
     {
-        $agama = MasterAgama::find($id);
+        $agama = MasterAgama::on($this->getConnectionName())->find($id);
 
         return view('agama.edit')->with(compact('agama'));
     }
@@ -137,7 +142,7 @@ class M_AgamaController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $agama = MasterAgama::find($id);
+        $agama = MasterAgama::on($this->getConnectionName())->find($id);
         $agama->fill($request->except('_token'));
 
         $validator = $agama->validate();
@@ -160,7 +165,7 @@ class M_AgamaController extends Controller
     */
     public function destroy($id)
     {
-        $agama = MasterAgama::find($id);
+        $agama = MasterAgama::on($this->getConnectionName())->find($id);
         $agama->is_deleted = 1;
         if($agama->save()){
             echo 1;

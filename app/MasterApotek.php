@@ -5,9 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterApotek extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Apotek 
 		Author 	: Sri U.

@@ -34,7 +34,31 @@ Data Member
    				List Data Member
         	</h3>
       	</div>
-        <div class="card-body">s
+        <?php
+            $first = date('Y-m-d');
+            $last = date('Y-m-t');
+        ?>
+        <div class="card-body">
+            <hr>
+            <form role="form" id="searching_form">
+                <div class="row">
+                    <div class="form-group  col-md-2">
+                        <label>Dari Tanggal Transaksi</label>
+                        <input type="text" name="tgl_awal"  id="tgl_awal"  value="{{ $first }}" class="datepicker form-control" autocomplete="off">
+                    </div>
+                    <div class="form-group  col-md-2">
+                        <label>Sampai Tanggal Transaksi</label>
+                        <input type="text" name="tgl_akhir" id="tgl_akhir" value="{{ $last }}" class="datepicker form-control" autocomplete="off">
+                    </div>
+
+                    <div class="col-lg-5">
+                        <label>- Action -</label><br>
+                        <!-- <button type="submit" class="btn btn-info" id="datatable_filter"><i class="fa fa-search"></i> Cari</button>  -->
+                        <span class="btn bg-secondary" onClick="export_detail_transaksi()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-download" aria-hidden="true"></i> Export Data Transaksi</span> 
+                    </div>
+                </div>
+            </form>
+            <hr>
 			<table  id="tb_member" class="table table-bordered table-striped table-hover">
                 <thead>
                     <tr>
@@ -44,6 +68,7 @@ Data Member
                         <th>Group Apotek</th>
                         <th>Telepon</th>
                         <th>Email</th>
+                        <th>Total Transaksi</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -73,6 +98,7 @@ Data Member
                 {data: 'id_group_apotek', name: 'id_group_apotek'},
                 {data: 'telepon', name: 'telepon'},
                 {data: 'email', name: 'email'},
+                {data: 'total_transaksi', name: 'total_transaksi', class:'text-center bg-info disabled color-palette'},
                 {data: 'action', name: 'id',orderable: true, searchable: true}
             ],
             rowCallback: function( row, data, iDisplayIndex ) {
@@ -203,6 +229,10 @@ Data Member
             }
 
         });
+    }
+
+    function export_detail_transaksi(){
+        window.open("{{ url('member/export/detail') }}"+"/"+$('#tgl_awal').val()+"/"+$('#tgl_akhir').val(),"_blank");
     }
 </script>
 @endsection

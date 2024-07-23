@@ -34,9 +34,11 @@ class BarangImport implements  ToCollection,WithHeadingRow
     
                 if(is_null($cekdetail)){
                     //$detail = new MasterBarang;
+                   // $detail->setDynamicConnection();
+
                     $gagal++;
                 } else {    
-                    $detail = MasterObat::find($cekdetail->id);
+                    $detail = MasterObat::on($this->getConnectionName())->find($cekdetail->id);
                     $detail->sku = $value['sku'];
                     $detail->updated_at = date('Y-m-d H:i:s');
                     $detail->updated_by = Auth::id();

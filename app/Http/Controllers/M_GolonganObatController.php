@@ -10,8 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class M_GolonganObatController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -39,7 +42,7 @@ class M_GolonganObatController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterGolonganObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_golongan_obat.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_golongan_obat.is_deleted','=','0');
@@ -74,6 +77,7 @@ class M_GolonganObatController extends Controller
     public function create()
     {
         $golongan_obat = new MasterGolonganObat;
+        $golongan_obat->setDynamicConnection();
 
         return view('golongan_obat.create')->with(compact('golongan_obat'));
     }
@@ -88,6 +92,7 @@ class M_GolonganObatController extends Controller
     public function store(Request $request)
     {
         $golongan_obat = new MasterGolonganObat;
+        $golongan_obat->setDynamicConnection();
         $golongan_obat->fill($request->except('_token'));
 
         $validator = $golongan_obat->validate();
@@ -123,7 +128,7 @@ class M_GolonganObatController extends Controller
     */
     public function edit($id)
     {
-        $golongan_obat = MasterGolonganObat::find($id);
+        $golongan_obat = MasterGolonganObat::on($this->getConnectionName())->find($id);
 
         return view('golongan_obat.edit')->with(compact('golongan_obat'));
     }
@@ -137,7 +142,7 @@ class M_GolonganObatController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $golongan_obat = MasterGolonganObat::find($id);
+        $golongan_obat = MasterGolonganObat::on($this->getConnectionName())->find($id);
         $golongan_obat->fill($request->except('_token'));
 
         $validator = $golongan_obat->validate();
@@ -160,7 +165,7 @@ class M_GolonganObatController extends Controller
     */
     public function destroy($id)
     {
-        $golongan_obat = MasterGolonganObat::find($id);
+        $golongan_obat = MasterGolonganObat::on($this->getConnectionName())->find($id);
         $golongan_obat->is_deleted = 1;
         if($golongan_obat->save()){
             echo 1;

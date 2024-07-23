@@ -6,8 +6,11 @@ use Illuminate\Http\Request;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use Mike42\Escpos\Printer;
+use App\Traits\DynamicConnectionTrait;
+
 class PrintController extends Controller
 {
+    use DynamicConnectionTrait;
     public function printToPrinter()
     {
         $content = "Isi teks yang ingin Anda simpan dalam file .txt.";

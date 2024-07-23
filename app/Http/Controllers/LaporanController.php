@@ -24,9 +24,11 @@ use Datatables;
 use DB;
 use Auth;
 use Mail;
+use App\Traits\DynamicConnectionTrait;
 
 class LaporanController extends Controller
 {
+    use DynamicConnectionTrait;
     /**
      * Create a new controller instance.
      *
@@ -58,7 +60,7 @@ class LaporanController extends Controller
 		$arr_aktivas = array();
 		$total_aktiva = 0;
 		foreach ($aktivas as $key => $val) {
-            $akuns = MasterKodeAkun::where('id_kategori_akun', $val->id)
+            $akuns = MasterKodeAkun::on($this->getConnectionName())->where('id_kategori_akun', $val->id)
                                     ->where('is_deleted', 0)
                                     ->get();
             $i_val = 0;
@@ -107,7 +109,7 @@ class LaporanController extends Controller
         $arr_pasivas = array();
         $total_pasiva = 0;
         foreach ($pasivas as $key => $val) {
-            $akuns = MasterKodeAkun::where('id_kategori_akun', $val->id)
+            $akuns = MasterKodeAkun::on($this->getConnectionName())->where('id_kategori_akun', $val->id)
                                     ->where('is_deleted', 0)
                                     ->get();
             $i_val = 0;
@@ -167,7 +169,7 @@ class LaporanController extends Controller
 		$tgl_awal = '2021-01-01';//$request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
 
-        $akuns = MasterKodeAkun::where('is_deleted', 0)->get();
+        $akuns = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $data = array();
 		foreach ($akuns as $key => $val) {
 			$getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
@@ -408,7 +410,7 @@ class LaporanController extends Controller
         $arr_pendapatans = array();
         $total_pendapatan = 0;
         foreach ($pendapatans as $key => $val) {
-            $akuns = MasterKodeAkun::where('id_kategori_akun', $val->id)
+            $akuns = MasterKodeAkun::on($this->getConnectionName())->where('id_kategori_akun', $val->id)
                                     ->where('is_deleted', 0)
                                     ->get();
             $i_val = 0;
@@ -457,7 +459,7 @@ class LaporanController extends Controller
         $arr_biayas = array();
         $total_biaya = 0;
         foreach ($biayas as $key => $val) {
-            $akuns = MasterKodeAkun::where('id_kategori_akun', $val->id)
+            $akuns = MasterKodeAkun::on($this->getConnectionName())->where('id_kategori_akun', $val->id)
                                     ->where('is_deleted', 0)
                                     ->get();
             $i_val = 0;

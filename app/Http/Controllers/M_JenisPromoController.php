@@ -10,9 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class M_JenisPromoController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,7 +42,7 @@ class M_JenisPromoController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterJenisPromo::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_promo.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_promo.is_deleted','=','0');
@@ -75,6 +77,7 @@ class M_JenisPromoController extends Controller
     public function create()
     {
         $jenis_promo = new MasterJenisPromo;
+        $jenis_promo->setDynamicConnection();
 
         return view('jenis_promo.create')->with(compact('jenis_promo'));
     }
@@ -89,6 +92,7 @@ class M_JenisPromoController extends Controller
     public function store(Request $request)
     {
         $jenis_promo = new MasterJenisPromo;
+        $jenis_promo->setDynamicConnection();
         $jenis_promo->fill($request->except('_token'));
 
         $validator = $jenis_promo->validate();
@@ -124,7 +128,7 @@ class M_JenisPromoController extends Controller
     */
     public function edit($id)
     {
-        $jenis_promo = MasterJenisPromo::find($id);
+        $jenis_promo = MasterJenisPromo::on($this->getConnectionName())->find($id);
 
         return view('jenis_promo.edit')->with(compact('jenis_promo'));
     }
@@ -138,7 +142,7 @@ class M_JenisPromoController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $jenis_promo = MasterJenisPromo::find($id);
+        $jenis_promo = MasterJenisPromo::on($this->getConnectionName())->find($id);
         $jenis_promo->fill($request->except('_token'));
 
         $validator = $jenis_promo->validate();
@@ -161,7 +165,7 @@ class M_JenisPromoController extends Controller
     */
     public function destroy($id)
     {
-        $jenis_promo = MasterJenisPromo::find($id);
+        $jenis_promo = MasterJenisPromo::on($this->getConnectionName())->find($id);
         $jenis_promo->is_deleted = 1;
         if($jenis_promo->save()){
             echo 1;

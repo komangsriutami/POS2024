@@ -17,17 +17,19 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Traits\DynamicConnectionTrait;
 
 class S_SGController extends Controller
 {
+    use DynamicConnectionTrait;
     public function index(StokSGDataTable $dataTable)
     {
         $nama_apotek_singkat_active = session('nama_apotek_singkat_active');
     	$id_apotek = session('id_apotek_active');
     	$now = date('Y-m-d');
-    	$cek = SettingStokOpnam::where('id_apotek', $id_apotek)->where('tgl_so', $now)->first();
+    	$cek = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', $id_apotek)->where('tgl_so', $now)->first();
     	if($id_apotek != 6) {
-    		$apotek = MasterApotek::find(6);
+    		$apotek = MasterApotek::on($this->getConnectionName())->find(6);
     		return view('so.page_not_select_apotek')->with(compact('apotek'));
     	} else {
     		if($cek == null) {
@@ -62,10 +64,10 @@ class S_SGController extends Controller
     public function export(Request $request) 
     {
         $id_apotek = session('id_apotek_active');
-        $apotek = MasterApotek::find($id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->get();
 
@@ -76,7 +78,7 @@ class S_SGController extends Controller
                 foreach($rekaps as $rekap) {
                     $no++;
                     
-                    /*$cek = DB::table('tb_histori_stok_'.$inisial.'')->where('id_obat', $rekap->id_obat)->where('id_jenis_transaksi', 11)->orderBy('created_at', 'DESC')->first();
+                    /*$cek = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_obat', $rekap->id_obat)->where('id_jenis_transaksi', 11)->orderBy('created_at', 'DESC')->first();
                     $so = 'Tidak';
                     if(!empty($cek)) {
                         $tgl_cek = date('Y-m-d', strtotime($cek->created_at));
@@ -163,10 +165,10 @@ class S_SGController extends Controller
     public function export_awal(Request $request) 
     {
         $id_apotek = session('id_apotek_active');
-        $apotek = MasterApotek::find($id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->get();
 
@@ -252,20 +254,20 @@ class S_SGController extends Controller
 
     public function reload_stok_awal(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $cek = DB::table('tb_m_stok_harga_'.$inisial.'')
+        $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->first();
 
-        $last = DB::table('tb_histori_stok_'.$inisial.'')
+        $last = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
                 ->where('id_obat', $cek->id_obat)
                 ->where('id_jenis_transaksi', '!=', 11)
                 ->orderBy('id', 'DESC')
                 ->first();
 
         if(!empty($last)) {
-            DB::table('tb_m_stok_harga_'.$inisial.'')
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->update(['stok_awal_so' => $last->stok_akhir]);
         }

@@ -10,9 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class SettingPaketSistemController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,7 +42,7 @@ class SettingPaketSistemController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = SettingPaketSistem::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_setting_paket_sistem.*'])
         ->where(function($query) use($request){
             $query->with('jenis_paket_sistem')->where('tb_setting_paket_sistem.is_deleted','=','0');
@@ -80,8 +82,9 @@ class SettingPaketSistemController extends Controller
     public function create()
     {
         $setting_paket_sistem = new SettingPaketSistem;
+        $setting_paket_sistem->setDynamicConnection();
 
-        $jenis_paket_sistems = MasterJenisPaketSistem::where('is_deleted', 0)->pluck('nama', 'id');
+        $jenis_paket_sistems = MasterJenisPaketSistem::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $jenis_paket_sistems->prepend('-- Pilih Jenis Paket Sistem --','');
 
         return view('setting_paket_sistem.create')->with(compact('setting_paket_sistem', 'jenis_paket_sistems'));
@@ -97,9 +100,10 @@ class SettingPaketSistemController extends Controller
     public function store(Request $request)
     {
         $setting_paket_sistem = new SettingPaketSistem;
+        $setting_paket_sistem->setDynamicConnection();
         $setting_paket_sistem->fill($request->except('_token'));
 
-        $jenis_paket_sistems = MasterJenisPaketSistem::where('is_deleted', 0)->pluck('nama', 'id');
+        $jenis_paket_sistems = MasterJenisPaketSistem::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $jenis_paket_sistems->prepend('-- Pilih Jenis Paket Sistem --','');
 
         $validator = $setting_paket_sistem->validate();
@@ -135,9 +139,9 @@ class SettingPaketSistemController extends Controller
     */
     public function edit($id)
     {
-        $setting_paket_sistem = SettingPaketSistem::find($id);
+        $setting_paket_sistem = SettingPaketSistem::on($this->getConnectionName())->find($id);
 
-        $jenis_paket_sistems = MasterJenisPaketSistem::where('is_deleted', 0)->pluck('nama', 'id');
+        $jenis_paket_sistems = MasterJenisPaketSistem::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $jenis_paket_sistems->prepend('-- Pilih Jenis Paket Sistem --','');
 
         return view('setting_paket_sistem.edit')->with(compact('setting_paket_sistem', 'jenis_paket_sistems'));
@@ -152,7 +156,7 @@ class SettingPaketSistemController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $setting_paket_sistem = SettingPaketSistem::find($id);
+        $setting_paket_sistem = SettingPaketSistem::on($this->getConnectionName())->find($id);
         $setting_paket_sistem->fill($request->except('_token'));
 
         $validator = $setting_paket_sistem->validate();
@@ -175,7 +179,7 @@ class SettingPaketSistemController extends Controller
     */
     public function destroy($id)
     {
-        $setting_paket_sistem = SettingPaketSistem::find($id);
+        $setting_paket_sistem = SettingPaketSistem::on($this->getConnectionName())->find($id);
         $setting_paket_sistem->is_deleted = 1;
         if($setting_paket_sistem->save()){
             echo 1;

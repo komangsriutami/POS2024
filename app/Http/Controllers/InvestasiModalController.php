@@ -9,9 +9,11 @@ use App\MasterInvestor;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class InvestasiModalController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : Menampilkan halaman index investasi modal
@@ -21,7 +23,7 @@ class InvestasiModalController extends Controller
     */
     public function index()
     {
-        $investor = MasterInvestor::where('is_deleted', 0)->get();
+        $investor = MasterInvestor::on($this->getConnectionName())->where('is_deleted', 0)->get();
 
         return view('investasi_modal.index')
             ->with(compact(
@@ -43,7 +45,7 @@ class InvestasiModalController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = InvestasiModal::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_investasi_modal.*',
@@ -92,10 +94,11 @@ class InvestasiModalController extends Controller
     public function create()
     {
     	$investasi_modal = new InvestasiModal;
-        $apotek = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $investasi_modal->setDynamicConnection();
+        $apotek = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apotek->prepend('-- Pilih Apotek --','');
 
-        $investor = MasterInvestor::where('is_deleted', 0)->pluck('nama', 'id');
+        $investor = MasterInvestor::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $investor->prepend('-- Pilih Investor --','');
 
         return view('investasi_modal.create')
@@ -116,14 +119,15 @@ class InvestasiModalController extends Controller
     public function store(Request $request)
     {
         $investasi_modal = new InvestasiModal;
+        $investasi_modal->setDynamicConnection();
         $investasi_modal->fill($request->except('_token'));
 
         $validator = $investasi_modal->validate();
         if($validator->fails()){
-            $apotek = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+            $apotek = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
             $apotek->prepend('-- Pilih Apotek --','');
 
-            $investor = MasterInvestor::where('is_deleted', 0)->pluck('nama', 'id');
+            $investor = MasterInvestor::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
             $investor->prepend('-- Pilih Investor --','');
 
             return view('investasi_modal.create')
@@ -162,11 +166,11 @@ class InvestasiModalController extends Controller
     */
     public function edit($id)
     {
-        $investasi_modal = InvestasiModal::find($id);
-        $apotek = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $investasi_modal = InvestasiModal::on($this->getConnectionName())->find($id);
+        $apotek = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apotek->prepend('-- Pilih Apotek --','');
 
-        $investor = MasterInvestor::where('is_deleted', 0)->pluck('nama', 'id');
+        $investor = MasterInvestor::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $investor->prepend('-- Pilih Investor --','');
 
         return view('investasi_modal.edit')
@@ -186,7 +190,7 @@ class InvestasiModalController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $investasi_modal = InvestasiModal::find($id);
+        $investasi_modal = InvestasiModal::on($this->getConnectionName())->find($id);
         $investasi_modal->fill($request->except('_token'));
 
         $validator = $investasi_modal->validate();
@@ -208,7 +212,7 @@ class InvestasiModalController extends Controller
     */
     public function destroy($id)
     {
-        $investasi_modal = InvestasiModal::find($id);
+        $investasi_modal = InvestasiModal::on($this->getConnectionName())->find($id);
         $investasi_modal->save_delete();
         if($investasi_modal->delete()){
             $this->updatePersentaseKepemilikan($investasi_modal->id_apotek);
@@ -228,10 +232,10 @@ class InvestasiModalController extends Controller
     */
     private function updatePersentaseKepemilikan($id_apotek)
     {
-        $investasi_modal_at_apotek = InvestasiModal::where('id_apotek',$id_apotek)->get();
-        $investasi_modal_sum_saham = InvestasiModal::where('id_apotek',$id_apotek)->sum('jumlah_modal');
+        $investasi_modal_at_apotek = InvestasiModal::on($this->getConnectionName())->where('id_apotek',$id_apotek)->get();
+        $investasi_modal_sum_saham = InvestasiModal::on($this->getConnectionName())->where('id_apotek',$id_apotek)->sum('jumlah_modal');
         foreach ($investasi_modal_at_apotek as $value) {
-            $investasi_modal = InvestasiModal::find($value->id);
+            $investasi_modal = InvestasiModal::on($this->getConnectionName())->find($value->id);
             $investasi_modal->persentase_kepemilikan = $this->calculatePersentaseKepemilikan($value->jumlah_modal, $investasi_modal_sum_saham);
             $investasi_modal->update();
         }

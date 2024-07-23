@@ -9,9 +9,11 @@ use App;
 use Datatables;
 use DB;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class T_PenjualanClosingController extends Controller
 {
+    use DynamicConnectionTrait;
     public function index() {
 
     }
@@ -22,6 +24,7 @@ class T_PenjualanClosingController extends Controller
 
     public function store(Request $request) {
     	$penjualan_closing = new TransaksiPenjualanClosing;
+        $penjualan_closing->setDynamicConnection();
         $penjualan_closing->fill($request->except('_token'));
         $penjualan_closing->id_apotek_nota = session('id_apotek_active');
         // dd($penjualan_closing);exit();
@@ -75,7 +78,7 @@ class T_PenjualanClosingController extends Controller
     }
 
     public function update(Request $request, $id) {
-    	$penjualan_closing = TransaksiPenjualanClosing::find($id);
+    	$penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
         $penjualan_closing->fill($request->except('_token'));
        
         $tanggal = $request->tanggal;

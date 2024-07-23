@@ -13,17 +13,17 @@
                 }
             },
             columns: [
-                {data: 'no', name: 'no', orderable: true, searchable: true, class:'text-center'},
-                {data: 'action', name: 'action', orderable: false, searchable: true, class:'text-center'},
-                {data: 'nama_barang', name: 'nama_barang', orderable: false, searchable: true, class:'text-left'},
-                {data: 'total1', name: 'total1', orderable: false, searchable: true, class:'text-right'},
-                {data: 'diskon', name: 'diskon', orderable: false, searchable: true, class:'text-right'},
-                {data: 'diskon_persen', name: 'diskon_persen', orderable: false, searchable: true, class:'text-center'},
-                {data: 'total2', name: 'total2', orderable: false, searchable: true, class:'text-right'},
-                {data: 'jumlah', name: 'jumlah', orderable: false, searchable: true, class:'text-center'},
-                {data: 'harga_beli', name: 'harga_beli', orderable: false, searchable: true, class:'text-right'},
-                {data: 'harga_beli_ppn', name: 'harga_beli_ppn', orderable: false, searchable: true, class:'text-right'},
-                {data: 'margin', name: 'margin', orderable: false, searchable: true, class:'text-right'}
+                {data: 'no', name: 'no', orderable: false, searchable: false, class:'text-center'},
+                {data: 'action', name: 'action', orderable: false, searchable: false, class:'text-center'},
+                {data: 'nama_barang', name: 'nama_barang', orderable: false, searchable: false, class:'text-left'},
+                {data: 'total1', name: 'total1', orderable: false, searchable: false, class:'text-right'},
+                {data: 'diskon', name: 'diskon', orderable: false, searchable: false, class:'text-right'},
+                {data: 'diskon_persen', name: 'diskon_persen', orderable: false, searchable: false, class:'text-center'},
+                {data: 'total2', name: 'total2', orderable: false, searchable: false, class:'text-right'},
+                {data: 'jumlah', name: 'jumlah', orderable: false, searchable: false, class:'text-center'},
+                {data: 'harga_beli', name: 'harga_beli', orderable: false, searchable: false, class:'text-right'},
+                {data: 'harga_beli_ppn', name: 'harga_beli_ppn', orderable: false, searchable: false, class:'text-right'},
+                {data: 'margin', name: 'margin', orderable: false, searchable: false, class:'text-right'}
             ],
             rowCallback: function( row, data, iDisplayIndex ) {
                 var api = this.api();

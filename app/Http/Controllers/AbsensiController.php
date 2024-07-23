@@ -21,9 +21,11 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Traits\DynamicConnectionTrait;
 
 class AbsensiController extends Controller
 {
+    use DynamicConnectionTrait;
     /**
      * Display a listing of the resource.
      *
@@ -34,9 +36,9 @@ class AbsensiController extends Controller
         $id_role_active = session('id_role_active');
         $id_apotek_active = session('id_apotek_active');
         if($id_role_active == 1 || $id_role_active == 6) {
-            $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
+            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
         } else {
-            $apoteks = MasterApotek::where('id', $id_apotek_active)->get();
+            $apoteks = MasterApotek::on($this->getConnectionName())->where('id', $id_apotek_active)->get();
         }
         
         $months = array();
@@ -56,7 +58,7 @@ class AbsensiController extends Controller
         $order_dir = $order[0]['dir'];
         $tanggal = date('Y-m-d');
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = Absensi::select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'id_user', 
@@ -109,10 +111,11 @@ class AbsensiController extends Controller
     public function create()
     {
         $absensi = new Absensi;
+        $absensi->setDynamicConnection();
 
-        $users =  User::where('is_deleted', 0)->lists('nama', 'id');
-        $apoteks = MasterApotek::where('is_deleted', 0)->lists('nama', 'id');
-        $sesi_jadwal_kerja = SesiJadwalKerja::where('is_deleted', 0)->lists('nama', 'id');
+        $users =  User::on($this->getConnectionName())->where('is_deleted', 0)->lists('nama', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->lists('nama', 'id');
+        $sesi_jadwal_kerja = SesiJadwalKerja::on($this->getConnectionName())->where('is_deleted', 0)->lists('nama', 'id');
         
         return view('absensi.create')->with(compact('absensi', 'users', 'apoteks', 'sesi_jadwal_kerja'));
     }
@@ -127,6 +130,7 @@ class AbsensiController extends Controller
     {
         if ($request->id_status == 1) {
             $absensi = new Absensi;
+            $absensi->setDynamicConnection();
             $absensi->fill($request->except('_token'));
             $absensi->id_apotek = session('id_apotek_active');
             $absensi->id_kasir_aktif = Auth::user()->id;
@@ -135,7 +139,7 @@ class AbsensiController extends Controller
             $absensi->jam_pulang = "00:00:00";
             $absensi->jumlah_jam_kerja = "0";
         } else if ($request->id_status == 2) {
-            $absensi = Absensi::where('id_user', $request->id_user)->where('tgl', date('Y-m-d'))->first();
+            $absensi = Absensi::on($this->getConnectionName())->where('id_user', $request->id_user)->where('tgl', date('Y-m-d'))->first();
             $absensi->jam_datang = $absensi->jam_datang;
             $absensi->jam_pulang = date('H:i:s');
             $date1 = strtotime($absensi->tgl." ".$absensi->jam_datang);
@@ -144,14 +148,14 @@ class AbsensiController extends Controller
             $jam = $diff/(60 * 60);
             $absensi->jumlah_jam_kerja = $jam; 
         } else if ($request->id_status == 3) {
-            $absensi = Absensi::where('id_user', $request->id_user)->where('tgl', date('Y-m-d'))->first();
+            $absensi = Absensi::on($this->getConnectionName())->where('id_user', $request->id_user)->where('tgl', date('Y-m-d'))->first();
             $absensi->jam_datang = $absensi->jam_datang;
             $absensi->jam_pulang = date('H:i:s');
             $absensi->jam_datang_split = date('H:i:s');
             $absensi->jam_pulang_split = "00:00:00";
             $absensi->jumlah_jam_kerja = $absensi->jumlah_jam_kerja; 
         } else if ($request->id_status == 4) {
-            $absensi = Absensi::where('id_user', $request->id_user)->where('tgl', date('Y-m-d'))->first();
+            $absensi = Absensi::on($this->getConnectionName())->where('id_user', $request->id_user)->where('tgl', date('Y-m-d'))->first();
             $absensi->jam_datang = $absensi->jam_datang;
             $absensi->jam_pulang = $absensi->jam_pulang;
             
@@ -164,7 +168,7 @@ class AbsensiController extends Controller
         }
         
         $new_password = bcrypt($request->password);
-        $user = User::find($request->id_user);
+        $user = User::on($this->getConnectionName())->find($request->id_user);
 
         $cek_1 = Hash::check($request->password, $new_password);
         $cek_2 = Hash::check($request->password, $user->password);
@@ -205,7 +209,7 @@ class AbsensiController extends Controller
      */
     public function edit($id)
     {
-        $absensi = Absensi::find($id);
+        $absensi = Absensi::on($this->getConnectionName())->find($id);
         return view('absensi.edit')->with(compact('absensi'));
     }
 
@@ -219,7 +223,7 @@ class AbsensiController extends Controller
     public function update(Request $request, $id)
     {
         //
-        $absensi = Absensi::find($id);
+        $absensi = Absensi::on($this->getConnectionName())->find($id);
         $absensi->fill($request->except('_token'));
 
         $validator = $absensi->validate();
@@ -240,7 +244,7 @@ class AbsensiController extends Controller
     public function destroy($id)
     {
         //
-        $absensi = Absensi::find($id);
+        $absensi = Absensi::on($this->getConnectionName())->find($id);
         $absensi->is_deleted = 1;
         if($absensi->save()){
             echo 1;
@@ -252,7 +256,7 @@ class AbsensiController extends Controller
 
     public function add_absensi() {
         if(Auth::user()->is_admin == 1) {
-            $users = User::where('is_deleted', 0)->pluck('nama', 'id');
+            $users = User::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
             $users->prepend('--- Pilih User ---','');
 
             return view('absensi._form_add_absensi')->with((compact('users')));
@@ -262,9 +266,9 @@ class AbsensiController extends Controller
     }
 
     public function cari_user(Request $request) {
-        $user = User::where('id', $request->txtcari)->first();
+        $user = User::on($this->getConnectionName())->where('id', $request->txtcari)->first();
         $now = date('Y-m-d');
-        $cek_absensi = Absensi::where('id_user', $user->id)->where('tgl', $now)->first();
+        $cek_absensi = Absensi::on($this->getConnectionName())->where('id_user', $user->id)->where('tgl', $now)->first();
 
         $jum = 0;
         if(!empty($cek_absensi)) {
@@ -311,7 +315,7 @@ class AbsensiController extends Controller
         $str_name = $tahun.'_'.$bulan;
         if($id_searching_by == 2) {
             $id_apotek = $request->id_apotek;
-            $apotek = MasterApotek::find($id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
             $str_name .= '_'.$apotek->nama_singkat;
             
         } else {
@@ -365,7 +369,7 @@ class AbsensiController extends Controller
                 $sheet->row(2, array(''));
 
 
-                $apotek = Apotek::find($request->id_apotek);
+                $apotek = Apotek::on($this->getConnectionName())->find($request->id_apotek);
 
                 $sheet->row(3, function ($row) {
                     $row->setFontFamily('Calibri');
@@ -400,7 +404,7 @@ class AbsensiController extends Controller
                 $tgl_awal       = date('Y-m-d',strtotime($split[0]));
                 $tgl_akhir      = date('Y-m-d',strtotime($split[1]));
                 $cek_user_absen = Absensi::select(['id_user'])->where('is_deleted', 0)->where('id_apotek', $request->id_apotek)->whereBetween('tgl', [$tgl_awal, $tgl_akhir])->get();
-                $data_users = User::where('is_deleted', 0)->where('is_absensi', 1)->whereIn('id', $cek_user_absen)->get();
+                $data_users = User::on($this->getConnectionName())->where('is_deleted', 0)->where('is_absensi', 1)->whereIn('id', $cek_user_absen)->get();
 
 
 
@@ -454,7 +458,7 @@ class AbsensiController extends Controller
 
                     foreach ($data_users as $key => $val) {
                       //  echo $val->username;
-                        $cek_absen = Absensi::where('is_deleted', 0)->where('tgl', $date)->where('id_apotek', $request->id_apotek)->where('id_user', $val->id)->first(); //
+                        $cek_absen = Absensi::on($this->getConnectionName())->where('is_deleted', 0)->where('tgl', $date)->where('id_apotek', $request->id_apotek)->where('id_user', $val->id)->first(); //
                         if(!empty($cek_absen)) {
                             if($cek_absen->jam_datang != null && $cek_absen->jam_pulang == null) {
                                 $jam1 = 0;
@@ -502,7 +506,7 @@ class AbsensiController extends Controller
     }
 
     public function detail_data($id_user, $bulan, $id_apotek, $id_searching_by) {
-        $user = User::find($id_user);
+        $user = User::on($this->getConnectionName())->find($id_user);
         $tahun = session('id_tahun_active');
         $jumlah_jam = Absensi::select([DB::raw('SUM(jumlah_jam_kerja) as jumlah_jam')])
                                 ->where(function($query) use($id_user, $bulan, $tahun, $id_apotek, $id_searching_by){
@@ -516,11 +520,11 @@ class AbsensiController extends Controller
                                 })
                                 ->first();
 
-        /*$jumlah_hari_libur = DB::table('j_setting_tgl_libur')->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->count();
+        /*$jumlah_hari_libur = DB::connection($this->getConnectionName())->table('j_setting_tgl_libur')->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->count();
         $jumlah_hari_all = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
         $jumlah_hari_all = $jumlah_hari_all-$jumlah_hari_libur;
         $jumlah_jam_kerja_all = $jumlah_hari_all*8;
-        $jumlah_hari = J_Absensi::where('id_pegawai', $id)->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->where('is_status', 1)->count();*/
+        $jumlah_hari = J_Absensi::on($this->getConnectionName())->where('id_pegawai', $id)->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->where('is_status', 1)->count();*/
 
         $jumlah_hari_libur = 0;
         $jumlah_hari_all = 0;
@@ -537,7 +541,7 @@ class AbsensiController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = Absensi::select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_absensi.*'
                 ])

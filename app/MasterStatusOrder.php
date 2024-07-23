@@ -3,9 +3,11 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterStatusOrder extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Status Order
 		Author 	: Sri U.

@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class RbacRole extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk RBAC Role 
 		Author 	: 
@@ -38,12 +40,13 @@ class RbacRole extends Model
         $array_id_permission = array();
 
         foreach ($permission_roles as $key) {
-            $cek = RbacRolePermission::where('id_permission', $key['id_permission'])->where('id_role', $this->id)->first();
+            $cek = RbacRolePermission::on($this->getConnectionName())->where('id_permission', $key['id_permission'])->where('id_role', $this->id)->first();
 
             if (empty($cek)) {
                 $obj = new RbacRolePermission;
+                $obj->setDynamicConnection();
             } else {
-                $obj = RbacRolePermission::find($cek->id);
+                $obj = RbacRolePermission::on($this->getConnectionName())->find($cek->id);
             }
 
             $obj->id_role = $this->id;
@@ -57,11 +60,11 @@ class RbacRole extends Model
         }
 
         if (!empty($array_id_permission)) {
-            DB::statement("DELETE FROM rbac_role_perm
+            DB::connection($this->getConnection())->statement("DELETE FROM rbac_role_perm
                             WHERE id_role=" . $this->id . " AND 
                                     id NOT IN(" . implode(',', $array_id_permission) . ")");
         } else {
-            DB::statement("DELETE FROM rbac_role_perm 
+            DB::connection($this->getConnection())->statement("DELETE FROM rbac_role_perm 
                             WHERE id_role=" . $this->id);
         }
     }

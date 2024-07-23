@@ -5,8 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class SettingStokOpnam extends Model
 {
+    use DynamicConnectionTrait;
     protected $table = 'tb_setting_stok_opnam';
     public $primaryKey = 'id';
     protected $fillable = ['id_apotek','tgl_so'];

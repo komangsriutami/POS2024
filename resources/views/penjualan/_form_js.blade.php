@@ -14,14 +14,14 @@
                 }
             },
             columns: [
-               {data: 'no', name: 'no', orderable: false, searchable: true, class:'text-center'},
-                {data: 'action', name: 'action', orderable: false, searchable: true, class:'text-center'},
-                {data: 'nama_barang', name: 'nama_barang', orderable: false, searchable: true, class:'text-left'},
-                {data: 'harga_jual', name: 'harga_jual', orderable: false, searchable: true, class:'text-right'},
-                {data: 'diskon', name: 'diskon', orderable: false, searchable: true, class:'text-right'},
-                {data: 'jumlah', name: 'jumlah', orderable: false, searchable: true, class:'text-center'},
-                {data: 'jumlah_cn', name: 'jumlah_cn', orderable: false, searchable: true, class:'text-center'},
-                {data: 'total', name: 'total', orderable: false, searchable: true, class:'text-right'}
+               {data: 'no', name: 'no', orderable: false, searchable: false, class:'text-center'},
+                {data: 'action', name: 'action', orderable: false, searchable: false, class:'text-center'},
+                {data: 'nama_barang', name: 'nama_barang', orderable: false, searchable: false, class:'text-left'},
+                {data: 'harga_jual', name: 'harga_jual', orderable: false, searchable: false, class:'text-right'},
+                {data: 'diskon', name: 'diskon', orderable: false, searchable: false, class:'text-right'},
+                {data: 'jumlah', name: 'jumlah', orderable: false, searchable: false, class:'text-center'},
+                {data: 'jumlah_cn', name: 'jumlah_cn', orderable: false, searchable: false, class:'text-center'},
+                {data: 'total', name: 'total', orderable: false, searchable: false, class:'text-right'}
             ],
             rowCallback: function( row, data, iDisplayIndex ) {
                 var api = this.api();
@@ -179,14 +179,14 @@
 				    }
 			     },
 	        columns: [
-	            {data: 'no', name: 'no',width:"2%", class:'text-center'},
-	            {data: 'tanggal', name: 'tanggal', class:'text-center', orderable: true, searchable: true},
+	            {data: 'no', name: 'no',width:"2%", orderable: false, searchable: false, class:'text-center'},
+	            {data: 'tanggal', name: 'tanggal', class:'text-center', orderable: false, searchable: false},
 	            {data: 'detail_obat', name: 'detail_obat', orderable: false, searchable: false},
 	            {data: 'kasir', name: 'kasir', class:'text-center', orderable: false, searchable: false},
 	            {data: 'alasan', name: 'alasan', orderable: false, searchable: false},
 	            {data: 'status', name: 'status', class:'text-center', orderable: false, searchable: false},
 	            {data: 'aprove', name: 'aprove', class:'text-center', orderable: false, searchable: false},
-	            {data: 'action', name: 'id',orderable: true, searchable: true, class:'text-center'}
+	            {data: 'action', name: 'id',orderable: false, searchable: false, class:'text-center'}
 	        ],
 	        rowCallback: function( row, data, iDisplayIndex ) {
 	            var api = this.api();
@@ -271,7 +271,7 @@
 									show_error("Data item penjualan tidak lengkap!");
 								}
 				        	} else {
-					        	Swal.fire("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
+					        	swal("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
 				        	}
 				        }  else {
 				        	var cek_ = cek_kelengkapan_form();
@@ -363,7 +363,7 @@
 			        $("#harga_jual").val(harga_jual_new);
 			        $("#is_margin_kurang").val(1);
 	        	} else {
-		        	Swal.fire("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
+		        	swal("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
 	        		return false;
 	        	}
 	        }
@@ -383,7 +383,7 @@
 						show_error("Data item penjualan tidak lengkap!");
 					}
 	        	} else {
-		        	Swal.fire("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
+		        	swal("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
 	        		return false;
 	        	}
 	        }  else {
@@ -426,7 +426,7 @@
             complete: function(data){
             },
             error: function(data) {
-                show_error("Error!", "Ajax occured.", "error");
+                swal("Error!", "Ajax occured.", "error");
             }
         });
     }
@@ -520,7 +520,7 @@
                 $("#modal-xl").find(".overlay").fadeOut("200");
             },
               error: function(data) {
-                show_error("error ajax occured!");
+                alert("error ajax occured!");
               }
         });
 	}
@@ -658,7 +658,7 @@
 				        $("#harga_jual").val(harga_jual_new);
 				        $("#is_margin_kurang").val(1);
 		        	} else {
-			        	Swal.fire("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
+			        	swal("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
 			        	return false;
 		        	}
 		        }
@@ -679,7 +679,7 @@
 						show_error("Data item penjualan tidak lengkap!");
 					}
 		        } else {
-	            	Swal.fire("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
+	            	swal("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
 	            }
 	        }  else {
 	        	var cek_ = cek_kelengkapan_form();
@@ -733,7 +733,7 @@
                         unHideDiskon();
                     }else{
                         //show_error(data.message);
-                        Swal.fire(data.message, "error");
+                        swal(data.message, "error");
                         return false;
                     }
                 },
@@ -763,7 +763,7 @@
                         unHideDiskon();
                     }else{
                         //show_error(data.message);
-                        Swal.fire(data.message, "error");
+                        swal(data.message, "error");
                         return false;
                     }
                 },
@@ -838,7 +838,7 @@
 	        		$("#is_margin_kurang").val(1);
 	        		input = true;
 	        	} else {
-		        	Swal.fire("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
+		        	swal("Harga Jual Tidak Sesuai!", "Harga jual tidak sesuai, margin dibawah 5%! Mohon cek data kembali.", "error");
 	            	input = false;
 	        	}
 	        } 
@@ -1139,7 +1139,7 @@
                 $("#modal-xl").find(".overlay").fadeOut("200");
             },
               error: function(data) {
-                show_error("error ajax occured!");
+                alert("error ajax occured!");
               }
         });
 	}
@@ -1174,7 +1174,7 @@
 	            $("#modal-xl").find(".overlay").fadeOut("200");
 	        },
 	        error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	        }
 	    });
 	}
@@ -1208,7 +1208,7 @@
 	            $("#modal-xl").find(".overlay").fadeOut("200");
 	        },
 	        error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	        }
 	    });
 	}
@@ -1239,7 +1239,7 @@
 		            $("#modal-lg").find(".overlay").fadeOut("200");
 		        },
 		        error: function(data) {
-		            show_error("error ajax occured!");
+		            alert("error ajax occured!");
 		        }
 		    });
 	    } else {
@@ -1249,20 +1249,17 @@
 
 	function submit_valid(){
 		var id = $("#id").val();
-		Swal.fire({
+		swal({
             title: "Apakah anda yakin menyimpan data ini?",
-            icon: "warning",
-            showDenyButton: true,
-		    showCancelButton: true,
-		    confirmButtonText: "Ya",
-		    denyButtonText: 'Tidak',
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Ya",
+            cancelButtonText: "Tidak",
             closeOnConfirm: true
-        }).then((result) => {
-        	if (result.isConfirmed) {
-			    submit_valid_konfirm(id);
-			} else if (result.isDenied) {
-				return false;
-			}
+        },
+        function(){
+            submit_valid_konfirm(id);
         });
 	}
 
@@ -1419,7 +1416,7 @@
 	            $("#modal-lg").find(".overlay").fadeOut("200");
 	        },
 	          error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	          }
 	    });*/
 	}
@@ -1447,7 +1444,7 @@
 	            $("#modal-lg").find(".overlay").fadeOut("200");
 	        },
 	          error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	          }
 	    });
 	}
@@ -1477,7 +1474,7 @@
 	            $("#modal-xl").find(".overlay").fadeOut("200");
 	        },
 	          error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	          }
 	    });
 	}
@@ -1504,7 +1501,7 @@
             form_retur.submit();
         }
         else{
-            Swal.fire({
+            swal({
                 title: "Warning",
                 text: "centang data yang akan diretur terlebih dahulu!",
                 type: "error",
@@ -1539,7 +1536,7 @@
                 $("#modal-xl").find(".overlay").fadeOut("200");
             },
             error: function(data) {
-                show_error("error ajax occured!");
+                alert("error ajax occured!");
             }
         });
     }
@@ -1559,44 +1556,41 @@
     }
 
     function batal_retur(id){
-        Swal.fire({
+        swal({
             title: "Apakah anda yakin membatalkan retur ini?",
-            icon: "warning",
-            showDenyButton: true,
-		    showCancelButton: true,
-		    confirmButtonText: "Ya",
-		    denyButtonText: 'Tidak',
-            closeOnConfirm: true
-       	}).then((result) => {
-        	if (result.isConfirmed) {
-			    $.ajax({
-	                type: "POST",
-	                url: '{{url("penjualan/batal_retur")}}',
-	                async:true,
-	                data: {
-	                    _token:token,
-	                    id:id
-	                },
-	                beforeSend: function(data){
-	                    // replace dengan fungsi loading
-	                },
-	                success:  function(data){
-	                    if(data==1){
-	                        Swal.fire("Deleted!", "Data retur berhasil dibatalkan.", "success");
-	                    }else{
-	                        Swal.fire("Failed!", "Gagal menyimpan data.", "error");
-	                    }
-	                },
-	                complete: function(data){
-	                    tb_penjualan_retur.fnDraw(false);
-	                },
-	                error: function(data) {
-	                    Swal.fire("Error!", "Ajax occured.", "error");
-	                }
-	            });
-			} else if (result.isDenied) {
-				return false;
-			}
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Ya",
+            cancelButtonText: "Tidak",
+            closeOnConfirm: false
+        },
+        function(){
+            $.ajax({
+                type: "POST",
+                url: '{{url("penjualan/batal_retur")}}',
+                async:true,
+                data: {
+                    _token:token,
+                    id:id
+                },
+                beforeSend: function(data){
+                    // replace dengan fungsi loading
+                },
+                success:  function(data){
+                    if(data==1){
+                        swal("Deleted!", "Data retur berhasil dibatalkan.", "success");
+                    }else{
+                        swal("Failed!", "Gagal menyimpan data.", "error");
+                    }
+                },
+                complete: function(data){
+                    tb_penjualan_retur.fnDraw(false);
+                },
+                error: function(data) {
+                    swal("Error!", "Ajax occured.", "error");
+                }
+            });
         });
     }
 
@@ -1626,7 +1620,7 @@
 	            $("#modal-xl").find(".overlay").fadeOut("200");
 	        },
 	        error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	        }
 	    });
 	}
@@ -1658,7 +1652,7 @@
 	            $("#modal-xl").find(".overlay").fadeOut("200");
 	        },
 	        error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	        }
 	    });
 	}
@@ -1688,7 +1682,7 @@
 	            $("#modal-xl").find(".overlay").fadeOut("200");
 	        },
 	        error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	        }
 	    });
 	}
@@ -1721,7 +1715,7 @@
             	tb_nota_penjualan.fnDraw(false);
             },
             error: function(data) {
-                Swal.fire("Error!", "Ajax occured.", "error");
+                swal("Error!", "Ajax occured.", "error");
             }
         });
 	}
@@ -1768,62 +1762,51 @@
         }
 	}
 
-	function delete_item(element, id){
-        Swal.fire({
+	function delete_item(id){
+        swal({
             title: "Apakah anda yakin menghapus data ini?",
-            icon: "warning",
-            showDenyButton: true,
-		    showCancelButton: true,
-		    confirmButtonText: "Ya",
-		    denyButtonText: 'Tidak',
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Ya",
+            cancelButtonText: "Tidak",
             closeOnConfirm: true
-        }).then((result) => {
-        	if (result.isConfirmed) {
-        		// Disable the button to prevent double-click
-			    element.disabled = true;
+        },
+        function(){
+            $.ajax({
+                type:"GET",
+                url : '{{url("penjualan/delete_item/")}}/'+id,
+                dataType : "json",
+                data : {},
+                beforeSend: function(data){
+                    // replace dengan fungsi loading
+                    //spinner.show();
+                },
+                success:  function(data){
+                    if(data.status ==1){
+                    	kosongkan_form();
+                    	if(data.is_sisa == 1) {
 
-			    // Optionally, change the appearance of the button to indicate it's been clicked
-			    element.classList.add('disabled');
+                    	} else {
+                    		// tidak ada sisa item penjualan clear semua cache
+							window.location.replace('{{url("penjualan")}}/');
+						}
+                        show_info("Data penjualan berhasil dihapus!");
+                        tb_nota_penjualan.fnDraw(false);
+                    }else{
+                        show_error("Gagal menghapus data penjualan ini!");
+                        return false;
+                    }
+                },
+                complete: function(data){
+                    // replace dengan fungsi mematikan loading
+                    //spinner.hide();
+                },
+                error: function(data) {
+                    show_error("error ajax occured!");
+                }
 
-			    $.ajax({
-	                type:"GET",
-	                url : '{{url("penjualan/delete_item/")}}/'+id,
-	                dataType : "json",
-	                data : {},
-	                beforeSend: function(data){
-	                    // replace dengan fungsi loading
-	                    spinner.show();
-	                },
-	                success:  function(data){
-	                    if(data.status ==1){
-	                    	kosongkan_form();
-	                    	if(data.is_sisa == 1) {
-
-	                    	} else {
-	                    		// tidak ada sisa item penjualan clear semua cache
-								window.location.replace('{{url("penjualan")}}/');
-							}
-	                        show_info("Data penjualan berhasil dihapus!");
-	                        tb_nota_penjualan.fnDraw(false);
-	                    }else{
-	                        show_error("Gagal menghapus data penjualan ini!");
-	                        return false;
-	                    }
-	                },
-	                complete: function(data){
-	                    // replace dengan fungsi mematikan loading
-	                    spinner.hide();
-	                    element.disabled = false;
-                		element.classList.remove('disabled');
-	                },
-	                error: function(data) {
-	                    show_error("error ajax occured!");
-	                }
-
-	            });
-			} else if (result.isDenied) {
-				return false;
-			}
+            });
         });
     }
 
@@ -1850,7 +1833,7 @@
 	            $("#modal-xl").find(".overlay").fadeOut("200");
 	        },
 	          	error: function(data) {
-	            show_error("error ajax occured!");
+	            alert("error ajax occured!");
 	        }
 
 	    });

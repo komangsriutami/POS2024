@@ -7,10 +7,12 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterPasien extends Authenticatable
 {
     use Notifiable;
+    use DynamicConnectionTrait;
     protected $guard = 'pasien';
 
     /*

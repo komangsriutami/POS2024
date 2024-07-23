@@ -47,7 +47,7 @@ class UpdatePenjualanLV extends Command
         $last_id_obat_ex = 0;
         $id_apotek = 1;
         $skip = 0;
-        $cek = DB::table('tb_bantu_transaksi_update_lv')->orderBy('id', 'DESC')->first();
+        $cek = DB::connection($this->getConnectionName())->table('tb_bantu_transaksi_update_lv')->orderBy('id', 'DESC')->first();
         if(!empty($cek)) {
             $last_id_obat_ex = $cek->last_id_obat_after;
             if($last_id_obat_ex >= $last_id_obat) {
@@ -60,21 +60,21 @@ class UpdatePenjualanLV extends Command
                 $last_id_obat_ex = $last_id_obat_ex+1;
                 $last_id_obat_after = $last_id_obat_ex+10-1;
             }
-            $apotek = MasterApotek::find($cek->id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($cek->id_apotek);
             if(!empty($apotek)) {
                 $inisial = strtolower($apotek->nama_singkat);
             } else {
                 $skip = 1;
             }
         } else {
-            $apotek = MasterApotek::find($id_apotek);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
             $inisial = strtolower($apotek->nama_singkat);
             $last_id_obat_ex = $last_id_obat_ex+1;
             $last_id_obat_after = $last_id_obat_ex+10-1;
         }
 
         if($skip != 1) {
-            DB::table('tb_bantu_transaksi_update_lv')
+            DB::connection($this->getConnectionName())->table('tb_bantu_transaksi_update_lv')
                 ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after, 'id_apotek' => $id_apotek, 'created_at' => date('Y-m-d H:i:s')]);
             
             $data = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.*', 'a.created_at as tgl_nota_buat'])
@@ -87,10 +87,10 @@ class UpdatePenjualanLV extends Command
             $now = date('Y-m-d');
             foreach ($data as $key => $val) {
                 # data pembelian obat keseluruhan
-                $cek_last_histori = DB::table('tb_histori_all_'.$inisial.'')->where('created_at', '>', $val->tgl_nota_buat)->orderBy('created_at', 'DESC')->first();
+                $cek_last_histori = DB::connection($this->getConnectionName())->table('tb_histori_all_'.$inisial.'')->where('created_at', '>', $val->tgl_nota_buat)->orderBy('created_at', 'DESC')->first();
 
                 if(!empty($cek_last_histori)) {
-                    TransaksiPenjualanDetail::where('id', $val->id)->update(['harga_beli_ppn' => $cek_last_histori->harga_beli_ppn]);
+                    TransaksiPenjualanDetail::on($this->getConnectionName())->where('id', $val->id)->update(['harga_beli_ppn' => $cek_last_histori->harga_beli_ppn]);
                 }
                 
 

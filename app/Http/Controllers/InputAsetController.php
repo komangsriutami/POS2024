@@ -16,9 +16,11 @@ use Datatables;
 use DB;
 use Auth;
 use Seatreserved;
+use App\Traits\DynamicConnectionTrait;
 
 class InputAsetController extends Controller
 {
+    use DynamicConnectionTrait;
     /**
      * Display a listing of the resource.
      *
@@ -36,7 +38,7 @@ class InputAsetController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = InputAset::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_transaksi_aset.*'])
             ->where(function ($query) use ($request) {
                 $query->orwhere('tb_transaksi_aset.is_deleted', '=', '0');
@@ -80,13 +82,15 @@ class InputAsetController extends Controller
      */
     public function create()
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 1;
         $aset = new InputAset();
+        $aset->setDynamicConnection();
         $detail_asets = new DetailInputAset();
+        $detail_asets->setDynamicConnection();
 
         return view('input_aset.create')->with(compact('aset', 'detail_asets', 'apotek', 'inisial', 'apoteks', 'var'));
     }
@@ -99,15 +103,16 @@ class InputAsetController extends Controller
      */
     public function store(Request $request)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $aset = new InputAset;
+            $aset->setDynamicConnection();
             $aset->fill($request->except('_token'));
 
             $detail_asets = $request->detail_aset;
             $jum = count($detail_asets);
             $tanggal = date('Y-m-d');
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
             $validator = $aset->validate();
             if($validator->fails() AND $jum > 0){
@@ -115,12 +120,12 @@ class InputAsetController extends Controller
                 return view('input_aset.create')->with(compact('aset', 'apoteks', 'detail_asets', 'var', 'apotek', 'inisial'))->withErrors($validator);
             }else{
                 $aset->save_from_array($detail_asets,1);
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 session()->flash('success', 'Sukses menyimpan data!');
                 return redirect('input_aset');
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('input_aset');
         }
@@ -134,12 +139,12 @@ class InputAsetController extends Controller
      */
     public function edit($id)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 0;
-        $aset = InputAset::find($id);
+        $aset = InputAset::on($this->getConnectionName())->find($id);
         $detail_asets = $aset->detail_transfer_outlet;
 
         return view('input_aset.edit')->with(compact('aset', 'detail_asets', 'apotek', 'inisial', 'apoteks', 'var'));
@@ -154,15 +159,15 @@ class InputAsetController extends Controller
      */
     public function update(Request $request, $id)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $aset = InputAset::find($id);
+            $aset = InputAset::on($this->getConnectionName())->find($id);
             $aset->fill($request->except('_token'));
 
             $detail_asets = $request->detail_aset;
             $jum = count($detail_asets);
             $tanggal = date('Y-m-d');
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
             $validator = $aset->validate();
             if($validator->fails() AND $jum > 0){
@@ -170,12 +175,12 @@ class InputAsetController extends Controller
                 return view('input_aset.edit')->with(compact('aset', 'apoteks', 'detail_asets', 'var', 'apotek', 'inisial'))->withErrors($validator);
             }else{
                 $aset->save_from_array($detail_asets, 2);
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 session()->flash('success', 'Sukses menyimpan data!');
                 return redirect('input_aset');
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('input_aset');
         }
@@ -190,25 +195,25 @@ class InputAsetController extends Controller
     public function destroy($id)
     {
         $success = true;
-        DB::beginTransaction();
+        DB::connection($this->getConnectionName())->beginTransaction(); 
         try{
-            $aset = InputAset::find($id);
+            $aset = InputAset::on($this->getConnectionName())->find($id);
             $aset->is_deleted = 1;
             $aset->deleted_at = date('Y-m-d H:i:s');
             $aset->deleted_by = Auth::user()->id;
 
             $detail_asets = $aset->detail_aset;
             foreach ($detail_asets as $key => $detail) {
-                $detail = DetailInputAset::find($detail->id);
+                $detail = DetailInputAset::on($this->getConnectionName())->find($detail->id);
                 $detail->is_deleted = 1;
                 $detail->deleted_at= date('Y-m-d H:i:s');
                 $detail->deleted_by = Auth::user()->id;
                 $detail->save();
             }
             $aset->save();
-            DB::commit();
+            DB::connection($this->getConnectionName())->commit();
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             $success = false;
         }
 
@@ -220,7 +225,7 @@ class InputAsetController extends Controller
     }
 
     public function cari_aset(Request $request) {
-        $aset = MasterAset::where('kode_aset', $request->kode_aset)->first();
+        $aset = MasterAset::on($this->getConnectionName())->where('kode_aset', $request->kode_aset)->first();
         $cek_ = 0;
         
         if(!empty($aset)) {
@@ -232,7 +237,7 @@ class InputAsetController extends Controller
     }
 
     public function cari_aset_dialog(Request $request) {
-        $aset = MasterAset::find($request->id_aset);
+        $aset = MasterAset::on($this->getConnectionName())->find($request->id_aset);
 
         return json_encode($aset);
     }
@@ -245,7 +250,7 @@ class InputAsetController extends Controller
     public function get_data_aset(Request $request)
     {
         $kode_aset = $request->kode_aset;
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterAset::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_aset.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_aset.is_deleted','=','0');
@@ -283,22 +288,22 @@ class InputAsetController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = DetailInputAset::find($id);
+        $detail = DetailInputAset::on($this->getConnectionName())->find($id);
         return view('input_aset._form_edit_detail')->with(compact('detail', 'no'));
     }
 
     public function hapus_detail($id) {
         $success = true;
-        DB::beginTransaction();
+        DB::connection($this->getConnectionName())->beginTransaction(); 
         try{
-            $detail = DetailInputAset::find($id);
+            $detail = DetailInputAset::on($this->getConnectionName())->find($id);
             $detail->is_deleted = 1;
             $detail->deleted_at= date('Y-m-d H:i:s');
             $detail->deleted_by = Auth::user()->id;
             $detail->save();
-            DB::commit();
+            DB::connection($this->getConnectionName())->commit();
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             $success = false;
         }
 

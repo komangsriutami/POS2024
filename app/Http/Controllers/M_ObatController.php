@@ -30,9 +30,11 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 use function PHPUnit\Framework\isNull;
 use App\Imports\BarangImport;
+use App\Traits\DynamicConnectionTrait;
 
 class M_ObatController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -42,13 +44,13 @@ class M_ObatController extends Controller
     */
     public function index()
     {
-        $golongan_obats = MasterGolonganObat::where('is_deleted', 0)->pluck('keterangan', 'id');
+        $golongan_obats = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('keterangan', 'id');
         $golongan_obats->prepend('-- Pilih Golongan Obat --','');
 
-        $penandaan_obats = MasterPenandaanObat::where('is_deleted', 0)->pluck('nama', 'id');
+        $penandaan_obats = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $penandaan_obats->prepend('-- Pilih Penandaan Obat --','');
 
-        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $produsens->prepend('-- Pilih Produsen --','');
 
         return view('obat.index')->with(compact('golongan_obats', 'penandaan_obats', 'produsens'));
@@ -64,14 +66,14 @@ class M_ObatController extends Controller
     */
     public function list_obat(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_obat.is_deleted','=','0');
@@ -140,16 +142,17 @@ class M_ObatController extends Controller
     public function create()
     {
         $obat = new MasterObat;
-        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
+        $obat->setDynamicConnection();
+        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $produsens->prepend('-- Pilih Produsen --','');
 
-        $satuans = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $golongan_obats = MasterGolonganObat::where('is_deleted', 0)->pluck('keterangan', 'id');
+        $golongan_obats = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('keterangan', 'id');
         $golongan_obats->prepend('-- Pilih Golongan Obat --','');
 
-        $penandaan_obats = MasterPenandaanObat::where('is_deleted', 0)->pluck('nama', 'id');
+        $penandaan_obats = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $penandaan_obats->prepend('-- Pilih Penandaan Obat --','');
 
         return view('obat.create')->with(compact('obat', 'produsens', 'satuans', 'golongan_obats', 'penandaan_obats'));
@@ -165,23 +168,24 @@ class M_ObatController extends Controller
     public function store(Request $request)
     {
         $obat = new MasterObat;
+        $obat->setDynamicConnection();
         $obat->fill($request->except('_token'));
 
         $sync_by = Auth::id();
         $sync_at = date('Y-m-d H:i:s');
 
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
 
-        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $produsens->prepend('-- Pilih Produsen --','');
 
-        $satuans = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $golongan_obats = MasterGolonganObat::where('is_deleted', 0)->pluck('keterangan', 'id');
+        $golongan_obats = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('keterangan', 'id');
         $golongan_obats->prepend('-- Pilih Golongan Obat --','');
 
-        $penandaan_obats = MasterPenandaanObat::where('is_deleted', 0)->pluck('nama', 'id');
+        $penandaan_obats = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $penandaan_obats->prepend('-- Pilih Penandaan Obat --','');
 
         $validator = $obat->validate();
@@ -194,7 +198,7 @@ class M_ObatController extends Controller
 
             foreach ($apoteks as $key => $val) {
                 $inisial = strtolower($val->nama_singkat);
-                DB::table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
                 $val->is_sync = 1;
                 $val->sync_by = $sync_by;
                 $val->sync_at = $sync_at;
@@ -228,18 +232,18 @@ class M_ObatController extends Controller
     */
     public function edit($id)
     {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
 
-        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $produsens->prepend('-- Pilih Produsen --','');
 
-        $satuans = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $golongan_obats = MasterGolonganObat::where('is_deleted', 0)->pluck('keterangan', 'id');
+        $golongan_obats = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('keterangan', 'id');
         $golongan_obats->prepend('-- Pilih Golongan Obat --','');
 
-        $penandaan_obats = MasterPenandaanObat::where('is_deleted', 0)->pluck('nama', 'id');
+        $penandaan_obats = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $penandaan_obats->prepend('-- Pilih Penandaan Obat --','');
 
         return view('obat.edit')->with(compact('obat', 'produsens', 'satuans', 'golongan_obats', 'penandaan_obats'));
@@ -254,7 +258,7 @@ class M_ObatController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         $harga_beli_awal = $obat->harga_beli;
         $harga_jual_awal = $obat->harga_jual;
         if(is_null($obat->zat_aktif)){
@@ -264,7 +268,7 @@ class M_ObatController extends Controller
             $obat->bentuk_kekuatan_sediaan = '-';
         }
         $obat->fill($request->except('_token'));
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $validator = $obat->validate();
         if($validator->fails()){
             echo json_encode(array('status' => 0));
@@ -277,10 +281,10 @@ class M_ObatController extends Controller
                 // update harga obat masing2 outlet
                 foreach ($apoteks as $key => $obj) {
                     $inisial = strtolower($obj->nama_singkat);
-                    $cek = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+                    $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
                     if($cek->is_status_harga == 0) {
-                        DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
-                        DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
+                        DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
                     }
                 }
             }
@@ -297,18 +301,18 @@ class M_ObatController extends Controller
     */
     public function destroy($id)
     {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         $obat->is_deleted = 1;
         $obat->deleted_by = Auth::user()->id;
         $obat->deleted_at = date('Y-m-d H:i:s');
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
         if($obat->save()){
             // update harga obat masing2 outlet
             foreach ($apoteks as $key => $obj) {
                 $inisial = strtolower($obj->nama_singkat);
-                $cek_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+                $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
                 if(!empty($cek_)) {
-                    DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::user()->id]);
                 }
             }
             echo 1;
@@ -337,7 +341,7 @@ class M_ObatController extends Controller
             return $currentPage;
         });
 
-        //$obats = MasterObat::where('is_deleted', 0)->get();
+        //$obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $persen = $request->persen_kenaikan;
         if($persen == '') {
             $persen = 0;
@@ -365,7 +369,7 @@ class M_ObatController extends Controller
                     ->groupBy('tb_detail_nota_pembelian.id_obat')
                     ->orderBy('a.tgl_nota')->toSql();
 
-        $obats = DB::table(DB::raw("($data1) AS t1"))->select([
+        $obats = DB::connection($this->getConnectionName())->table(DB::raw("($data1) AS t1"))->select([
                             DB::raw('*')
                         ])
                         ->whereRaw('harga_jual_now > harga_ambang_batas')
@@ -382,16 +386,16 @@ class M_ObatController extends Controller
         $harga_beli = $request->harga_beli;
         $harga_beli_ppn = $request->harga_beli_ppn;
         $id_asal = $request->id_asal;
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         return view('obat._form_set_harga')->with(compact('obat', 'harga_beli', 'harga_beli_ppn', 'id_asal'));
     }
 
     public function update_harga(Request $request, $id)
     {
-        $obat = MasterObat::find($id);
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
         $harga_beli_awal = $obat->harga_beli;
         $harga_jual_awal = $obat->harga_jual;
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $validator = $obat->validate();
         if($validator->fails()){
             echo json_encode(array('status' => 0));
@@ -405,10 +409,10 @@ class M_ObatController extends Controller
                 // update harga obat masing2 outlet
                 foreach ($apoteks as $key => $obj) {
                     $inisial = strtolower($obj->nama_singkat);
-                    $cek = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+                    $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
                     if($cek->is_status_harga == 0) {
-                        DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
-                        DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_beli_ppn' => $request->harga_beli_ppn, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
+                        DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_beli_ppn' => $request->harga_beli_ppn, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
                     }
                 }
 
@@ -426,10 +430,10 @@ class M_ObatController extends Controller
 
     public function export_data(Request $request) 
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $data = DB::table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*', 'tb_m_obat.nama', 'tb_m_obat.barcode', 'tb_m_obat.isi_tab', 'tb_m_obat.isi_strip', 'tb_m_produsen.nama as produsen', 'tb_m_penandaan_obat.nama as penandaan_obat', 'tb_m_golongan_obat.keterangan as golongan_obat'])
+        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*', 'tb_m_obat.nama', 'tb_m_obat.sku', 'tb_m_obat.isi_tab', 'tb_m_obat.isi_strip', 'tb_m_produsen.nama as produsen', 'tb_m_penandaan_obat.nama as penandaan_obat', 'tb_m_golongan_obat.keterangan as golongan_obat'])
                     ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
                     ->join('tb_m_produsen', 'tb_m_produsen.id', '=', 'tb_m_obat.id_produsen')
                     ->join('tb_m_penandaan_obat', 'tb_m_penandaan_obat.id', '=', 'tb_m_obat.id_penandaan_obat')
@@ -461,7 +465,7 @@ class M_ObatController extends Controller
             $collection[] = array(
                 $no,
                 $rekap->id,
-                $rekap->barcode,
+                $rekap->sku,
                 $rekap->nama,
                 $rekap->produsen,
                 $rekap->penandaan_obat,
@@ -485,7 +489,7 @@ class M_ObatController extends Controller
 
                     public function headings(): array
                     {
-                        return ['No', 'ID', 'Barcode','Nama', 'Produsen', 'Penandaan Obat', 'Golongan Diskon', 'Isi /tab','Isi /strip', 'Harga Jual',  'Harga Beli', 'HB+PPN', 'Stok'];
+                        return ['No', 'ID', 'SKU','Nama', 'Produsen', 'Penandaan Obat', 'Golongan Diskon', 'Isi /tab','Isi /strip', 'Harga Jual',  'Harga Beli', 'HB+PPN', 'Stok'];
                     } 
 
                     public function columnWidths(): array
@@ -528,8 +532,8 @@ class M_ObatController extends Controller
     }
 
     public function sync_obat_outlet($id) {
-        $obat = MasterObat::find($id);
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        $obat = MasterObat::on($this->getConnectionName())->find($id);
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
 
         $sync_by = Auth::id();
         $sync_at = date('Y-m-d H:i:s');
@@ -537,10 +541,10 @@ class M_ObatController extends Controller
 
         foreach ($apoteks as $key => $val) {
             $inisial = strtolower($val->nama_singkat);
-            $cek = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+            $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
             
             if(empty($cek)) {
-                DB::table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
                 $val->is_sync = 1;
                 $val->sync_by = $sync_by;
                 $val->sync_at = $sync_at;
@@ -555,6 +559,7 @@ class M_ObatController extends Controller
 
     public function import() {
         $data = new MasterObat;
+        $data->setDynamicConnection();
         return view("obat/import_form",compact('data'));
     }
 
@@ -568,21 +573,21 @@ class M_ObatController extends Controller
             if($file_data->getClientMimeType() == "text/csv"){
 
                 try {
-                    DB::beginTransaction();
+                    DB::connection($this->getConnectionName())->beginTransaction(); 
 
                     $import = new BarangImport();
                     $exl = Excel::import($import,$file_data);
                     
                     if($import->importstatus['status']){
-                        DB::commit();
+                        DB::connection($this->getConnectionName())->commit();
                         return json_encode(["status"=>1, "message"=>"Berhasil import data [ berhasil import : ".$import->importstatus['berhasil']." | gagal import : ".$import->importstatus['gagal']]);
                     } else {
-                        DB::rollBack();
+                        DB::connection($this->getConnectionName())->rollback();
                         return json_encode(["status"=>2, "message"=>"Gagal import data"]);
                     }            
 
                 } catch (Exception $e) {
-                    DB::rollBack();
+                    DB::connection($this->getConnectionName())->rollback();
                     return json_encode(["status"=>2, "message"=>"Gagal import data. ".$e->getMessage()]);
                 }                
 

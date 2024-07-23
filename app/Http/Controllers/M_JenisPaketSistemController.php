@@ -10,9 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class M_JenisPaketSistemController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : Direct to index jenis_paket_sistem views
@@ -40,7 +42,7 @@ class M_JenisPaketSistemController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterJenisPaketSistem::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_paket_sistem.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_paket_sistem.is_deleted','=','0');
@@ -75,6 +77,7 @@ class M_JenisPaketSistemController extends Controller
     public function create()
     {
         $jenis_paket_sistem = new MasterJenisPaketSistem;
+        $jenis_paket_sistem->setDynamicConnection();
 
         return view('jenis_paket_sistem.create')->with(compact('jenis_paket_sistem'));
     }
@@ -89,6 +92,7 @@ class M_JenisPaketSistemController extends Controller
     public function store(Request $request)
     {
         $jenis_paket_sistem = new MasterJenisPaketSistem;
+        $jenis_paket_sistem->setDynamicConnection();
         $jenis_paket_sistem->fill($request->except('_token'));
 
         $validator = $jenis_paket_sistem->validate();
@@ -123,7 +127,7 @@ class M_JenisPaketSistemController extends Controller
     */
     public function edit($id)
     {
-        $jenis_paket_sistem = MasterJenisPaketSistem::find($id);
+        $jenis_paket_sistem = MasterJenisPaketSistem::on($this->getConnectionName())->find($id);
 
         return view('jenis_paket_sistem.edit')->with(compact('jenis_paket_sistem'));
     }
@@ -137,7 +141,7 @@ class M_JenisPaketSistemController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $jenis_paket_sistem = MasterJenisPaketSistem::find($id);
+        $jenis_paket_sistem = MasterJenisPaketSistem::on($this->getConnectionName())->find($id);
         $jenis_paket_sistem->fill($request->except('_token'));
 
         $validator = $jenis_paket_sistem->validate();
@@ -160,7 +164,7 @@ class M_JenisPaketSistemController extends Controller
     */
     public function destroy($id)
     {
-        $jenis_paket_sistem = MasterJenisPaketSistem::find($id);
+        $jenis_paket_sistem = MasterJenisPaketSistem::on($this->getConnectionName())->find($id);
         $jenis_paket_sistem->is_deleted = 1;
         if($jenis_paket_sistem->save()){
             echo 1;

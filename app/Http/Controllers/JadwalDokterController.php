@@ -15,20 +15,22 @@ use Auth;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class JadwalDokterController extends Controller
 {
+    use DynamicConnectionTrait;
     public function index()
     {
         $tahun = date('Y');
         $bulan = date('m');
-        $dokters = MasterDokter::where('is_deleted', 0)->get();
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->get();
         return view('jadwal_dokter.index')->with(compact('dokters', 'tahun', 'bulan'));
     }
 
     public function list_data(Request $request)
     {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterDokter::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_dokter.*'])
             ->where(function ($query) use ($request) {
                 //$query->where('dokter.is_deleted','=','0');
@@ -69,13 +71,13 @@ class JadwalDokterController extends Controller
     }
 
     public function detail_data($id, $tahun, $bulan) {
-        $dokter = MasterDokter::find($id);
+        $dokter = MasterDokter::on($this->getConnectionName())->find($id);
         return view('jadwal_dokter._detail')->with(compact('dokter', 'tahun', 'bulan'));
     }
 
     public function list_jadwal_dokter(Request $request)
     {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = JadwalDokter::select([DB::raw('@rownum  := @rownum  + 1 AS no'),
         		'tb_jadwal_dokter.*'])
         ->where(function($query) use($request){
@@ -108,10 +110,11 @@ class JadwalDokterController extends Controller
     public function create()
     {
         $jadwal_dokter = new JadwalDokter;
+        $jadwal_dokter->setDynamicConnection();
 
-        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $dokters->prepend('-- Pilih Dokter --', '');
-        $sesi_dokter = SesiJadwalDokter::where('is_deleted', 0)->pluck('sesi', 'id');
+        $sesi_dokter = SesiJadwalDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('sesi', 'id');
         $sesi_dokter->prepend('-- Pilih Sesi --', '');
 
         return view('jadwal_dokter.create')->with(compact('jadwal_dokter', 'dokters', 'sesi_dokter'));
@@ -152,8 +155,10 @@ class JadwalDokterController extends Controller
         
         $sukses = 0;
         $jadwal_dokter = new JadwalDokter;
+        $jadwal_dokter->setDynamicConnection();
         foreach ($range_date as $key => $obj) {
             $jadwal_dokter = new JadwalDokter;
+            $jadwal_dokter->setDynamicConnection();
             $jadwal_dokter->fill($request->except('_token'));
             $jadwal_dokter->tgl = $obj;
             $validator = $jadwal_dokter->validate();
@@ -177,8 +182,8 @@ class JadwalDokterController extends Controller
             }
         }
 
-        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
-        $sesi_dokter = SesiJadwalDokter::where('is_deleted', 0)->pluck('sesi', 'id');
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $sesi_dokter = SesiJadwalDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('sesi', 'id');
         if($sukses == 0){
             $jadwal_dokter->tgl = $request->tgl;
             
@@ -211,11 +216,11 @@ class JadwalDokterController extends Controller
      */
     public function edit($id)
     {
-        $jadwal_dokter = JadwalDokter::find($id);
+        $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($id);
 
-        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $dokters->prepend('-- Pilih Dokter --', '');
-        $sesi_dokter = SesiJadwalDokter::where('is_deleted', 0)->pluck('sesi', 'id');
+        $sesi_dokter = SesiJadwalDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('sesi', 'id');
         $sesi_dokter->prepend('-- Pilih Sesi --', '');
 
         return view('jadwal_dokter.edit')->with(compact('jadwal_dokter', 'dokters', 'sesi_dokter', 'dates'));
@@ -231,7 +236,7 @@ class JadwalDokterController extends Controller
     public function update(Request $request, $id)
     {
         //
-        $jadwal_dokter = JadwalDokter::find($id);
+        $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($id);
         $jadwal_dokter->fill($request->except('_token'));
 
         $validator = $jadwal_dokter->validate();
@@ -252,7 +257,7 @@ class JadwalDokterController extends Controller
     public function destroy($id)
     {
         //
-        // $jadwal_dokter = JadwalDokter::find($id);
+        // $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($id);
         // $jadwal_dokter->is_deleted = 1;
         // if($jadwal_dokter->save()){
         //     echo 1;
@@ -260,7 +265,7 @@ class JadwalDokterController extends Controller
         //     echo 0;
         // }
         // session()->flash('success', 'Sukses menghapus data!');
-        $jadwal_dokter = JadwalDokter::find($id);
+        $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($id);
         if($jadwal_dokter->delete()){
             echo 1;
         }else{
@@ -269,7 +274,7 @@ class JadwalDokterController extends Controller
     }
 
     public function lihat_jadwal_kerja() {
-        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $dokters->prepend('-- Pilih Dokter --', '');
 
         return view('jadwal_dokter._form_lihat_jadwal_kerja')->with(compact('dokters'));
@@ -313,10 +318,10 @@ class JadwalDokterController extends Controller
     }
 
     // public function load_data_jadwal_dokter(Request $request) {
-    //     $jadwal_dokter = JadwalDokter::find($request->id);
-    //     $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+    //     $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($request->id);
+    //     $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
     //     $dokters->prepend('-- Pilih Dokter --', '');
-    //     $sesi_dokter = SesiJadwalDokter::where('is_deleted', 0)->pluck('sesi', 'id');
+    //     $sesi_dokter = SesiJadwalDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('sesi', 'id');
     //     $sesi_dokter->prepend('-- Pilih Sesi --', '');
 
     //     return view('jadwal_dokter.edit')->with(compact('jadwal_dokter', 'dokters', 'sesi_dokter'));
@@ -327,10 +332,10 @@ class JadwalDokterController extends Controller
         $date->setTimezone('Asia/Singapore');
         $dates = $date->toDateString();
 
-        $jadwal_dokter = JadwalDokter::find($request->id);
-        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+        $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($request->id);
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $dokters->prepend('-- Pilih Dokter --', '');
-        $sesi_dokter = SesiJadwalDokter::where('is_deleted', 0)->pluck('sesi', 'id');
+        $sesi_dokter = SesiJadwalDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('sesi', 'id');
         $sesi_dokter->prepend('-- Pilih Sesi --', '');
 
         $userAkses = true;

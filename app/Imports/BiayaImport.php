@@ -73,7 +73,7 @@ class BiayaImport implements ToCollection
 
             // dd($data);
 
-            DB::beginTransaction();
+            DB::connection($this->getConnectionName())->beginTransaction(); 
             DB::enableQueryLog();
 
             try {
@@ -106,6 +106,8 @@ class BiayaImport implements ToCollection
 
 
                             $biayadetil = new BiayaDetail;
+                            $biayadetil->setDynamicConnection();
+
 
                             if(!is_null($row[0])){
                                 // dd("sini");
@@ -141,6 +143,7 @@ class BiayaImport implements ToCollection
                                         $subtotal = 0;
 
                                         $biaya = new Biaya;
+                                        $biaya->setDynamicConnection();
                                         $biaya->id_apotek = session('id_apotek_active');
 
                                         if($row[0] != ""){ $biaya->id_akun_bayar = $row[0]; }
@@ -180,6 +183,7 @@ class BiayaImport implements ToCollection
 
                                             # ---- insert jurnal ---- #
                                             $jurnal_umum = new JurnalUmum;
+                                            $jurnal_umum->setDynamicConnection();
                                             $jurnal_umum->id_apotek = $biaya->id_apotek;
                                             $jurnal_umum->flag_trx = $this->flag_trx;
                                             $jurnal_umum->kode_referensi = $biaya->id;
@@ -219,6 +223,7 @@ class BiayaImport implements ToCollection
                                         // import detail biaya //
 
                                         $detail = new BiayaDetail;
+                                        $detail->setDynamicConnection();
                                         $detail->id_biaya = $idbiaya;
 
                                         $akun = $kodeakun->where("kode",$row[12])->first();
@@ -239,6 +244,7 @@ class BiayaImport implements ToCollection
 
                                             if($idjurnal_umum != ""){
                                                 $detiljurnal = new JurnalUmumDetail;
+                                                $detiljurnal->setDynamicConnection();
                                                 $detiljurnal->id_jurnal = $jurnal_umum->id; 
                                                 $detiljurnal->id_kode_akun = $detail->id_kode_akun; 
                                                 $detiljurnal->flag_trx = $this->flag_trx; 
@@ -266,8 +272,9 @@ class BiayaImport implements ToCollection
                                         // insert detil jurnal //
                                         if($iddetailjurnal_biaya_akun_ppn_potong == ""){
                                             $detiljurnal = new JurnalUmumDetail;
+                                            $detiljurnal->setDynamicConnection();
                                         } else {
-                                            $detiljurnal = JurnalUmumDetail::find($iddetailjurnal_biaya_akun_ppn_potong);
+                                            $detiljurnal = JurnalUmumDetail::on($this->getConnectionName())->find($iddetailjurnal_biaya_akun_ppn_potong);
                                         }                                    
 
                                         $detiljurnal->id_jurnal = $jurnal_umum->id; 
@@ -290,8 +297,9 @@ class BiayaImport implements ToCollection
                                         // insert detil jurnal //
                                         if($iddetailjurnal_biaya_akun_bayar == ""){
                                             $detiljurnal = new JurnalUmumDetail;
+                                            $detiljurnal->setDynamicConnection();
                                         } else {
-                                            $detiljurnal = JurnalUmumDetail::find($iddetailjurnal_biaya_akun_bayar);
+                                            $detiljurnal = JurnalUmumDetail::on($this->getConnectionName())->find($iddetailjurnal_biaya_akun_bayar);
                                         }
 
                                         $detiljurnal->id_jurnal = $jurnal_umum->id; 
@@ -330,14 +338,14 @@ class BiayaImport implements ToCollection
                 }
 
 
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 $this->importstatus = array("biayaimport_ok"=>$biayaimport_ok, "biayaimport_error"=>$biayaimport_error, "duplicatedata"=>$duplicatedata);
                 
                 // dd($status);
 
             } catch (Exception $e) {
                 dd("aa");
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
             }
 
         }

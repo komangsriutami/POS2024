@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Traits\DynamicConnectionTrait;
 
 class ModelConfig 
 {
+    use DynamicConnectionTrait;
     function __get($param)
     {
         // Kita buat dulu Namespace Modelnya, berdasarkan data $param

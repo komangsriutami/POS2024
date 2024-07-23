@@ -5,9 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterAgama extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Agama 
 		Author 	: Sri U.

@@ -7,9 +7,11 @@ use App\MasterTindakan;
 use Auth;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class M_TindakanController extends Controller
 {
+    use DynamicConnectionTrait;
     # untuk menampilkan halaman awal
     public function index()
     {
@@ -19,7 +21,7 @@ class M_TindakanController extends Controller
     # untuk menampilkan mengambil data dari database
     public function get_data(Request $request)
     {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterTindakan::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_tindakan.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_m_tindakan.is_deleted','=','0');
@@ -50,6 +52,7 @@ class M_TindakanController extends Controller
     public function create()
     {
         $data_ = new MasterTindakan; //inisialisasi array
+        $data_->setDynamicConnection();
 
         return view('tindakan.create')->with(compact('data_'));
     }
@@ -58,6 +61,7 @@ class M_TindakanController extends Controller
     public function store(Request $request)
     {
         $data_ = new MasterTindakan;
+        $data_->setDynamicConnection();
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         $validator = $data_->validate();
@@ -81,7 +85,7 @@ class M_TindakanController extends Controller
     # untuk menampilakn data detail show
     public function show($id)
     {
-        $data_ = MasterTindakan::find($id);
+        $data_ = MasterTindakan::on($this->getConnectionName())->find($id);
 
         return view('tindakan.show')->with(compact('data_'));
     }
@@ -89,14 +93,14 @@ class M_TindakanController extends Controller
     # untuk menampilkan form edit
     public function edit($id)
     {
-        $data_ = MasterTindakan::find($id);
+        $data_ = MasterTindakan::on($this->getConnectionName())->find($id);
         return view('tindakan.edit')->with(compact('data_'));
     }
 
     # untuk menyimpan data edit
     public function update(Request $request, $id)
     {
-        $data_ = MasterTindakan::find($id);
+        $data_ = MasterTindakan::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         $validator = $data_->validate();
@@ -119,7 +123,7 @@ class M_TindakanController extends Controller
     # untuk menghapus data
     public function destroy($id)
     {
-        $data_ = MasterTindakan::find($id);
+        $data_ = MasterTindakan::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');
         $data_->deleted_by = Auth::user()->id;

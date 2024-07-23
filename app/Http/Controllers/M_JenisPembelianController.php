@@ -10,8 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class M_JenisPembelianController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -39,7 +42,7 @@ class M_JenisPembelianController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterJenisPembelian::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_pembelian.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_pembelian.is_deleted','=','0');
@@ -74,6 +77,7 @@ class M_JenisPembelianController extends Controller
     public function create()
     {
         $jenis_pembelian = new MasterJenisPembelian;
+        $jenis_pembelian->setDynamicConnection();
 
         return view('jenis_pembelian.create')->with(compact('jenis_pembelian'));
     }
@@ -88,6 +92,7 @@ class M_JenisPembelianController extends Controller
     public function store(Request $request)
     {
         $jenis_pembelian = new MasterJenisPembelian;
+        $jenis_pembelian->setDynamicConnection();
         $jenis_pembelian->fill($request->except('_token'));
 
         $validator = $jenis_pembelian->validate();
@@ -123,7 +128,7 @@ class M_JenisPembelianController extends Controller
     */
     public function edit($id)
     {
-        $jenis_pembelian = MasterJenisPembelian::find($id);
+        $jenis_pembelian = MasterJenisPembelian::on($this->getConnectionName())->find($id);
 
         return view('jenis_pembelian.edit')->with(compact('jenis_pembelian'));
     }
@@ -137,7 +142,7 @@ class M_JenisPembelianController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $jenis_pembelian = MasterJenisPembelian::find($id);
+        $jenis_pembelian = MasterJenisPembelian::on($this->getConnectionName())->find($id);
         $jenis_pembelian->fill($request->except('_token'));
 
         $validator = $jenis_pembelian->validate();
@@ -160,7 +165,7 @@ class M_JenisPembelianController extends Controller
     */
     public function destroy($id)
     {
-        $jenis_pembelian = MasterJenisPembelian::find($id);
+        $jenis_pembelian = MasterJenisPembelian::on($this->getConnectionName())->find($id);
         $jenis_pembelian->is_deleted = 1;
         if($jenis_pembelian->save()){
             echo 1;

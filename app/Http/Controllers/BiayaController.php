@@ -42,9 +42,11 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Traits\DynamicConnectionTrait;
 
 class BiayaController extends Controller
 {
+    use DynamicConnectionTrait;
     protected $flag_trx = 1;
     protected $carabayar = array("-- Pilih Cara Pembayaran --","1"=>"Cash","2"=>"Transfer");
 
@@ -105,7 +107,7 @@ class BiayaController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = Biaya::select([
             DB::raw('@rownum  := @rownum  + 1 AS no'),
             "tb_biaya.*"
@@ -225,6 +227,7 @@ class BiayaController extends Controller
     public function create()
     {
         $biaya = new Biaya;
+        $biaya->setDynamicConnection();
 
         $akundompet = MasterKodeAkun::select("id",DB::RAW("CONCAT(kode,' - ',nama) as nama_akun"))
                     ->where('is_deleted', 0)->pluck('nama_akun', 'id');
@@ -243,9 +246,9 @@ class BiayaController extends Controller
     }
 
     public function get_penerima() {
-        $suppliers = MasterSuplier::where("is_deleted",0)->get();
-        $users = User::where("is_deleted",0)->get();
-        $members = MasterMember::where("is_deleted",0)->get();
+        $suppliers = MasterSuplier::on($this->getConnectionName())->where("is_deleted",0)->get();
+        $users = User::on($this->getConnectionName())->where("is_deleted",0)->get();
+        $members = MasterMember::on($this->getConnectionName())->where("is_deleted",0)->get();
 
         $arr_ = collect();
         foreach ($suppliers as $key => $val) {
@@ -297,6 +300,7 @@ class BiayaController extends Controller
         // dd($listpajak);
 
         $detailbiaya = new BiayaDetail;
+        $detailbiaya->setDynamicConnection();
         $count = $request->count;
         $form_detail = View::make('biaya._form_detail',compact('kode_akun','detailbiaya','count','listpajak'))->render();
         $status = 1;
@@ -318,6 +322,7 @@ class BiayaController extends Controller
     {
         // dd($request->input());
         $filebukti = new BiayaBukti;
+        $filebukti->setDynamicConnection();
         $count = $request->count;
         $form_detail = View::make('biaya._form_file',compact('filebukti','count'))->render();
         $status = 1;
@@ -426,13 +431,14 @@ class BiayaController extends Controller
      */
     public function store(Request $request)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
              // dd($request->id_akun_pajak);
             // dd($request->buktifile);
 
 
             $biaya = new Biaya;
+            $biaya->setDynamicConnection();
             if(isset($request->is_bayar_nanti)){
                 $biaya->id_akun_bayar = null;
                 $biaya->is_bayar_nanti = $request->is_bayar_nanti;
@@ -462,7 +468,7 @@ class BiayaController extends Controller
                 $biaya->created_by = Auth::user()->id;
                 $biaya->created_at = Date("Y-m-d H:i:s");
 
-                $getdataapotek = MasterApotek::find(session('id_apotek_active'));
+                $getdataapotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 if(!empty($getdataapotek)){
                     $aptk =  $getdataapotek->nama_singkat;
                 } else {
@@ -500,6 +506,7 @@ class BiayaController extends Controller
                     // ---- save jurnal ---- //
                     $statusjurnalumum = 0;
                     $jurnal_umum = new JurnalUmum;
+                    $jurnal_umum->setDynamicConnection();
                     $jurnal_umum->id_apotek = $biaya->id_apotek;
                     $jurnal_umum->flag_trx = $this->flag_trx;
                     $jurnal_umum->kode_referensi = $biaya->id;
@@ -518,6 +525,7 @@ class BiayaController extends Controller
                         foreach ($request->id_kode_akun as $key => $kode) {
                             if(!is_null($kode)){
                                 $detail = new BiayaDetail;
+                                $detail->setDynamicConnection();
                                 $detail->id_biaya = $biaya->id;
                                 $detail->id_kode_akun = $kode;
                                 $detail->deskripsi = $request->deskripsi[$key];
@@ -537,6 +545,7 @@ class BiayaController extends Controller
                                     if($statusjurnalumum){
                                         // insert detil jurnal //
                                         $detiljurnal = new JurnalUmumDetail;
+                                        $detiljurnal->setDynamicConnection();
                                         $detiljurnal->id_jurnal = $jurnal_umum->id; 
                                         $detiljurnal->id_kode_akun = $detail->id_kode_akun; 
                                         $detiljurnal->flag_trx = $this->flag_trx; 
@@ -581,6 +590,7 @@ class BiayaController extends Controller
                         if($request->id_akun_ppn_potong != ""){
                             // insert detil jurnal //
                             $detiljurnal = new JurnalUmumDetail;
+                            $detiljurnal->setDynamicConnection();
                             $detiljurnal->id_jurnal = $jurnal_umum->id; 
                             $detiljurnal->id_kode_akun = $request->id_akun_ppn_potong; 
                             $detiljurnal->flag_trx = $this->flag_trx; 
@@ -595,6 +605,7 @@ class BiayaController extends Controller
                         if(isset($request->id_akun_bayar)){
                             // insert detil jurnal //
                             $detiljurnal = new JurnalUmumDetail;
+                            $detiljurnal->setDynamicConnection();
                             $detiljurnal->id_jurnal = $jurnal_umum->id; 
                             $detiljurnal->id_kode_akun = $request->id_akun_bayar; 
                             $detiljurnal->flag_trx = $this->flag_trx; 
@@ -625,6 +636,7 @@ class BiayaController extends Controller
                                         $mime = $bukti->getMimeType();
 
                                         $buktibiaya = new BiayaBukti;
+                                        $buktibiaya->setDynamicConnection();
 
                                         $nama_file = $bukti->getClientOriginalName();
                                         $split = explode('.', $nama_file);
@@ -666,6 +678,7 @@ class BiayaController extends Controller
                                             if($statusjurnalumum){
                                                 // save ke file bukti jurnal
                                                 $buktijurnal = new JurnalUmumBukti;
+                                                $buktijurnal->setDynamicConnection();
                                                 $buktijurnal->id_jurnal = $jurnal_umum->id;
                                                 $buktijurnal->flag_trx = $this->flag_trx;
                                                 $buktijurnal->kode_referensi = $buktibiaya->id;
@@ -694,7 +707,7 @@ class BiayaController extends Controller
                     // dd($errorfile);
 
                     if($errorfile > 0){ $errorMessages = "terdapat ".$errorfile." file bukti dengan ekstensi yang tidak sesuai"; }
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
 
                     echo json_encode(array("status" => 1,"errorMessages" => $errorMessages, "url" => url('biaya')));
 
@@ -704,7 +717,7 @@ class BiayaController extends Controller
                 echo json_encode(array("status" => 2, "errorMessages" => "terdapat data tidak valid"));
             }
         } catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             // dd($e->getMessage());
             echo json_encode(array("status" => 2, "errorMessages" => "ERROR : ".$e->getMessage()));
         }
@@ -719,7 +732,7 @@ class BiayaController extends Controller
     public function show($id)
     {
         $id = Crypt::decrypt($id);
-        $biaya = Biaya::find($id);        
+        $biaya = Biaya::on($this->getConnectionName())->find($id);        
         if(!empty($biaya)){            
             $pajak = MasterPajak::whereNull("deleted_by")->get();
             return view('biaya.showDetail')->with(compact("biaya","pajak"));
@@ -743,14 +756,14 @@ class BiayaController extends Controller
     {
         $id = Crypt::decrypt($id);
 
-        $biaya = Biaya::find($id);
+        $biaya = Biaya::on($this->getConnectionName())->find($id);
 
         $akundompet = MasterKodeAkun::select("id",DB::RAW("CONCAT(kode,' - ',nama) as nama_akun"))
                     ->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $akundompet->prepend('-- Pilih Akun --','');
 
         $supplier = $this->get_penerima();
-        /*$supplier = MasterSuplier::where("is_deleted",0)->pluck('nama', 'id');
+        /*$supplier = MasterSuplier::on($this->getConnectionName())->where("is_deleted",0)->pluck('nama', 'id');
         $supplier->prepend('-- Pilih Penerima --','');*/
 
         $carabayar = $this->carabayar;
@@ -776,13 +789,13 @@ class BiayaController extends Controller
      */
     public function update(Request $request, $id)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             // dd($request->input());
             // dd($request->buktifile);
             $id = Crypt::decrypt($id);
 
-            $biaya = Biaya::find($id);
+            $biaya = Biaya::on($this->getConnectionName())->find($id);
             if(isset($request->is_bayar_nanti)){
                 $biaya->id_akun_bayar = null;
                 $biaya->is_bayar_nanti = $request->is_bayar_nanti;
@@ -815,14 +828,15 @@ class BiayaController extends Controller
                 if($biaya->save()){
 
                     // check jurnal umum //
-                    $check_jurnal_umum = JurnalUmum::where("flag_trx",$this->flag_trx)->where("kode_referensi",$biaya->id)
+                    $check_jurnal_umum = JurnalUmum::on($this->getConnectionName())->where("flag_trx",$this->flag_trx)->where("kode_referensi",$biaya->id)
                                         ->whereNull('deleted_by')->first();
                     if(!empty($check_jurnal_umum)){
-                        $jurnal_umum = JurnalUmum::find($check_jurnal_umum->id);    
+                        $jurnal_umum = JurnalUmum::on($this->getConnectionName())->find($check_jurnal_umum->id);    
                         $jurnal_umum->updated_by = Auth::user()->id;
                         $jurnal_umum->updated_at = Date("Y-m-d H:i:s");
                     } else {
                         $jurnal_umum = new JurnalUmum; 
+                        $jurnal_umum->setDynamicConnection();
                         $jurnal_umum->created_by = Auth::user()->id;
                         $jurnal_umum->created_at = Date("Y-m-d H:i:s");
                     }
@@ -849,13 +863,15 @@ class BiayaController extends Controller
                             if(!is_null($kode)){
                                 if($request->iddetail[$key] == ""){
                                     $detail = new BiayaDetail;
+                                    $detail->setDynamicConnection();
                                     $detail->created_by = Auth::user()->id;
                                     $detail->created_at = Date("Y-m-d H:i:s");
                                 } else {
                                     $iddetail = Crypt::decrypt($request->iddetail[$key]);
-                                    $detail = BiayaDetail::find($iddetail);
+                                    $detail = BiayaDetail::on($this->getConnectionName())->find($iddetail);
                                     if(empty($detail)){ 
                                         $detail = new BiayaDetail;
+                                        $detail->setDynamicConnection();
                                         $detail->created_by = Auth::user()->id;
                                         $detail->created_at = Date("Y-m-d H:i:s"); 
                                     } else {
@@ -881,19 +897,21 @@ class BiayaController extends Controller
                                     $statusdetiljurnal[$detail->id] = 0;
                                     if($statusjurnalumum){
                                         // cek detil jurnal sudah ada atau tidak //
-                                        $check_detil_jurnal = JurnalUmumDetail::where('flag_trx',$this->flag_trx)
+                                        $check_detil_jurnal = JurnalUmumDetail::on($this->getConnectionName())->where('flag_trx',$this->flag_trx)
                                                             ->where("kode_referensi",$detail->id)
                                                             ->whereNull('deleted_by')
                                                             ->first();
 
                                         if(empty($check_detil_jurnal)){
                                             $detiljurnal = new JurnalUmumDetail;
+                                            $detiljurnal->setDynamicConnection();
                                             $detiljurnal->created_by = Auth::user()->id;
                                             $detiljurnal->created_at = Date("Y-m-d H:i:s");
                                         } else {
-                                            $detiljurnal = JurnalUmumDetail::find($check_detil_jurnal->id);
+                                            $detiljurnal = JurnalUmumDetail::on($this->getConnectionName())->find($check_detil_jurnal->id);
                                             if(empty($detiljurnal)){
                                                 $detiljurnal = new JurnalUmumDetail;
+                                                $detiljurnal->setDynamicConnection();
                                                 $detiljurnal->created_by = Auth::user()->id;
                                                 $detiljurnal->created_at = Date("Y-m-d H:i:s");
                                             } else {
@@ -922,7 +940,7 @@ class BiayaController extends Controller
 
                     // delete yang tidak digunakan //
                     # --- soft delete detail biaya yang tidak digunakan --- #
-                    $del_biaya_detail = BiayaDetail::where('id_biaya',$biaya->id)
+                    $del_biaya_detail = BiayaDetail::on($this->getConnectionName())->where('id_biaya',$biaya->id)
                                     ->whereNotIn('id',$array_detail)
                                     ->update([
                                         'deleted_at' => Date("Y-m-d H:i:s"),
@@ -930,7 +948,7 @@ class BiayaController extends Controller
                                     ]);
 
                     # --- soft delete detail jurnal yang tidak digunakan --- #
-                    $del_jurnal_detail = JurnalUmumDetail::where('flag_trx',$this->flag_trx)
+                    $del_jurnal_detail = JurnalUmumDetail::on($this->getConnectionName())->where('flag_trx',$this->flag_trx)
                                     ->where('id_jurnal',$jurnal_umum->id)
                                     ->whereNotIn("kode_referensi",$array_detail)
                                     ->update([
@@ -963,7 +981,7 @@ class BiayaController extends Controller
 
                     if($statusjurnalumum){
                         // delete detail jurnal yang kode_referensi nya null //
-                        $del = JurnalUmumDetail::where('id_jurnal',$jurnal_umum->id)
+                        $del = JurnalUmumDetail::on($this->getConnectionName())->where('id_jurnal',$jurnal_umum->id)
                                 ->whereNull('kode_referensi')->delete();
 
 
@@ -971,6 +989,7 @@ class BiayaController extends Controller
                         if($request->id_akun_ppn_potong != ""){
                             // insert detil jurnal //
                             $detiljurnal = new JurnalUmumDetail;
+                            $detiljurnal->setDynamicConnection();
                             $detiljurnal->id_jurnal = $jurnal_umum->id; 
                             $detiljurnal->id_kode_akun = $request->id_akun_ppn_potong; 
                             $detiljurnal->flag_trx = $this->flag_trx; 
@@ -985,6 +1004,7 @@ class BiayaController extends Controller
                         if(isset($request->id_akun_bayar)){
                             // insert detil jurnal //
                             $detiljurnal = new JurnalUmumDetail;
+                            $detiljurnal->setDynamicConnection();
                             $detiljurnal->id_jurnal = $jurnal_umum->id; 
                             $detiljurnal->id_kode_akun = $request->id_akun_bayar; 
                             $detiljurnal->flag_trx = $this->flag_trx; 
@@ -1015,9 +1035,10 @@ class BiayaController extends Controller
 
                                         if($request->idbukti[$key] == ""){
                                             $buktibiaya = new BiayaBukti;
+                                            $buktibiaya->setDynamicConnection();
                                         } else {
                                             $idbukti = Crypt::decrypt($request->idbukti[$key]);
-                                            $buktibiaya = BiayaBukti::find($idbukti);
+                                            $buktibiaya = BiayaBukti::on($this->getConnectionName())->find($idbukti);
                                         }                                    
 
                                         $nama_file = $bukti->getClientOriginalName();
@@ -1060,18 +1081,19 @@ class BiayaController extends Controller
                                             if($statusjurnalumum){
                                                 // save ke file bukti jurnal
 
-                                                $check_bukti_jurnal = JurnalUmumBukti::where('id_jurnal',$jurnal_umum->id)
+                                                $check_bukti_jurnal = JurnalUmumBukti::on($this->getConnectionName())->where('id_jurnal',$jurnal_umum->id)
                                                                     ->where('flag_trx',$this->flag_trx)
                                                                     ->where('kode_referensi',$buktibiaya->id)
                                                                     ->whereNull('deleted_by')
                                                                     ->first();
 
                                                 if(!empty($check_bukti_jurnal)){
-                                                    $buktijurnal = JurnalUmumBukti::find($check_bukti_jurnal->id);    
+                                                    $buktijurnal = JurnalUmumBukti::on($this->getConnectionName())->find($check_bukti_jurnal->id);    
                                                     $buktijurnal->updated_by = Auth::user()->id;
                                                     $buktijurnal->updated_at = Date("Y-m-d H:i:s");
                                                 } else {
                                                     $buktijurnal = new JurnalUmumBukti; 
+                                                    $buktijurnal->setDynamicConnection();
                                                     $buktijurnal->created_by = Auth::user()->id;
                                                     $buktijurnal->created_at = Date("Y-m-d H:i:s");
                                                 }
@@ -1110,9 +1132,10 @@ class BiayaController extends Controller
 
                                 if($id_bukti == ""){
                                     $buktibiaya = new BiayaBukti;
+                                    $buktibiaya->setDynamicConnection();
                                 } else {
                                     $idbukti = Crypt::decrypt($id_bukti);
-                                    $buktibiaya = BiayaBukti::find($idbukti);
+                                    $buktibiaya = BiayaBukti::on($this->getConnectionName())->find($idbukti);
                                 } 
 
 
@@ -1175,18 +1198,19 @@ class BiayaController extends Controller
                                         if($statusjurnalumum){
                                             
                                             // save ke file bukti jurnal
-                                            $check_bukti_jurnal = JurnalUmumBukti::where('id_jurnal',$jurnal_umum->id)
+                                            $check_bukti_jurnal = JurnalUmumBukti::on($this->getConnectionName())->where('id_jurnal',$jurnal_umum->id)
                                                         ->where('flag_trx',$this->flag_trx)
                                                         ->where('kode_referensi',$buktibiaya->id)
                                                         ->whereNull('deleted_by')
                                                         ->first();
 
                                             if(!empty($check_bukti_jurnal)){
-                                                $buktijurnal = JurnalUmumBukti::find($check_bukti_jurnal->id);    
+                                                $buktijurnal = JurnalUmumBukti::on($this->getConnectionName())->find($check_bukti_jurnal->id);    
                                                 $buktijurnal->updated_by = Auth::user()->id;
                                                 $buktijurnal->updated_at = Date("Y-m-d H:i:s");
                                             } else {
                                                 $buktijurnal = new JurnalUmumBukti; 
+                                                $buktijurnal->setDynamicConnection();
                                                 $buktijurnal->created_by = Auth::user()->id;
                                                 $buktijurnal->created_at = Date("Y-m-d H:i:s");
                                             }
@@ -1216,7 +1240,7 @@ class BiayaController extends Controller
 
                     // delete yang tidak digunakan //
                     # --- soft delete bukti biaya yang tidak digunakan --- #
-                    $del_biaya_bukti = BiayaBukti::where('id_biaya',$biaya->id)
+                    $del_biaya_bukti = BiayaBukti::on($this->getConnectionName())->where('id_biaya',$biaya->id)
                                     ->whereNotIn('id',$array_bukti)
                                     ->update([
                                         'deleted_at' => Date("Y-m-d H:i:s"),
@@ -1224,7 +1248,7 @@ class BiayaController extends Controller
                                     ]);
 
                     # --- soft delete bukti jurnal yang tidak digunakan --- #
-                    $del_jurnal_bukti = JurnalUmumBukti::where('flag_trx',$this->flag_trx)
+                    $del_jurnal_bukti = JurnalUmumBukti::on($this->getConnectionName())->where('flag_trx',$this->flag_trx)
                                     ->where('id_jurnal',$jurnal_umum->id)
                                     ->whereNotIn("kode_referensi",$array_bukti)
                                     ->update([
@@ -1236,7 +1260,7 @@ class BiayaController extends Controller
 
                     if($errorfile > 0){ $errorMessages = "terdapat ".$errorfile." file bukti dengan ekstensi yang tidak sesuai"; }
 
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo json_encode(array("status" => 1,"errorMessages" => $errorMessages, "url" => url('biaya')));
 
                 }
@@ -1244,7 +1268,7 @@ class BiayaController extends Controller
                 echo json_encode(array("status" => 2, "errorMessages" => "terdapat data tidak valid"));
             }
         } catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array("status" => 2, "errorMessages" => "ERROR : ".$e->getMessage()));
         }
     }
@@ -1261,7 +1285,7 @@ class BiayaController extends Controller
     {
         // dd($request->input());
         $id = Crypt::decrypt($id);
-        $filebukti = BiayaBukti::find($id);
+        $filebukti = BiayaBukti::on($this->getConnectionName())->find($id);
         if(!empty($filebukti)){
             return base64_decode($filebukti->file);
         } else {
@@ -1280,13 +1304,13 @@ class BiayaController extends Controller
     public function destroy($id)
     {
         $id = Crypt::decrypt($id);
-        $biaya = Biaya::find($id);
+        $biaya = Biaya::on($this->getConnectionName())->find($id);
         if($biaya){
             $biaya->deleted_at = date('Y-m-d H:i:s');
             $biaya->deleted_by = Auth::user()->id;
             if($biaya->save()){
 
-                $jurnal_umum = JurnalUmum::where("flag_trx",$this->flag_trx)->where("kode_referensi",$id)
+                $jurnal_umum = JurnalUmum::on($this->getConnectionName())->where("flag_trx",$this->flag_trx)->where("kode_referensi",$id)
                             ->update([
                                 "deleted_at" => date('Y-m-d H:i:s'),
                                 "deleted_by" => Auth::user()->id
@@ -1444,7 +1468,7 @@ class BiayaController extends Controller
     {
         // dd($request->input());
         $id = Crypt::decrypt($id);
-        $biaya = Biaya::find($id);
+        $biaya = Biaya::on($this->getConnectionName())->find($id);
         if(!is_null($biaya)){
             $biaya->id_status = $request->st;
             $biaya->updated_by = Auth::user()->id;

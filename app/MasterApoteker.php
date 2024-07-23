@@ -6,10 +6,12 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterApoteker extends Authenticatable
 {
     use Notifiable;
+    use DynamicConnectionTrait;
     protected $guard = 'apoteker';
     /*
         Model   : Untuk Master Apoteker

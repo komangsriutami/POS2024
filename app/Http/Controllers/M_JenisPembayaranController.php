@@ -10,8 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class M_JenisPembayaranController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -39,7 +42,7 @@ class M_JenisPembayaranController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterJenisPembayaran::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_pembayaran.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_pembayaran.is_deleted','=','0');
@@ -74,6 +77,7 @@ class M_JenisPembayaranController extends Controller
     public function create()
     {
         $jenis_pembayaran = new MasterJenisPembayaran;
+        $jenis_pembayaran->setDynamicConnection();
 
         return view('jenis_pembayaran.create')->with(compact('jenis_pembayaran'));
     }
@@ -88,6 +92,7 @@ class M_JenisPembayaranController extends Controller
     public function store(Request $request)
     {
         $jenis_pembayaran = new MasterJenisPembayaran;
+        $jenis_pembayaran->setDynamicConnection();
         $jenis_pembayaran->fill($request->except('_token'));
 
         $validator = $jenis_pembayaran->validate();
@@ -123,7 +128,7 @@ class M_JenisPembayaranController extends Controller
     */
     public function edit($id)
     {
-        $jenis_pembayaran = MasterJenisPembayaran::find($id);
+        $jenis_pembayaran = MasterJenisPembayaran::on($this->getConnectionName())->find($id);
 
         return view('jenis_pembayaran.edit')->with(compact('jenis_pembayaran'));
     }
@@ -137,7 +142,7 @@ class M_JenisPembayaranController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $jenis_pembayaran = MasterJenisPembayaran::find($id);
+        $jenis_pembayaran = MasterJenisPembayaran::on($this->getConnectionName())->find($id);
         $jenis_pembayaran->fill($request->except('_token'));
 
         $validator = $jenis_pembayaran->validate();
@@ -160,7 +165,7 @@ class M_JenisPembayaranController extends Controller
     */
     public function destroy($id)
     {
-        $jenis_pembayaran = MasterJenisPembayaran::find($id);
+        $jenis_pembayaran = MasterJenisPembayaran::on($this->getConnectionName())->find($id);
         $jenis_pembayaran->is_deleted = 1;
         if($jenis_pembayaran->save()){
             echo 1;

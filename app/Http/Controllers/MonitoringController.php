@@ -32,9 +32,11 @@ use Mail;
 
 use App\TransaksiPenjualan;
 use App\TransaksiPenjualanDetail;
+use App\Traits\DynamicConnectionTrait;
 
 class MonitoringController extends Controller
 {
+    use DynamicConnectionTrait;
    	public function __construct()
     {
         $this->middleware('auth:web');
@@ -55,7 +57,7 @@ class MonitoringController extends Controller
     }
 
     public function getData(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
 
@@ -78,11 +80,11 @@ class MonitoringController extends Controller
                                   ");
 
 
-        //DB::statement(DB::raw('set @rownum = 0'));
+        //DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
        
         //->where('b.stok_awal', '!=', 'tb_histori_stok_'.$inisial.'.stok_akhir')
 
-       /*  $q1 = DB::table('tb_histori_stok_'.$inisial)
+       /*  $q1 = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                 ->select([  DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'tb_histori_stok_'.$inisial.'.id',
                     'tb_histori_stok_'.$inisial.'.id_obat',
@@ -101,14 +103,14 @@ class MonitoringController extends Controller
                 ->where('tb_histori_stok_'.$inisial.'.created_at', '>', '2022-10-09 00:00:01')
                 ->groupBy('tb_histori_stok_'.$inisial.'.id');
 
-      $data = DB::table(DB::raw("({$q1->toSql()}) as sub"))
+      $data = DB::connection($this->getConnectionName())->table(DB::raw("({$q1->toSql()}) as sub"))
                 ->mergeBindings($q1)
                 ->select(['sub.*'])
                 ->where('stok_awal_after', '!=', 'stok_awal')
                 ->get();
 */
 
-    /*  $q1 = DB::table('tb_histori_stok_'.$inisial)
+    /*  $q1 = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                 ->select([  DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'tb_histori_stok_'.$inisial.'.id',
                     'tb_histori_stok_'.$inisial.'.id_obat',
@@ -120,7 +122,7 @@ class MonitoringController extends Controller
                     DB::raw('(SELECT a.stok_awal FROM tb_histori_stok_'.$inisial.' AS a WHERE a.id_obat = tb_histori_stok_'.$inisial.'.id_obat AND tb_histori_stok_'.$inisial.'.id < a.id LIMIT 1) as stok_awal_after')
                 ]);
 
-        $data = DB::table(DB::raw("({$q1->toSql()}) as sub"))
+        $data = DB::connection($this->getConnectionName())->table(DB::raw("({$q1->toSql()}) as sub"))
                 ->mergeBindings($q1)
                 ->join('tb_m_stok_harga_'.$inisial.' as master', 'master.id_obat', 'sub.id_obat')
                 ->select(['sub.*', 'master.nama', 'master.barcode'])
@@ -160,7 +162,7 @@ class MonitoringController extends Controller
     }
 
     public function getDataPembelian(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $tgl_awal_baru = $request->tgl_awal.' 00:00:01';
@@ -182,7 +184,7 @@ class MonitoringController extends Controller
 
         $data = collect();
         foreach ($rekaps as $key => $obj) {
-            $last = HistoriStok::where('id_obat', $obj->id_obat)
+            $last = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)
                             ->where('id_jenis_transaksi', [2])
                             ->where('id_transaksi', '=', $obj->id)
                             ->orderBy('id', 'DESC')
@@ -211,13 +213,13 @@ class MonitoringController extends Controller
                     $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
 
                     if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                        $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                        $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                         $id_nota = ' | IDNota : '.$check->nota->id;
                         $hb = $check->harga_beli;
                         $ppn = $check->nota->ppn;
                         $harga_beli_ppn = $check->harga_beli_ppn;
                     } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                        $check = TransaksiTODetail::find($data->id_transaksi);
+                        $check = TransaksiTODetail::on($this->getConnectionName())->find($data->id_transaksi);
                         $hb = 0;
                         $ppn = 0;
                         $harga_beli_ppn = $check->harga_outlet;

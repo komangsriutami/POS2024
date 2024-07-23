@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use DB;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class MasterPajak extends Model
 {
     use HasFactory;
+    use DynamicConnectionTrait;
 
     protected $table = 'tb_m_pajak';
     public $primaryKey = 'id';

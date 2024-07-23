@@ -5,8 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class TransaksiTransferDetail extends Model
 {
+    use DynamicConnectionTrait;
     // ini tabel detail transfer
     protected $table = 'tb_detail_nota_transfer';
     public $primaryKey = 'id';

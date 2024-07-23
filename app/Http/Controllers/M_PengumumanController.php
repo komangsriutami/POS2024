@@ -15,9 +15,11 @@ use DB;
 use Excel;
 use Auth;
 use Crypt;
+use App\Traits\DynamicConnectionTrait;
 
 class M_PengumumanController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -45,8 +47,8 @@ class M_PengumumanController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $apotek = MasterApotek::find(session('id_apotek_active'));
-        $apoteker = User::find($apotek->id_apoteker);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses = 0;
@@ -59,7 +61,7 @@ class M_PengumumanController extends Controller
         }
 
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterPengumuman::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_pengumuman.*'])
         ->leftJoin('rbac_roles as a', 'a.id', '=', 'tb_pengumuman.id_role_penerima')
         ->where(function($query) use($request){
@@ -75,7 +77,7 @@ class M_PengumumanController extends Controller
         })  
         ->editColumn('id_role_penerima', function ($data) {
             $id_role_penerima = json_decode($data->id_role_penerima);
-	        $penerima = RbacRole::where('is_deleted', 0)->whereIn('id', $id_role_penerima)->get();
+	        $penerima = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $id_role_penerima)->get();
 	        $jum = count($penerima);
 	        $string = '';
 
@@ -124,7 +126,8 @@ class M_PengumumanController extends Controller
     public function create()
     {
         $data_ = new MasterPengumuman;
-        $roles = RbacRole::where('is_deleted', 0)->pluck('nama', 'id');
+        $data_->setDynamicConnection();
+        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
 
         return view('pengumuman.create')->with(compact('data_', 'roles'));
     }
@@ -139,6 +142,7 @@ class M_PengumumanController extends Controller
     public function store(Request $request)
     {
         $data_ = new MasterPengumuman;
+        $data_->setDynamicConnection();
         $data_->fill($request->except('_token'));
         $data_->id_role_penerima = json_encode($request->id_role_penerima);
         $data_->show_popup = $request->show_popup;
@@ -150,7 +154,7 @@ class M_PengumumanController extends Controller
         $data_->tanggal_mulai = date('Y-m-d', strtotime($date1));
         $data_->tanggal_selesai =  date('Y-m-d', strtotime($date2));
 
-        $roles = RbacRole::where('is_deleted', 0)->pluck('nama', 'id');
+        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $date_now = date('Y-m-d H:i:s');
         $validator = $data_->validate();
         if($validator->fails()){
@@ -206,10 +210,10 @@ class M_PengumumanController extends Controller
     public function edit($id)
     {
         $id = Crypt::decrypt($id);
-        $data_ = MasterPengumuman::find($id);
+        $data_ = MasterPengumuman::on($this->getConnectionName())->find($id);
         $data_->tanggal_aktif = date('m/d/Y', strtotime($data_->tanggal_mulai)).' - '. date('m/d/Y', strtotime($data_->tanggal_selesai));
         $data_->id_role_penerima = json_decode($data_->id_role_penerima);
-        $roles = RbacRole::where('is_deleted', 0)->pluck('nama', 'id');
+        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
 
         return view('pengumuman.edit')->with(compact('data_', 'roles'));
     }
@@ -223,7 +227,7 @@ class M_PengumumanController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $data_ = MasterPengumuman::find($id);
+        $data_ = MasterPengumuman::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token'));
         $data_->id_role_penerima = json_encode($request->id_role_penerima);
         $data_->show_popup = $request->show_popup;
@@ -234,7 +238,7 @@ class M_PengumumanController extends Controller
         $data_->tanggal_mulai = date('Y-m-d', strtotime($date1));
         $data_->tanggal_selesai =  date('Y-m-d', strtotime($date2));
 
-        $roles = RbacRole::where('is_deleted', 0)->pluck('nama', 'id');
+        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $date_now = date('Y-m-d H:i:s');
         $validator = $data_->validate();
         if($validator->fails()){
@@ -284,7 +288,7 @@ class M_PengumumanController extends Controller
     */
     public function destroy($id)
     {
-        $data_ = MasterPengumuman::find($id);
+        $data_ = MasterPengumuman::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_by = Auth::user()->id;
         $data_->deleted_at = date('Y-m-d H:i:s');

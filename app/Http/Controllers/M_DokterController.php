@@ -18,9 +18,11 @@ use File;
 use Mail;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use App\Traits\DynamicConnectionTrait;
 
 class M_DokterController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -53,7 +55,7 @@ class M_DokterController extends Controller
         $order_dir = $order[0]['dir'];
 
         $super_admin = session('super_admin');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterDokter::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_dokter.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_dokter.is_deleted','=','0');
@@ -98,15 +100,16 @@ class M_DokterController extends Controller
     public function create()
     {
     	$data_ = new MasterDokter;
+        $data_->setDynamicConnection();
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
         # Tangkas
-        $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $apoteks->prepend('-- Pilih Apotek --', '');
 
-        $spesialiss      = MasterSpesialis::where('is_deleted', 0)->pluck('spesialis', 'id');
+        $spesialiss      = MasterSpesialis::on($this->getConnectionName())->where('is_deleted', 0)->pluck('spesialis', 'id');
         $spesialiss->prepend('-- Pilih Spesialis --', '');
 
         return view('dokter.create')->with(compact('data_', 'group_apoteks', 'apoteks', 'spesialiss'));
@@ -120,15 +123,15 @@ class M_DokterController extends Controller
     */
     public function invite_confirm(Request $request)
     {
-        $dokter = MasterDokter::where('remember_token', $request->token)->first();
+        $dokter = MasterDokter::on($this->getConnectionName())->where('remember_token', $request->token)->first();
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $apoteks->prepend('-- Pilih Apotek --', '');
 
-        $spesialiss      = MasterSpesialis::where('is_deleted', 0)->pluck('spesialis', 'id');
+        $spesialiss      = MasterSpesialis::on($this->getConnectionName())->where('is_deleted', 0)->pluck('spesialis', 'id');
         $spesialiss->prepend('-- Pilih Spesialis --', '');
 
         return view('frontend.confirm_invite_dokter')->with(compact(
@@ -148,19 +151,19 @@ class M_DokterController extends Controller
 
     public function invite_confirm_post(Request $request)
     {
-        $dokter = MasterDokter::where('id', $request->id)->first();
+        $dokter = MasterDokter::on($this->getConnectionName())->where('id', $request->id)->first();
         $dokter->fill($request->except('_token'));
         
         $validator = $dokter->validate_confirm_dokter();
         if($validator->fails()){
 
-            $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $group_apoteks->prepend('-- Pilih Group Apotek --', '');
 
-            $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $apoteks->prepend('-- Pilih Apotek --', '');
 
-            $spesialiss      = MasterSpesialis::where('is_deleted', 0)->pluck('spesialis', 'id');
+            $spesialiss      = MasterSpesialis::on($this->getConnectionName())->where('is_deleted', 0)->pluck('spesialis', 'id');
             $spesialiss->prepend('-- Pilih Spesialis --', '');
             
             return view('frontend.confirm_invite_dokter')
@@ -193,8 +196,9 @@ class M_DokterController extends Controller
     */
     public function invite_view()
     {
-        $dokter = new MasterDokter;        
-        $roles = RbacRole::where('is_deleted', 0)->get();
+        $dokter = new MasterDokter;   
+        $dokter->setDynamicConnection();   
+        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->get();
 
         return view('dokter.invite')->with(compact('dokter','roles'));
     }
@@ -207,14 +211,15 @@ class M_DokterController extends Controller
     */
     public function invite_submit(Request $request)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try {
             $dokter = new MasterDokter;
+            $dokter->setDynamicConnection();
             $dokter->fill($request->except('_token'));
 
             $validator = $dokter->validate_invite();
             if($validator->fails()){
-                $roles = RbacRole::where('is_deleted', 0)->get();
+                $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->get();
                 return view('dokter.invite')
                     ->with(compact('dokter', 'roles'))
                     ->withErrors($validator);
@@ -226,6 +231,7 @@ class M_DokterController extends Controller
                 
                 foreach ($request->roles as $role) {
                     $rbac_user_role = new RbacUserRole;
+                    $rbac_user_role->setDynamicConnection();
                     $rbac_user_role->id_user = $dokter->id;
                     $rbac_user_role->id_role = $role;
                     $rbac_user_role->save();
@@ -233,14 +239,14 @@ class M_DokterController extends Controller
                                 
                 $link = route('confirm_dokter', $dokter->remember_token);
                 Mail::to($dokter->email)->send(new \App\Mail\MailInviteDokter($dokter, $link));
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
 
                 session()->flash('success', 'Sukses invite dokter!');
                 return redirect('dokter');
             }
         } catch(\Exception $e){
             dd($e);
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('dokter');
         }
@@ -256,6 +262,7 @@ class M_DokterController extends Controller
     {
         # Tangkas
         $data_ = new MasterDokter;
+        $data_->setDynamicConnection();
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
         $data_->password = bcrypt($request->password);
         $data_->activated = 1;
@@ -287,13 +294,13 @@ class M_DokterController extends Controller
 
         $validator = $data_->validate();
         if ($validator->fails()) {
-            $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $group_apoteks->prepend('-- Pilih Group Apotek --', '');
 
-            $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $apoteks->prepend('-- Pilih Apotek --', '');
 
-            $spesialiss      = MasterSpesialis::where('is_deleted', 0)->pluck('spesialis', 'id');
+            $spesialiss      = MasterSpesialis::on($this->getConnectionName())->where('is_deleted', 0)->pluck('spesialis', 'id');
             $spesialiss->prepend('-- Pilih Spesialis --', '');
 
             Session()->flash('error', 'Gagal menyimpan data!');
@@ -333,16 +340,16 @@ class M_DokterController extends Controller
     */
     public function edit($id)
     {
-        $data_ 		= MasterDokter::find($id);
+        $data_ 		= MasterDokter::on($this->getConnectionName())->find($id);
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
         # Tangkas
-        $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $apoteks->prepend('-- Pilih Apotek --', '');
 
-        $spesialiss      = MasterSpesialis::where('is_deleted', 0)->pluck('spesialis', 'id');
+        $spesialiss      = MasterSpesialis::on($this->getConnectionName())->where('is_deleted', 0)->pluck('spesialis', 'id');
         $spesialiss->prepend('-- Pilih Spesialis --', '');
 
         return view('dokter.edit')->with(compact('data_', 'group_apoteks', 'apoteks', 'spesialiss'));
@@ -357,7 +364,7 @@ class M_DokterController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $data_ = MasterDokter::find($id);
+        $data_ = MasterDokter::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
         if(isset($request->is_ganti_password)) {
             if($request->is_ganti_password_val == 1) {
@@ -395,14 +402,14 @@ class M_DokterController extends Controller
 
         $validator = $data_->validate();
         if ($validator->fails()) {
-            $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
             # Tangkas
-            $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $apoteks->prepend('-- Pilih Apotek --', '');
 
-            $spesialiss      = MasterSpesialis::where('is_deleted', 0)->pluck('spesialis', 'id');
+            $spesialiss      = MasterSpesialis::on($this->getConnectionName())->where('is_deleted', 0)->pluck('spesialis', 'id');
             $spesialiss->prepend('-- Pilih Spesialis --', '');
 
             Session()->flash('error', 'Gagal menyimpan data!');
@@ -430,7 +437,7 @@ class M_DokterController extends Controller
     */
     public function destroy($id)
     {
-        $data_ = MasterDokter::find($id);
+        $data_ = MasterDokter::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');
         $data_->deleted_by = Auth::user()->id;

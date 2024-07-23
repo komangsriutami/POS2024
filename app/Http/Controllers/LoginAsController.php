@@ -17,8 +17,11 @@ use App\MasterTahun;
 use Auth;
 use Route;
 use Session;
+use App\Traits\DynamicConnectionTrait;
+
 class LoginAsController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         ========================================================================================================================================
         For     : Tampilan index halaman login as
@@ -31,7 +34,7 @@ class LoginAsController extends Controller
 
    
         $id_user = session('id');
-        $data['user'] = User::where('is_deleted',0)->get();
+        $data['user'] = User::on($this->getConnectionName())->where('is_deleted',0)->get();
 
         return view('auth.loginas')->with($data, $id_user);
     }
@@ -57,7 +60,7 @@ class LoginAsController extends Controller
     {
         $idUser = $request->user;
 
-        $user = User::find($idUser);
+        $user = User::on($this->getConnectionName())->find($idUser);
         
         if(!is_null($user)){
             $actions = array();
@@ -98,9 +101,9 @@ class LoginAsController extends Controller
                 session(['active_role_id'=>$user_roles[0]->id]);
                 //session(['active_menu'=>$user_roles[0]->menu]);
 
-                $role_permissions = RolePermission::where("id_role", $user_roles[0]->id)->get();
+                $role_permissions = RolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
                 foreach ($role_permissions as $role_permission) {
-                    $permission = Permission::find($role_permission->id_permission);
+                    $permission = Permission::on($this->getConnectionName())->find($role_permission->id_permission);
                     $actions[] = $permission->nama;
                     /*if (!in_array($permission->id_menu, $menus)) {
                     } else {*/
@@ -108,21 +111,21 @@ class LoginAsController extends Controller
                     //}
                 }
 
-                $menu = Menu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                $menu = Menu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
             
                 $parents = array();
                 foreach ($menu as $key => $val) {
                     if($val->parent == 0) {
-                        $data_parent = Menu::find($val->id);
+                        $data_parent = Menu::on($this->getConnectionName())->find($val->id);
                         $parents[] = $data_parent->id;
                     } else {
-                        $data_parent = Menu::find($val->parent);
+                        $data_parent = Menu::on($this->getConnectionName())->find($val->parent);
                         $parents[] = $data_parent->id;
                     }
                    
                 }
 
-                $parent_menu = Menu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                $parent_menu = Menu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                 foreach ($parent_menu as $key => $obj) {
                     $sub_menu = array(); 
@@ -160,7 +163,7 @@ class LoginAsController extends Controller
             session(['role_list' => $role_list]);
 
             if(!is_null($user->id_sso)){
-                /*$userunud = UserImissu::find($user->id_sso);
+                /*$userunud = UserImissu::on($this->getConnectionName())->find($user->id_sso);
                 session(['photo' => 'https://imissu.unud.ac.id/upload/photos/'.$userunud->photo ]);*/
                 session(['photo' => '' ]); 
             } else {

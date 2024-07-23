@@ -6,8 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use DB;
+use App\Traits\DynamicConnectionTrait;
+
 class TransaksiTD extends Model
 {
+    use DynamicConnectionTrait;
     // ini tabel nota penjualan
     protected $table = 'tb_nota_transfer_dokter';
     public $primaryKey = 'id';
@@ -53,9 +56,10 @@ class TransaksiTD extends Model
         foreach ($details as $detail) {
             if(!in_array($detail['id_obat'], $array_id_obat)){
                 if($detail['id']>0){
-                    $obj = TransaksiTDDetail::find($detail['id']);
+                    $obj = TransaksiTDDetail::on($this->getConnectionName())->find($detail['id']);
                 }else{
                     $obj = new TransaksiTDDetail;
+                    $obj->setDynamicConnection();
                 }
 
                 $obj->id_nota = $this->id;
@@ -73,16 +77,16 @@ class TransaksiTD extends Model
                 $grand_total = $grand_total + $obj->total;
                 $array_id_obat[] = $obj->id;
 
-                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
 		        $inisial = strtolower($apotek->nama_singkat);
-		        $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+		        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 		        $stok_now = $stok_before->stok_akhir-$obj->jumlah;
 
 		        # update ke table stok harga
-		        DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+		        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
 		        # create histori
-		        DB::table('tb_histori_stok_'.$inisial)->insert([
+		        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
 		            'id_obat' => $obj->id_obat,
 		            'jumlah' => $obj->jumlah,
 		            'stok_awal' => $stok_before->stok_akhir,
@@ -101,11 +105,11 @@ class TransaksiTD extends Model
         $this->save();
         
         if(!empty($array_id_obat)){
-            DB::statement("DELETE FROM tb_detail_nota_transfer_dokter
+            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_nota_transfer_dokter
                             WHERE id_nota=".$this->id." AND 
                                     id NOT IN(".implode(',', $array_id_obat).")");
         }else{
-            DB::statement("DELETE FROM tb_detail_nota_transfer_dokter 
+            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_nota_transfer_dokter 
                             WHERE id_nota=".$this->id);
         }
     }

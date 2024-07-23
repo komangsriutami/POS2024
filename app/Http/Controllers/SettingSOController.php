@@ -21,9 +21,11 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Traits\DynamicConnectionTrait;
 
 class SettingSOController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -55,7 +57,7 @@ class SettingSOController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = SettingStokOpnam::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_setting_stok_opnam.*'])
         ->where(function($query) use($request){
             $query->where('tb_setting_stok_opnam.is_deleted','=','0');
@@ -74,7 +76,7 @@ class SettingSOController extends Controller
         ->editcolumn('step', function($data) use($request){
             $now = $data->step+1;
 
-            $last_so = SettingStokOpnam::where('id_apotek', $data->id_apotek)->where('step', '>', 1)->orderBy('id', 'DESC')->first();
+            $last_so = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', $data->id_apotek)->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
             $btn = '';
             if($now == 1) {
@@ -128,7 +130,8 @@ class SettingSOController extends Controller
     public function create()
     {
         $setting_so = new SettingStokOpnam;
-        $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $setting_so->setDynamicConnection();
+        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
         return view('setting_so.create')->with(compact('setting_so', 'apoteks'));
@@ -144,11 +147,12 @@ class SettingSOController extends Controller
     public function store(Request $request)
     {
         $setting_so = new SettingStokOpnam;
+        $setting_so->setDynamicConnection();
         $setting_so->fill($request->except('_token'));
 
         $validator = $setting_so->validate();
         if($validator->fails()){
-            $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+            $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
             $apoteks->prepend('-- Pilih Apotek --','');
 
             return view('setting_so.create')->with(compact('setting_so', 'apoteks'))->withErrors($validator);
@@ -182,8 +186,8 @@ class SettingSOController extends Controller
     */
     public function edit($id)
     {
-        $setting_so = SettingStokOpnam::find($id);
-        $apoteks      = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($id);
+        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
         return view('setting_so.edit')->with(compact('setting_so', 'apoteks'));
@@ -198,7 +202,7 @@ class SettingSOController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $setting_so = SettingStokOpnam::find($id);
+        $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($id);
         $setting_so->fill($request->except('_token'));
 
         $validator = $setting_so->validate();
@@ -221,7 +225,7 @@ class SettingSOController extends Controller
     */
     public function destroy($id)
     {
-        $setting_so = SettingStokOpnam::find($id);
+        $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($id);
         $setting_so->is_deleted = 1;
         $setting_so->deleted_by = Auth::user()->id;
         $setting_so->deleted_at = date('Y-m-d H:i:s');
@@ -235,65 +239,115 @@ class SettingSOController extends Controller
 
     public function reload_data_awal(Request $request) {
         ini_set('memory_limit', '-1'); 
+        ini_set('max_execution_time', '0');
 
-        DB::beginTransaction(); 
-        try{
-            $setting_so = SettingStokOpnam::find($request->id);
-            $apotek = MasterApotek::find($setting_so->id_apotek);
-            $inisial = strtolower($apotek->nama_singkat);
-            # set awal
-            //DB::table('tb_m_stok_harga_'.$inisial)->update(['stok_awal_so'=> DB::raw('stok_akhir'), 'stok_akhir_so'=> 0, 'selisih' => 0]);
-            $data = DB::table('tb_m_stok_harga_'.$inisial)->select(['id', 'id_obat', 'stok_akhir'])->get();
-            //dd($data);exit();
-            
-            foreach ($data as $key => $obj) {
-                if($obj->id_obat != null) {
-                    $obat = MasterObat::find($obj->id_obat);
-                    $array_id_histori_stok_awal = array();
-                    $historis = DB::table('tb_histori_stok_'.$inisial)
-                            ->where('id_obat', $obj->id_obat)
-                            ->whereIn('id_jenis_transaksi', [2,3,11,9])
-                            ->where('sisa_stok', '>', 0)
-                            ->orderBy('id', 'ASC')
-                            ->get();
+        if(Auth::user()->id == 1) {
+            DB::connection($this->getConnectionName())->beginTransaction();  
+            try{
+                $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($request->id);
+                $apotek = MasterApotek::on($this->getConnectionName())->find($setting_so->id_apotek);
+                $inisial = strtolower($apotek->nama_singkat);
+                # set awal
+                //DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->update(['stok_awal_so'=> DB::raw('stok_akhir'), 'stok_akhir_so'=> 0, 'selisih' => 0]);
+                $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->select(['id', 'id_obat', 'stok_akhir'])->get();
+                //dd($data);exit();
+                
+                foreach ($data as $key => $obj) {
+                    if($obj->id_obat != null) {
+                        $obat = MasterObat::on($this->getConnectionName())->find($obj->id_obat);
+                        $array_id_histori_stok_awal = array();
+                        $historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+                                ->where('id_obat', $obj->id_obat)
+                                ->whereIn('id_jenis_transaksi', [2,3,11,9])
+                                ->where('sisa_stok', '>', 0)
+                                ->orderBy('id', 'ASC')
+                                ->get();
 
-                    foreach ($historis as $key => $val) {
-                        $array_id_histori_stok_awal[] = array('id_histori_stok' => $val->id, 'jumlah' => $val->sisa_stok, 'hb_ppn' => $val->hb_ppn, 'hb_ppn_avg' => $val->hb_ppn_avg);
+                        foreach ($historis as $key => $val) {
+                            $array_id_histori_stok_awal[] = array('id_histori_stok' => $val->id, 'jumlah' => $val->sisa_stok, 'hb_ppn' => $val->hb_ppn, 'hb_ppn_avg' => $val->hb_ppn_avg);
+                        }
+
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id', $obj->id)->update(['nama' => $obat->nama, 'barcode' => $obat->barcode, 'stok_awal_so'=> $obj->stok_akhir, 'stok_akhir_so'=> 0, 'selisih' => 0, 'total_penjualan_so' => 0, 'id_so' => $setting_so->id, 'is_so' => 0, 'so_at' => null, 'so_by' => null, 'so_by_nama' => null, 'id_histori_stok_awal' => json_encode($array_id_histori_stok_awal)]); //, 'id_histori_stok_awal' => json_encode($array_id_histori_stok_awal
                     }
-
-                    DB::table('tb_m_stok_harga_'.$inisial)->where('id', $obj->id)->update(['nama' => $obat->nama, 'barcode' => $obat->barcode, 'stok_awal_so'=> $obj->stok_akhir, 'stok_akhir_so'=> 0, 'selisih' => 0, 'total_penjualan_so' => 0, 'id_so' => $setting_so->id, 'is_so' => 0, 'so_at' => null, 'so_by' => null, 'so_by_nama' => null, 'id_histori_stok_awal' => json_encode($array_id_histori_stok_awal)]); //, 'id_histori_stok_awal' => json_encode($array_id_histori_stok_awal
                 }
+                
+                # update step
+                $setting_so->step = $setting_so->step+1;
+                $setting_so->updated_by = Auth::user()->id;
+                $setting_so->updated_at = date('Y-m-d H:i:s');
+                if($setting_so->save()){
+                    DB::connection($this->getConnectionName())->commit();
+                    echo 1;
+                }else{
+                    DB::connection($this->getConnectionName())->rollback();
+                    echo 0;
+                }
+            }catch(\Exception $e){
+                DB::connection($this->getConnectionName())->rollback();
+                session()->flash('error', 'Error!');
+                return redirect('setting_so');
             }
-            
-            # update step
-            $setting_so->step = $setting_so->step+1;
-            $setting_so->updated_by = Auth::user()->id;
-            $setting_so->updated_at = date('Y-m-d H:i:s');
-            if($setting_so->save()){
-                DB::commit();
-                echo 1;
-            }else{
-                DB::rollback();
-                echo 0;
+        } else {
+            DB::connection($this->getConnectionName())->beginTransaction();  
+            try{
+                $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($request->id);
+                $apotek = MasterApotek::on($this->getConnectionName())->find($setting_so->id_apotek);
+                $inisial = strtolower($apotek->nama_singkat);
+                # set awal
+                //DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->update(['stok_awal_so'=> DB::raw('stok_akhir'), 'stok_akhir_so'=> 0, 'selisih' => 0]);
+                $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->select(['id', 'id_obat', 'stok_akhir'])->get();
+                //dd($data);exit();
+                
+                foreach ($data as $key => $obj) {
+                    if($obj->id_obat != null) {
+                        $obat = MasterObat::on($this->getConnectionName())->find($obj->id_obat);
+                        $array_id_histori_stok_awal = array();
+                        $historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+                                ->where('id_obat', $obj->id_obat)
+                                ->whereIn('id_jenis_transaksi', [2,3,11,9])
+                                ->where('sisa_stok', '>', 0)
+                                ->orderBy('id', 'ASC')
+                                ->get();
+
+                        foreach ($historis as $key => $val) {
+                            $array_id_histori_stok_awal[] = array('id_histori_stok' => $val->id, 'jumlah' => $val->sisa_stok, 'hb_ppn' => $val->hb_ppn, 'hb_ppn_avg' => $val->hb_ppn_avg);
+                        }
+
+                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id', $obj->id)->update(['nama' => $obat->nama, 'barcode' => $obat->barcode, 'stok_awal_so'=> $obj->stok_akhir, 'stok_akhir_so'=> 0, 'selisih' => 0, 'total_penjualan_so' => 0, 'id_so' => $setting_so->id, 'is_so' => 0, 'so_at' => null, 'so_by' => null, 'so_by_nama' => null, 'id_histori_stok_awal' => json_encode($array_id_histori_stok_awal)]); //, 'id_histori_stok_awal' => json_encode($array_id_histori_stok_awal
+                    }
+                }
+                
+                # update step
+                $setting_so->step = $setting_so->step+1;
+                $setting_so->updated_by = Auth::user()->id;
+                $setting_so->updated_at = date('Y-m-d H:i:s');
+                if($setting_so->save()){
+                    DB::connection($this->getConnectionName())->commit();
+                    echo 1;
+                }else{
+                    DB::connection($this->getConnectionName())->rollback();
+                    echo 0;
+                }
+            }catch(\Exception $e){
+                DB::connection($this->getConnectionName())->rollback();
+                session()->flash('error', 'Error!');
+                return redirect('setting_so');
             }
-        }catch(\Exception $e){
-            DB::rollback();
-            session()->flash('error', 'Error!');
-            return redirect('setting_so');
         }
     }
 
     public function reload_data_akhir(Request $request) {
         ini_set('memory_limit', '-1'); 
-        DB::beginTransaction(); 
+        ini_set('max_execution_time', '0');
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $now = date('Y-m-d');
-            $setting_so = SettingStokOpnam::find($request->id);
+            $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($request->id);
                 if($now = $setting_so) {
-                $apotek = MasterApotek::find($setting_so->id_apotek);
+                $apotek = MasterApotek::on($this->getConnectionName())->find($setting_so->id_apotek);
                 $inisial = strtolower($apotek->nama_singkat);
                 # buat histori
-                $data = DB::table('tb_m_stok_harga_'.$inisial)->where('is_so', 0)->get();
+                $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('is_so', 0)->get();
                 
                 foreach ($data as $key => $obj) {
                     $stok_awal = $obj->stok_awal_so;
@@ -317,9 +371,9 @@ class SettingSOController extends Controller
                         $stok_missing = $missing*$obj->harga_beli;
                     }
 
-                    DB::table('tb_m_stok_harga_'.$inisial)->where('id', $obj->id)->update(['stok_awal'=> $obj->stok_awal_so, 'stok_akhir' => 0, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id, 'is_so' => 1, 'so_at' => date('Y-m-d H:i:s'), 'so_by' => Auth::user()->id, 'so_by_nama' => 'by sistem', 'stok_tersedia' => $stok_tersedia, 'stok_found' => $stok_found, 'stok_missing' => $stok_missing, 'found' => $found, 'missing' => $missing, 'hb_ppn_so' => $hb_ppn_so]);
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id', $obj->id)->update(['stok_awal'=> $obj->stok_awal_so, 'stok_akhir' => 0, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id, 'is_so' => 1, 'so_at' => date('Y-m-d H:i:s'), 'so_by' => Auth::user()->id, 'so_by_nama' => 'by sistem', 'stok_tersedia' => $stok_tersedia, 'stok_found' => $stok_found, 'stok_missing' => $stok_missing, 'found' => $found, 'missing' => $missing, 'hb_ppn_so' => $hb_ppn_so]);
 
-                    DB::table('tb_histori_stok_'.$inisial)->insert([
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                         'id_obat' => $obj->id_obat,
                         'jumlah' => $obj->stok_akhir_so,
                         'stok_awal' => $obj->stok_awal_so,
@@ -341,7 +395,7 @@ class SettingSOController extends Controller
                 $setting_so->updated_by = Auth::user()->id;
                 $setting_so->updated_at = date('Y-m-d H:i:s');
                 if($setting_so->save()){
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo 1;
                 }else{
                     echo 0;
@@ -350,7 +404,7 @@ class SettingSOController extends Controller
                 echo 2;
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('setting_so');
         }
@@ -360,11 +414,11 @@ class SettingSOController extends Controller
     {
         ini_set('memory_limit', '-1');
 
-        $setting_so = SettingStokOpnam::find($request->id);
-        $apotek = MasterApotek::find($setting_so->id_apotek);
+        $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($request->id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($setting_so->id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->get();
 
@@ -463,7 +517,7 @@ class SettingSOController extends Controller
                         $stok_missing = '0';
                     }
 
-                    $obat = MasterObat::find($rekap->id_obat);
+                    $obat = MasterObat::on($this->getConnectionName())->find($rekap->id_obat);
 
                     $collection[] = array(
                         $no, // a
@@ -556,16 +610,16 @@ class SettingSOController extends Controller
 
     public function backup_data_so(Request $request) {
         ini_set('memory_limit', '-1'); 
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $now = date('Y-m-d H:i:s');
             $id_user = Auth::user()->id;
-            $setting_so = SettingStokOpnam::find($request->id);
-            $apotek = MasterApotek::find($setting_so->id_apotek);
+            $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($request->id);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($setting_so->id_apotek);
             $inisial = strtolower($apotek->nama_singkat);
             # select all data so
 
-            $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
+            $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                         ->select([DB::raw(''.$apotek->id.' as id_apotek'), 'id_obat', 'is_so', 'id_so', 'stok_awal_so', 'stok_akhir_so', 'selisih', DB::raw(''.$id_user.' as id_histori_stok_awal'), 'stok_tersedia', 'stok_found', 'stok_missing', 'found', 'missing', 'hb_ppn_so', 'total_penjualan_so', 'so_at', 'so_by', 'so_by_nama', DB::raw('"'.$now.'" as created_at'), DB::raw(''.$id_user.' as created_by'), DB::raw('"'.$now.'" as updated_at'), DB::raw(''.$id_user.' as updated_by')])
                         ->where('is_deleted', 0)
                         ->get();
@@ -573,21 +627,21 @@ class SettingSOController extends Controller
 
             $data= json_decode( json_encode($rekaps), true);
             DB::connection()->getPdo()->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
-            DB::table('tb_backup_data_so')->insert($data);
+            DB::connection($this->getConnectionName())->table('tb_backup_data_so')->insert($data);
             DB::connection()->getPdo()->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
             
             $setting_so->is_backup = 1;
             $setting_so->backup_by = Auth::user()->id;
             $setting_so->backup_at = date('Y-m-d H:i:s');
             if($setting_so->save()){
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 echo 1;
             }else{
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo 0;
             session()->flash('error', 'Error!');
         }

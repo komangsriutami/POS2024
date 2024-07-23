@@ -5,9 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterTindakan extends Model
 {
+    use DynamicConnectionTrait;
     /*
 		Model 	: Model Master Tindakan untuk Tindakan@Controller
 		Author 	: Tangkas.

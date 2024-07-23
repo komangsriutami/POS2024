@@ -6,12 +6,16 @@
             <i class="fas fa-bars"></i>
             </a>
         </li>
-       <!--  <li class="nav-item d-none d-sm-inline-block">
-            <a href="{{ url('home') }}" class="nav-link">Home</a>
+        <li class="nav-item d-none d-sm-inline-block">
+            <?php
+                $connectionName = session('connection_active');
+                $databaseName = config("database.connections.$connectionName.database");
+            ?>
+            <a href="#" class="nav-link">DB.{{ $databaseName }}</a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
             <a href="{{ url('contact') }}" class="nav-link">Contact</a>
-        </li> -->
+        </li>
     </ul>
     <!-- SEARCH FORM -->
    <!--  <form class="form-inline ml-3">

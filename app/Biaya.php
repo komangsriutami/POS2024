@@ -4,9 +4,11 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Validator;
+use App\Traits\DynamicConnectionTrait;
 
 class Biaya extends Model
 {
+    use DynamicConnectionTrait;
     protected $table = 'tb_biaya';
     public $primaryKey = 'id';
     public  $timestamps = false;

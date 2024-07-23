@@ -42,9 +42,11 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Traits\DynamicConnectionTrait;
 
 class JurnalUmumController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : Halaman utama jurnal umum
@@ -72,7 +74,7 @@ class JurnalUmumController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterKodeAkun::select([
             DB::raw('@rownum  := @rownum  + 1 AS no'),
             DB::raw('tb_m_kode_akun.id AS id_akun'),
@@ -148,6 +150,7 @@ class JurnalUmumController extends Controller
     public function create()
     {
         $jurnal_umum = new JurnalUmum;
+        $jurnal_umum->setDynamicConnection();
         $jenistransaksi = MasterJenisTransaksi::get();
         return view('jurnal_umum.create')->with(compact('jurnal_umum','jenistransaksi'));
     }
@@ -167,6 +170,7 @@ class JurnalUmumController extends Controller
         $kode_akun->prepend('-- Pilih Akun --','');
 
         $detailjurnal = new JurnalUmumDetail;
+        $detailjurnal->setDynamicConnection();
         $count = $request->count;
         $form_detail = View::make('jurnal_umum._form_detail',compact('kode_akun','detailjurnal','count'))->render();
         $status = 1;
@@ -186,6 +190,7 @@ class JurnalUmumController extends Controller
     {
         // dd($request->input());
         $filebukti = new JurnalUmumBukti;
+        $filebukti->setDynamicConnection();
         $count = $request->count;
         $form_detail = View::make('jurnal_umum._form_file',compact('filebukti','count'))->render();
         $status = 1;
@@ -205,7 +210,7 @@ class JurnalUmumController extends Controller
     {
         // dd($request->input());
         $id = Crypt::decrypt($id);
-        $filebukti = JurnalUmumBukti::find($id);
+        $filebukti = JurnalUmumBukti::on($this->getConnectionName())->find($id);
         // dd($filebukti);
         if(!empty($filebukti)){
             $result['mime'] = $filebukti->type_file;
@@ -229,11 +234,12 @@ class JurnalUmumController extends Controller
     */
     public function store(Request $request)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             // dd($request->buktifile);
 
             $jurnal_umum = new JurnalUmum;
+            $jurnal_umum->setDynamicConnection();
             $jurnal_umum->no_transaksi = $request->no_transaksi;
             $jurnal_umum->tgl_transaksi = $request->tgl_transaksi;
             $jurnal_umum->memo = $request->memo;
@@ -254,6 +260,7 @@ class JurnalUmumController extends Controller
                         foreach ($request->id_kode_akun as $key => $kode) {
                             if(!is_null($kode)){
                                 $detail = new JurnalUmumDetail;
+                                $detail->setDynamicConnection();
                                 $detail->id_jurnal = $jurnal_umum->id;
                                 $detail->id_kode_akun = $kode;
                                 $detail->deskripsi = $request->deskripsi[$key];
@@ -278,6 +285,7 @@ class JurnalUmumController extends Controller
                                         $mime = $bukti->getMimeType();
 
                                         $buktijurnal = new JurnalUmumBukti;
+                                        $buktijurnal->setDynamicConnection();
 
                                         $nama_file = $bukti->getClientOriginalName();
                                         $split = explode('.', $nama_file);
@@ -325,7 +333,7 @@ class JurnalUmumController extends Controller
 
                     if($errorfile > 0){ $errorMessages = "terdapat "+$errorfile+" file bukti dengan ekstensi yang tidak sesuai"; }
 
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo json_encode(array("status" => 1,"errorMessages" => $errorMessages, "url" => url('jurnalumum')));
 
 
@@ -336,7 +344,7 @@ class JurnalUmumController extends Controller
                 echo json_encode(array("status" => 2));
             }
         } catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array('status' => 2));
         }
         
@@ -364,7 +372,7 @@ class JurnalUmumController extends Controller
     public function showakun($id)
     {
         $idakun = Crypt::decrypt($id);
-        $akun = MasterKodeAkun::find($idakun);
+        $akun = MasterKodeAkun::on($this->getConnectionName())->find($idakun);
         if(!empty($akun)){
             return view('jurnal_umum.showakun')->with(compact("id","akun"));
         } else {
@@ -389,7 +397,7 @@ class JurnalUmumController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $datadetail = JurnalUmumDetail::select(
                     "tb_jurnal_umum_detail.id",
                     "id_jurnal",
@@ -417,14 +425,14 @@ class JurnalUmumController extends Controller
                 ->orderBy("j.tgl_transaksi");
 
 
-        $dt = DB::table(DB::raw('(SELECT @saldo := 0) AS var_saldo, (SELECT @no := 0) AS var_no'))
+        $dt = DB::connection($this->getConnectionName())->table(DB::raw('(SELECT @saldo := 0) AS var_saldo, (SELECT @no := 0) AS var_no'))
                     ->select('detail.*')
                     ->crossjoin(DB::raw("({$datadetail->toSql()}) as detail"))
                     ->orderBy("detail.tgl_transaksi");
         // dd($dt->toSql());
 
 
-        $queryakhir = DB::table(DB::raw("({$dt->toSql()}) as a"))
+        $queryakhir = DB::connection($this->getConnectionName())->table(DB::raw("({$dt->toSql()}) as a"))
                     ->select(
                         '*',
                         DB::raw('@saldo := (@saldo+IFNULL(debit,0)-IFNULL(kredit,0)) as saldo'),
@@ -454,7 +462,7 @@ class JurnalUmumController extends Controller
             if(is_null($data->id_jenis_transaksi)){
                 return "Jurnal Umum #".$data->no_transaksi.'<br><small class="text-muted">'.$data->deskripsi.'. '.$data->memo.'</small>';
             } else {
-                $jns = JurnalUmumDetail::find($data->id);
+                $jns = JurnalUmumDetail::on($this->getConnectionName())->find($data->id);
                 return $jns->jenis_transaksi->nama.' #'.$data->no_transaksi.'<br><small class="text-muted">'.$jns->jenis_transaksi->nama.' '.$data->kode_referensi.'</small>';
             }
         })
@@ -533,7 +541,7 @@ class JurnalUmumController extends Controller
     public function show($id)
     {
         $idjurnal = Crypt::decrypt($id);
-        $jurnal_umum = JurnalUmum::find($idjurnal);
+        $jurnal_umum = JurnalUmum::on($this->getConnectionName())->find($idjurnal);
         if(!empty($jurnal_umum)){
             return view('jurnal_umum.showDetail')->with(compact("jurnal_umum"));
         } else {
@@ -553,7 +561,7 @@ class JurnalUmumController extends Controller
     public function edit($id)
     {
         $idjurnal = Crypt::decrypt($id);
-        $jurnal_umum = JurnalUmum::find($idjurnal);
+        $jurnal_umum = JurnalUmum::on($this->getConnectionName())->find($idjurnal);
         if(!empty($jurnal_umum)){
             $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
             $kode_akun->prepend('-- Pilih Akun --','');
@@ -573,11 +581,11 @@ class JurnalUmumController extends Controller
     */
     public function update(Request $request, $id)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             // dd($request->input());
             $id = Crypt::decrypt($id);
-            $jurnal_umum = JurnalUmum::find($id);
+            $jurnal_umum = JurnalUmum::on($this->getConnectionName())->find($id);
             $jurnal_umum->no_transaksi = $request->no_transaksi;
             $jurnal_umum->tgl_transaksi = $request->tgl_transaksi;
             $jurnal_umum->memo = $request->memo;
@@ -603,10 +611,11 @@ class JurnalUmumController extends Controller
 
                                 if($request->iddetail[$key] == ""){
                                     $detail = new JurnalUmumDetail;
+                                    $detail->setDynamicConnection();
                                     $detail->created_by = Auth::user()->id;
                                 } else {
                                     $id = Crypt::decrypt($request->iddetail[$key]);
-                                    $detail = JurnalUmumDetail::find($id);
+                                    $detail = JurnalUmumDetail::on($this->getConnectionName())->find($id);
                                     // dd($detail);
                                     $detail->updated_by = Auth::user()->id;
                                 }
@@ -625,7 +634,7 @@ class JurnalUmumController extends Controller
                         }
 
                         /* --- Hapus detail yang tidak ada dalam list --- */
-                        $del = JurnalUmumDetail::where(function($query) use ($listakun,$jurnal_umum){
+                        $del = JurnalUmumDetail::on($this->getConnectionName())->where(function($query) use ($listakun,$jurnal_umum){
                             if(count($listakun)){
                                 $query->whereNotIn("id",$listakun);
                                 $query->where("id_jurnal",$jurnal_umum->id); // SRI | sepertinya selain akun yang diupdate kehapus semua kalau tanpa ini
@@ -667,6 +676,7 @@ class JurnalUmumController extends Controller
                                             
                                             // dd($mime);
                                             $buktijurnal = new JurnalUmumBukti;
+                                            $buktijurnal->setDynamicConnection();
 
                                             $nama_file = $bukti->getClientOriginalName();
                                             $split = explode('.', $nama_file);
@@ -713,7 +723,7 @@ class JurnalUmumController extends Controller
                                     }
                                 
                                 } else {
-                                    $buktijurnal = JurnalUmumBukti::find(Crypt::decrypt($request->idbukti[$key]));
+                                    $buktijurnal = JurnalUmumBukti::on($this->getConnectionName())->find(Crypt::decrypt($request->idbukti[$key]));
                                     $buktijurnal->updated_by = Auth::user()->id;
                                     $buktijurnal->updated_at = Date("Y-m-d H:i:s");
                                     $buktijurnal->keterangan = $request->keterangan[$key];
@@ -729,7 +739,7 @@ class JurnalUmumController extends Controller
                     // dd($listbukti);
 
                     /* --- Hapus detail yang tidak ada dalam list --- */
-                    $del = JurnalUmumBukti::where(function($query) use ($listbukti,$jurnal_umum){
+                    $del = JurnalUmumBukti::on($this->getConnectionName())->where(function($query) use ($listbukti,$jurnal_umum){
                         if(count($listbukti)){
                             $query->whereNotIn("id",$listbukti);
                             $query->where("id_jurnal",$jurnal_umum->id); // SRI | sepertinya selain akun yang diupdate kehapus semua kalau tanpa ini
@@ -743,7 +753,7 @@ class JurnalUmumController extends Controller
 
                     if($errorfile > 0){ $errorMessages = "terdapat ".$errorfile." file bukti dengan ekstensi yang tidak sesuai"; }
 
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo json_encode(array("status" => 1,"errorMessages" => $errorMessages, "url" => 'jurnalumum'));
 
 
@@ -754,7 +764,7 @@ class JurnalUmumController extends Controller
                 echo json_encode(array("status" => 2,"error"=>$validator->getMessage()));
             }
         } catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array("status" => 2,"error"=>$e->getMessage()));
         }  
     }
@@ -770,7 +780,7 @@ class JurnalUmumController extends Controller
     {
         $id = Crypt::decrypt($id);
         // dd($id);
-        $detail = JurnalUmumDetail::find($id);
+        $detail = JurnalUmumDetail::on($this->getConnectionName())->find($id);
         $detail->deleted_at = date('Y-m-d H:i:s');
         $detail->deleted_by = Auth::user()->id;
         if($detail->save()){
@@ -791,7 +801,7 @@ class JurnalUmumController extends Controller
     {
         $id = Crypt::decrypt($id);
         // dd($id);
-        $detail = JurnalUmum::find($id);
+        $detail = JurnalUmum::on($this->getConnectionName())->find($id);
         $detail->deleted_at = date('Y-m-d H:i:s');
         $detail->deleted_by = Auth::user()->id;
         if($detail->save()){
@@ -812,9 +822,10 @@ class JurnalUmumController extends Controller
     */
     public function saldoawal()
     {
-        $kategoriakun = MasterKategoriAkun::where('is_deleted', 0)->orderBy('nama')->get();
+        $kategoriakun = MasterKategoriAkun::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('nama')->get();
         // dd($kategoriakun);
         $jurnal_umum = new JurnalUmum;
+        $jurnal_umum->setDynamicConnection();
         return view('jurnal_umum.saldoawal')->with(compact("kategoriakun","jurnal_umum"));
     }
 
@@ -830,10 +841,10 @@ class JurnalUmumController extends Controller
     public function getakun($id)
     {
         $id_kategori = Crypt::decrypt($id);
-        $kategori = MasterKategoriAkun::find($id_kategori);
-        $kode_akun = MasterKodeAkun::where("id_kategori_akun",$id_kategori)->whereNull("deleted_by")->get();
+        $kategori = MasterKategoriAkun::on($this->getConnectionName())->find($id_kategori);
+        $kode_akun = MasterKodeAkun::on($this->getConnectionName())->where("id_kategori_akun",$id_kategori)->whereNull("deleted_by")->get();
 
-        $jurnal = JurnalUmum::where("is_saldoawal",1)->first();
+        $jurnal = JurnalUmum::on($this->getConnectionName())->where("is_saldoawal",1)->first();
         $detail = array();
         if(!is_null($jurnal)){
             if(!is_null($jurnal->detailjurnal)){
@@ -860,15 +871,16 @@ class JurnalUmumController extends Controller
     {
         // dd($request->input());
         if(isset($request->saldoawal)){
-            $jurnal = JurnalUmum::where('is_saldoawal',1)->where('id_apotek',session('id_apotek_active'))->first();
+            $jurnal = JurnalUmum::on($this->getConnectionName())->where('is_saldoawal',1)->where('id_apotek',session('id_apotek_active'))->first();
             if(empty($jurnal)){
                 $jurnal = new JurnalUmum;
+                $jurnal->setDynamicConnection();
                 $jurnal->tgl_transaksi = Date("Y-m-d");            
                 $jurnal->created_by = Auth::user()->id;
                 $jurnal->id_apotek = session('id_apotek_active');
                 $jurnal->is_saldoawal = 1;
             } else {
-                $jurnal = JurnalUmum::find($jurnal->id);       
+                $jurnal = JurnalUmum::on($this->getConnectionName())->find($jurnal->id);       
                 $jurnal->updated_by = Auth::user()->id;
             }
 
@@ -876,13 +888,14 @@ class JurnalUmumController extends Controller
 
             if(count($request->saldoawal)){
                 foreach ($request->saldoawal as $key => $value) {
-                    $cekdetil = JurnalUmumDetail::where("id_jurnal",$jurnal->id)
+                    $cekdetil = JurnalUmumDetail::on($this->getConnectionName())->where("id_jurnal",$jurnal->id)
                             ->where("id_kode_akun",$key)->first();
                     if(empty($cekdetil)){
                         $detil = new JurnalUmumDetail;
+                        $detil->setDynamicConnection();
                         $detil->created_by = Auth::user()->id;
                     } else {
-                        $detil = JurnalUmumDetail::find($cekdetil->id);                        
+                        $detil = JurnalUmumDetail::on($this->getConnectionName())->find($cekdetil->id);                        
                         $detil->updated_by = Auth::user()->id;
                     }
 
@@ -918,7 +931,7 @@ class JurnalUmumController extends Controller
     */
     public function tutupbuku()
     {
-        $tutupbuku = JurnalUmum::where("is_tutup_buku",0)
+        $tutupbuku = JurnalUmum::on($this->getConnectionName())->where("is_tutup_buku",0)
                     ->whereNull("deleted_by")
                     ->update([
                         "is_tutup_buku" => 1,
@@ -1049,7 +1062,7 @@ class JurnalUmumController extends Controller
     public function Printpdf($id)
     {
         $id = Crypt::decrypt($id);
-        $jurnal_umum = JurnalUmum::find($id);
+        $jurnal_umum = JurnalUmum::on($this->getConnectionName())->find($id);
         if(!empty($jurnal_umum)){
 
             
@@ -1072,8 +1085,8 @@ class JurnalUmumController extends Controller
     */
     public function ReloadDataIndex()
     {
-        $listreload = ReloadDataStatus::where('is_deleted',0)->get();
-        $apotek = MasterApotek::find(session("id_apotek_active"));
+        $listreload = ReloadDataStatus::on($this->getConnectionName())->where('is_deleted',0)->get();
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session("id_apotek_active"));
 
         $tgl_nota = Date('Y-m-d');
         // $tgl_nota = '2021-07-15';
@@ -1204,7 +1217,7 @@ class JurnalUmumController extends Controller
             echo json_encode($status);
 
         } catch (Exception $e) {
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array("status" => 2, "message" => "Error :: ".$e->getMessage()));
         }
 
@@ -1227,11 +1240,12 @@ class JurnalUmumController extends Controller
         */
 
         // dd($var_reloadstatus);
-        $CheckReloadStatus = ReloadDataStatusDetail::where($var_reloadstatus)->first();
+        $CheckReloadStatus = ReloadDataStatusDetail::on($this->getConnectionName())->where($var_reloadstatus)->first();
         // dd($CheckReloadStatus);
         if(is_null($CheckReloadStatus)){
             
             $dtreloadstatus = new ReloadDataStatusDetail;
+            $dtreloadstatus->setDynamicConnection();
             $dtreloadstatus->id_apotek = $var_reloadstatus['id_apotek'] ;
             $dtreloadstatus->tglreload = $var_reloadstatus['tglreload'] ;
             $dtreloadstatus->id_reloaddata = $var_reloadstatus['id_reloaddata'] ;
@@ -1240,7 +1254,7 @@ class JurnalUmumController extends Controller
             
 
         } else {
-            $dtreloadstatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+            $dtreloadstatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         }
 
         $dtreloadstatus->updated_by = Auth::user()->id;
@@ -1265,13 +1279,14 @@ class JurnalUmumController extends Controller
 
             if(count($param_detail)){
 
-                DB::beginTransaction();
+                DB::connection($this->getConnectionName())->beginTransaction(); 
 
                 $savejurnal = new JurnalUmum;
+                $savejurnal->setDynamicConnection();
                 $status = $savejurnal->saveLoadDataToJurnal($param_jurnal,$param_detail);
                 // dd($status);
 
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
 
             } else {
                 $status = array("status" => 2, "keterangan" => "data detail kosong");
@@ -1281,7 +1296,7 @@ class JurnalUmumController extends Controller
             return $status;
            
         } catch (Exception $e) {
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array("status" => 2, "message" => "Error :: ".$e->getMessage()));
         }
     }
@@ -1306,7 +1321,7 @@ class JurnalUmumController extends Controller
         $id_jenis_transaksi = null;
 
         /* --- query get piutang --- */
-        $getData = DB::table("tb_detail_nota_penjualan as a")
+        $getData = DB::connection($this->getConnectionName())->table("tb_detail_nota_penjualan as a")
                     ->selectRaw("
                         SUM(a.jumlah * a.harga_jual) as total,
                         SUM((b.diskon_persen/100)*(a.jumlah * a.harga_jual)) as diskon
@@ -1393,7 +1408,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -1427,7 +1442,7 @@ class JurnalUmumController extends Controller
         $id_jenis_transaksi = null;
 
 
-        $getData = DB::table("tb_detail_nota_penjualan as a")
+        $getData = DB::connection($this->getConnectionName())->table("tb_detail_nota_penjualan as a")
                     ->selectRaw("
                         SUM(a.jumlah * a.harga_jual) as total,
                         SUM((b.diskon_persen/100)*(a.jumlah * a.harga_jual)) as diskon
@@ -1513,7 +1528,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -1572,7 +1587,7 @@ class JurnalUmumController extends Controller
                     "id_apotek" => $id_apotek
                 );
                 
-                $getData = DB::table("tb_detail_nota_transfer_outlet as a")
+                $getData = DB::connection($this->getConnectionName())->table("tb_detail_nota_transfer_outlet as a")
                     ->selectRaw("SUM(a.jumlah * a.harga_outlet) as total")
                     ->join("tb_nota_transfer_outlet as b","b.id","a.id_nota")
                     ->whereRaw("a.is_deleted = 0")
@@ -1630,7 +1645,7 @@ class JurnalUmumController extends Controller
 
 
                 /**** Update reloaddata status ****/
-                $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+                $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
                 $updatestatus->status = $status['status'];
                 $updatestatus->keterangan = $status['keterangan'];
                 $updatestatus->tglreload = $tgl_nota;
@@ -1662,14 +1677,14 @@ class JurnalUmumController extends Controller
 
         $id_jenis_transaksi = null;
 
-        $apotek = MasterApotek::find($id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         if(is_null($apotek)){
 
             echo json_encode(array("status"=>2, "errorMessages" => "Data Apotek tidak ditemukan."));
 
         } else {
 
-           $getData = DB::table("tb_m_stok_harga_".$apotek->nama_singkat)
+           $getData = DB::connection($this->getConnectionName())->table("tb_m_stok_harga_".$apotek->nama_singkat)
                     ->selectRaw("SUM((stok_akhir * harga_beli_ppn)) AS total")
                     ->whereRaw("is_deleted = 0")
                     ->get(); 
@@ -1741,7 +1756,7 @@ class JurnalUmumController extends Controller
             // dd($status);
 
             /**** Update reloaddata status ****/
-            $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+            $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
             $updatestatus->status = $status['status'];
             $updatestatus->keterangan = $status['keterangan'];
             $updatestatus->tglreload = $tgl_nota;
@@ -1777,7 +1792,7 @@ class JurnalUmumController extends Controller
 
         $id_jenis_transaksi = null;
 
-        $getData = DB::table("tb_detail_nota_pembelian as a")
+        $getData = DB::connection($this->getConnectionName())->table("tb_detail_nota_pembelian as a")
                     ->selectRaw("SUM(a.jumlah * a.harga_beli) AS total")
                     ->selectRaw("SUM((b.ppn / 100) * (a.jumlah * a.harga_beli - (b.diskon1 + b.diskon2))) AS ppn_masukan ")
                     ->selectRaw("SUM(b.diskon1 + b.diskon2) AS diskon ")
@@ -1869,7 +1884,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -1902,7 +1917,7 @@ class JurnalUmumController extends Controller
 
         $id_jenis_transaksi = null;
 
-        $getData = DB::table("tb_detail_nota_pembelian as a")
+        $getData = DB::connection($this->getConnectionName())->table("tb_detail_nota_pembelian as a")
                     ->selectRaw("SUM(a.jumlah * a.harga_beli) AS total")
                     ->selectRaw("SUM((b.ppn / 100) * (a.jumlah * a.harga_beli - (b.diskon1 + b.diskon2))) AS ppn_masukan ")
                     ->selectRaw("SUM(b.diskon1 + b.diskon2) AS diskon ")
@@ -1994,7 +2009,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -2055,7 +2070,7 @@ class JurnalUmumController extends Controller
                     "id_apotek" => $id_apotek
                 );
                 
-                $getData = DB::table("tb_detail_nota_transfer_outlet as a")
+                $getData = DB::connection($this->getConnectionName())->table("tb_detail_nota_transfer_outlet as a")
                     ->selectRaw("SUM(a.jumlah * a.harga_outlet) as total")
                     ->join("tb_nota_transfer_outlet as b","b.id","a.id_nota")
                     ->whereRaw("a.is_deleted = 0")
@@ -2113,7 +2128,7 @@ class JurnalUmumController extends Controller
 
 
                 /**** Update reloaddata status ****/
-                $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+                $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
                 $updatestatus->status = $status['status'];
                 $updatestatus->keterangan = $status['keterangan'];
                 $updatestatus->tglreload = $tgl_nota;
@@ -2151,7 +2166,7 @@ class JurnalUmumController extends Controller
         $id_jenis_transaksi = 1;
 
         /* ------ OLD ------ */
-        /*$getData = DB::table("tb_closing_nota_penjualan")
+        /*$getData = DB::connection($this->getConnectionName())->table("tb_closing_nota_penjualan")
                     ->selectRaw("SUM(total_penjualan) AS total")
                     ->selectRaw("SUM(total_diskon) AS diskon")
                     ->selectRaw("SUM(total_diskon) AS total_switch_cash")
@@ -2292,7 +2307,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -2323,7 +2338,7 @@ class JurnalUmumController extends Controller
 
         $id_jenis_transaksi = 1;
 
-        $getData = DB::table("tb_closing_nota_penjualan")
+        $getData = DB::connection($this->getConnectionName())->table("tb_closing_nota_penjualan")
                     ->selectRaw("SUM(total_diskon) AS total")
                     ->whereRaw("id_apotek_nota = '".$id_apotek."'")
                     ->whereRaw("tanggal = '".$tgl_nota."'")
@@ -2391,7 +2406,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -2427,7 +2442,7 @@ class JurnalUmumController extends Controller
         $id_jenis_transaksi = 5;
 
         /* ---- OLD ---- */
-        /*$getData = DB::table("tb_closing_nota_penjualan")
+        /*$getData = DB::connection($this->getConnectionName())->table("tb_closing_nota_penjualan")
                     ->selectRaw("SUM(total_penjualan_cn) AS total")
                     ->whereRaw("id_apotek_nota = '".$id_apotek."'")
                     ->whereRaw("tanggal = '".$tgl_nota."'")
@@ -2562,7 +2577,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -2592,7 +2607,7 @@ class JurnalUmumController extends Controller
 
         $id_jenis_transaksi = 1;
 
-        $getData = DB::table("tb_detail_nota_penjualan as a")
+        $getData = DB::connection($this->getConnectionName())->table("tb_detail_nota_penjualan as a")
                     ->selectRaw("SUM( a.jumlah * a.hb_ppn) as total")
                     ->join("tb_nota_penjualan as b","b.id","a.id_nota")
                     ->whereRaw("a.is_deleted = 0")
@@ -2664,7 +2679,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -2699,7 +2714,7 @@ class JurnalUmumController extends Controller
         # total + ppn_masukan ->hutang usaha id akun : 46 (kredit)
         # ----------------------------------------------------- #
 
-        $getpembeliankredit = DB::table("tb_detail_nota_pembelian as a")
+        $getpembeliankredit = DB::connection($this->getConnectionName())->table("tb_detail_nota_pembelian as a")
                     ->selectRaw("SUM(a.jumlah * a.harga_beli - (b.diskon1 + b.diskon2)) AS total")
                     ->selectRaw("SUM((b.ppn / 100) * (a.jumlah * a.harga_beli - (b.diskon1 + b.diskon2))) AS ppn_masukan")
                     ->join("tb_nota_pembelian as b","b.id","a.id_nota")
@@ -2782,7 +2797,7 @@ class JurnalUmumController extends Controller
         }
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status1['status'];
         $updatestatus->keterangan = $status1['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -2806,7 +2821,7 @@ class JurnalUmumController extends Controller
         # total + ppn_masukan ->hutang usaha id akun : 46 (debet)
         # ----------------------------------------------------- #
 
-        $getpembeliancash = DB::table("tb_detail_nota_pembelian as a")
+        $getpembeliancash = DB::connection($this->getConnectionName())->table("tb_detail_nota_pembelian as a")
                     ->selectRaw("SUM(a.jumlah * a.harga_beli - (b.diskon1 + b.diskon2)) AS total")
                     ->selectRaw("SUM((b.ppn/100) * (a.jumlah * a.harga_beli - (b.diskon1 + b.diskon2))) AS ppn_masukan")
                     ->join("tb_nota_pembelian as b","b.id","a.id_nota")
@@ -2901,7 +2916,7 @@ class JurnalUmumController extends Controller
 
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status2['status'];
         $updatestatus->keterangan = $status2['keterangan'];
         $updatestatus->tglreload = $tgl_nota;
@@ -2939,7 +2954,7 @@ class JurnalUmumController extends Controller
         # ----------------------------------------------------- #
 
 
-        $getdata = DB::table("tb_detail_nota_pembelian as a")
+        $getdata = DB::connection($this->getConnectionName())->table("tb_detail_nota_pembelian as a")
                     ->selectRaw("
                         DATE(a.retur_at) AS tgl_retur,
                         c.`jenis_pembayaran`,
@@ -3082,7 +3097,7 @@ class JurnalUmumController extends Controller
         // dd($status);
 
         /**** Update reloaddata status ****/
-        $updatestatus = ReloadDataStatusDetail::find($CheckReloadStatus->id);
+        $updatestatus = ReloadDataStatusDetail::on($this->getConnectionName())->find($CheckReloadStatus->id);
         $updatestatus->status = $status['status'];
         $updatestatus->keterangan = $status['keterangan'];
         $updatestatus->tglreload = $tgl_nota;

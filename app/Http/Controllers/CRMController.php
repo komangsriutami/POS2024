@@ -8,9 +8,12 @@ use App\TransaksiPenjualan;
 use App\TransaksiPenjualanDetail;
 use DB;
 use Datatables;
+use App\Traits\DynamicConnectionTrait;
 
 class CRMController extends Controller
 {
+    use DynamicConnectionTrait;
+    
     public function index() {
 
     }
@@ -44,7 +47,7 @@ class CRMController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterMember::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_member.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_member.is_deleted','=','0');
@@ -80,7 +83,7 @@ class CRMController extends Controller
             });
         }) 
         ->editcolumn('jum_kunjungan', function($data) use($request){
-            $jum_kunjungan = TransaksiPenjualan::where('is_deleted', 0)->where('id_pasien', $data->id)->count();
+            $jum_kunjungan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_pasien', $data->id)->count();
             return $jum_kunjungan. ' kunjungan';
         }) 
         ->editcolumn('poin', function($data) use($request){

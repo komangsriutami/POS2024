@@ -8,9 +8,11 @@ use App\MasterKodeAkun;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class M_PajakController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -38,7 +40,7 @@ class M_PajakController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterPajak::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_pajak.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_pajak.is_deleted','=','0');
@@ -79,8 +81,9 @@ class M_PajakController extends Controller
     public function create()
     {
     	$pajak = new MasterPajak;
+        $pajak->setDynamicConnection();
 
-    	$akuns = MasterKodeAkun::where('is_deleted', 0)->pluck('nama', 'id');
+    	$akuns = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $akuns->prepend('-- Pilih Akun --','');
 
         return view('pajak.create')->with(compact('pajak', 'akuns'));
@@ -96,9 +99,10 @@ class M_PajakController extends Controller
     public function store(Request $request)
     {
         $pajak = new MasterPajak;
+        $pajak->setDynamicConnection();
         $pajak->fill($request->except('_token'));
 
-        $akuns = MasterKodeAkun::where('is_deleted', 0)->pluck('nama', 'id');
+        $akuns = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $akuns->prepend('-- Pilih Akun --','');
 
         $validator = $pajak->validate();
@@ -132,9 +136,9 @@ class M_PajakController extends Controller
     */
     public function edit($id)
     {
-        $pajak = MasterPajak::find($id);
+        $pajak = MasterPajak::on($this->getConnectionName())->find($id);
 
-        $akuns = MasterKodeAkun::where('is_deleted', 0)->pluck('nama', 'id');
+        $akuns = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $akuns->prepend('-- Pilih Akun --','');
 
         return view('pajak.edit')->with(compact('pajak', 'akuns'));
@@ -149,7 +153,7 @@ class M_PajakController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $pajak = MasterPajak::find($id);
+        $pajak = MasterPajak::on($this->getConnectionName())->find($id);
         $pajak->fill($request->except('_token'));
 
         $validator = $pajak->validate();
@@ -170,7 +174,7 @@ class M_PajakController extends Controller
     */
     public function destroy($id)
     {
-        $pajak = MasterPajak::find($id);
+        $pajak = MasterPajak::on($this->getConnectionName())->find($id);
         $pajak->is_deleted = 1;
         if($pajak->save()){
             echo 1;

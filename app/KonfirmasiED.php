@@ -5,8 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class KonfirmasiED extends Model
 {
+    use DynamicConnectionTrait;
     // ini tabel konfirmasi obat ed
     protected $table = 'tb_konfirmasi_ed';
     public $primaryKey = 'id';

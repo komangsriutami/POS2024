@@ -4,8 +4,11 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Validator;
+use App\Traits\DynamicConnectionTrait;
+
 class MasterStatusKaryawan extends Model
 {
+    use DynamicConnectionTrait;
     protected $table = 'tb_m_status_karyawan';
     public $primaryKey = 'id';
     public  $timestamps = false;

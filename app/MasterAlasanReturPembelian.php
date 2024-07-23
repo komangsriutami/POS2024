@@ -5,9 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterAlasanReturPembelian extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Alasan Retur Pembelian
 		Author 	: Sri U.

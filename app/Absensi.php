@@ -4,8 +4,11 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Validator;
+use App\Traits\DynamicConnectionTrait;
+
 class Absensi extends Model
 {
+    use DynamicConnectionTrait;
     protected $table = 'tb_absensi';
     public $primaryKey = 'id';
     public  $timestamps = false;

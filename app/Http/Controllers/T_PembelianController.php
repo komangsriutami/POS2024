@@ -43,9 +43,11 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Traits\DynamicConnectionTrait;
 
 class T_PembelianController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -55,11 +57,12 @@ class T_PembelianController extends Controller
     */
     public function index()
     {
+        //echo "sementara ditutup, sampai so selesai";exit();
         $date_now = date('Y-m-d');
         $first = date('Y-m-01');
         $last = date("Y-m-t", strtotime($first));
-        $supliers =MasterSuplier::where('is_deleted', 0)->get();
-        $jenis_pembelians = MasterJenisPembelian::where('is_deleted', 0)->get();
+        $supliers =MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->get();
         return view('pembelian.index')->with(compact('supliers', 'jenis_pembelians', 'date_now', 'first', 'last'));
     }
 
@@ -72,8 +75,8 @@ class T_PembelianController extends Controller
     */
     public function list_pembelian(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
-        $apoteker = User::find($apotek->id_apoteker);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
@@ -84,10 +87,10 @@ class T_PembelianController extends Controller
             $hak_akses = 1;
         }
 
-        $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
+        $last_so = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
         $tanggal = date('Y-m-d');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelian::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*', 
@@ -303,22 +306,25 @@ class T_PembelianController extends Controller
     }
 
     public function create() {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
-        $jenis_pembelians = MasterJenisPembelian::where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
+        $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
         $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
         $tanggal = date('Y-m-d');
         $pembelian = new TransaksiPembelian;
+        $pembelian->setDynamicConnection();
         $detail_pembelians = new TransaksiPembelianDetail;
+        $detail_pembelians->setDynamicConnection();
         $var = 1;
         return view('pembelian.create')->with(compact('pembelian', 'apoteks', 'jenis_pembelians', 'detail_pembelians', 'var', 'apotek', 'inisial'));
     }
 
     public function store(Request $request) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $pembelian = new TransaksiPembelian;
+            $pembelian->setDynamicConnection();
             $pembelian->fill($request->except('_token'));
             //$detail_pembelians = $request->detail_pembelian;   
 
@@ -330,56 +336,56 @@ class T_PembelianController extends Controller
                 $pembelian->is_lunas = 0;
             }
 
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
             $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
-            $jenis_pembelians = MasterJenisPembelian::where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
+            $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
             $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
             $tanggal = date('Y-m-d');
 
             $validator = $pembelian->validate();
             if($validator->fails()){
                 $var = 0;
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 /*return view('pembelian.create')->with(compact('pembelian', 'apoteks', 'jenis_pembelians', 'var', 'apotek', 'inisial'))->withErrors($validator);*/
                 echo json_encode(array('status' => 0));
             }else{
                 /*if($pembelian->ppn > 0) {
-                    $details = TransaksiPembelianDetail::where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();
+                    $details = TransaksiPembelianDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();
                     $jum_details = count($details);
                     if($jum_details > 0) {
                         foreach ($details as $key => $obj) {
                             $obj->harga_beli_ppn = $obj->harga_beli+($pembelian->ppn/100*$obj->harga_beli);
-                            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
                             if($stok_before->harga_beli != $obj->harga_beli) {
                                 $data_histori_ = array('id_obat' => $obj->id_obat, 'harga_beli_awal' => $stok_before->harga_beli, 'harga_beli_akhir' => $obj->harga_beli, 'harga_jual_awal' => $stok_before->harga_jual, 'harga_jual_akhir' => $stok_before->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-                                DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                                DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                             }
 
-                            $stok_harga = MasterStokHarga::where('id_obat', $obj->id_obat)->first();
+                            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
                             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                             $stok_harga->harga_beli = $obj->harga_beli;
                             $stok_harga->harga_beli_ppn = $obj->harga_beli_ppn;
                             $stok_harga->updated_by = Auth::user()->id;
                             if($stok_harga->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 echo json_encode(array('status' => 0));
                             }
 
-                            $histori_stok = HistoriStok::where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                            $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                             $histori_stok->hb_ppn = $obj->harga_beli_ppn;
                             if($histori_stok->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 echo json_encode(array('status' => 0));
                             }
 
                             if($obj->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 echo json_encode(array('status' => 0));
                             }
                         }
@@ -388,25 +394,25 @@ class T_PembelianController extends Controller
 
 
                 if($pembelian->save()) {
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo json_encode(array('status' => 1, 'id' => $pembelian->id));
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo json_encode(array('status' => 0));
                 }
             } 
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function edit($id) {
-        $pembelian = TransaksiPembelian::find($id);
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
-        $jenis_pembelians = MasterJenisPembelian::where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
+        $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
         $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
         $tanggal = date('Y-m-d');
 
@@ -420,9 +426,9 @@ class T_PembelianController extends Controller
     }
 
     public function update(Request $request, $id) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $pembelian = TransaksiPembelian::find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
             $pembelian->fill($request->except('_token'));
             $pembelian->updated_at = date('Y-m-d H:i:s');
             $pembelian->updated_by = Auth::user()->id;
@@ -435,59 +441,59 @@ class T_PembelianController extends Controller
                 $pembelian->is_lunas = 0;
             }
 
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
             $validator = $pembelian->validate();
             if($validator->fails()){
-                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
                 $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
-                $jenis_pembelians = MasterJenisPembelian::where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
+                $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
                 $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
                 $tanggal = date('Y-m-d');
 
                 $var = 0;
                 /*return view('pembelian.edit')->with(compact('pembelian', 'apoteks', 'jenis_pembelians', 'var', 'apotek', 'inisial'))->withErrors($validator);*/
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo json_encode(array('status' => 0));
             }else{
                 /*if($pembelian->ppn > 0) {
-                    $details = TransaksiPembelianDetail::where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();
+                    $details = TransaksiPembelianDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();
                     $jum_details = count($details);
                     if($jum_details > 0) {
                         foreach ($details as $key => $obj) {
                             $obj->harga_beli_ppn = $obj->harga_beli+($pembelian->ppn/100*$obj->harga_beli);
-                            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
                             if($stok_before->harga_beli != $obj->harga_beli) {
                                 $data_histori_ = array('id_obat' => $obj->id_obat, 'harga_beli_awal' => $stok_before->harga_beli, 'harga_beli_akhir' => $obj->harga_beli, 'harga_jual_awal' => $stok_before->harga_jual, 'harga_jual_akhir' => $stok_before->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-                                DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                                DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                             }
 
-                            $stok_harga = MasterStokHarga::where('id_obat', $obj->id_obat)->first();
+                            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
                             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                             $stok_harga->harga_beli = $obj->harga_beli;
                             $stok_harga->harga_beli_ppn = $obj->harga_beli_ppn;
                             $stok_harga->updated_by = Auth::user()->id;
                             if($stok_harga->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 echo json_encode(array('status' => 0));
                             }
 
-                            $histori_stok = HistoriStok::where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                            $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                             $histori_stok->hb_ppn = $obj->harga_beli_ppn;
                             if($histori_stok->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 echo json_encode(array('status' => 0));
                             }
 
                             if($obj->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 echo json_encode(array('status' => 0));
                             }
                         }
@@ -495,35 +501,35 @@ class T_PembelianController extends Controller
                 }*/
 
                 if($pembelian->save()) {
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo json_encode(array('status' => 1, 'id' => $pembelian->id));
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo json_encode(array('status' => 0));
                 }
             } 
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function destroy_($id) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $pembelian = TransaksiPembelian::find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
             $pembelian->is_deleted = 1;
 
-            $detail_pembelians = TransaksiPembelianDetail::where('id_nota', $pembelian->id)->get();
+            $detail_pembelians = TransaksiPembelianDetail::on($this->getConnectionName())->where('id_nota', $pembelian->id)->get();
             foreach ($detail_pembelians as $key => $detail_pembelian) {
                 $detail_pembelian->is_deleted = 1;
                 $detail_pembelian->deleted_at = date('Y-m-d H:i:s');
                 $detail_pembelian->deleted_by = Auth::user()->id;
                 $detail_pembelian->save();
 
-                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                 if($detail_pembelian->id_jenis_revisi == 1) {
                     $jumlah = $detail_pembelian->selisih;
                 } else {
@@ -533,10 +539,10 @@ class T_PembelianController extends Controller
                 $stok_now = $stok_before->stok_akhir-$jumlah;
 
                 # update ke table stok harga
-                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $detail_pembelian->id_obat,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before->stok_akhir,
@@ -551,13 +557,13 @@ class T_PembelianController extends Controller
             }
 
             if($pembelian->save()){
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 echo 1;
             }else{
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('penjualan');
         }
@@ -572,7 +578,7 @@ class T_PembelianController extends Controller
     {
         $suplier = $request->suplier;
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterSuplier::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_m_suplier.*'
@@ -600,7 +606,7 @@ class T_PembelianController extends Controller
     }
 
     public function cari_suplier_dialog(Request $request) {
-        $suplier = MasterSuplier::find($request->id);
+        $suplier = MasterSuplier::on($this->getConnectionName())->find($request->id);
 
         return json_encode($suplier);
     }
@@ -612,7 +618,7 @@ class T_PembelianController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = TransaksiPembelianDetail::find($id);
+        $detail = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
         return view('pembelian._form_edit_detail')->with(compact('detail', 'no'));
     }
 
@@ -623,7 +629,7 @@ class T_PembelianController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = RevisiPembelian::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_revisi_pembelian_obat.*', 
@@ -677,7 +683,7 @@ class T_PembelianController extends Controller
         $jenisSP = JenisSP::pluck('jenis', 'id');
         $jenisSP->prepend('-- Pilih Jenis SP --','');
                 
-        //$supliers = MasterSuplier::where('is_deleted', 0)->pluck('nama','id');
+        //$supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama','id');
         $idPembelianRelasi = TransaksiOrderDetail::select('tb_detail_nota_order.id_nota_pembelian')
                                 ->where('tb_detail_nota_order.is_deleted', 0)
                                 ->where('id_nota', $id)
@@ -691,6 +697,7 @@ class T_PembelianController extends Controller
 
     public function konfirmasi_barang_store(Request $request) {
         $pembelian = new TransaksiPembelian;
+        $pembelian->setDynamicConnection();
         $pembelian->fill($request->except('_token'));
         $details = explode(",",$request->arr_id_order);
         $id_jenis_konfirmasi = $request->id_jenis_konfirmasi;
@@ -713,19 +720,19 @@ class T_PembelianController extends Controller
             session()->flash('error', 'Data SP tidak ditemukan !');
             return redirect('pembelian/konfirmasi_barang_datang/'.$id_order);
         } else {
-            $order = TransaksiOrder::find($id_order);
+            $order = TransaksiOrder::on($this->getConnectionName())->find($id_order);
             $pembelian->id_suplier = $order->id_suplier;
         }
 
         if($id_pembelian == '') {
         } else {
-            $pembelian = TransaksiPembelian::find($id_pembelian);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id_pembelian);
         }
 
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
-        $jenis_pembelians = MasterJenisPembelian::where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
+        $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
         $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
         $tanggal = date('Y-m-d');
 
@@ -737,7 +744,7 @@ class T_PembelianController extends Controller
     }
 
     public function set_konfirm_barang_tidak_diterima(Request $request) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $arr_id_order = $request->arr_id_order;
 
@@ -755,7 +762,7 @@ class T_PembelianController extends Controller
                 $obj->save();
 
                 if(isset($obj->id_defecta)) {
-                    $defecta = DefectaOutlet::find($obj->id_defecta);
+                    $defecta = DefectaOutlet::on($this->getConnectionName())->find($obj->id_defecta);
                     //setelah itu, update tabel temp order
                     $defecta->id_process = 2;
                     $defecta->save();
@@ -772,13 +779,13 @@ class T_PembelianController extends Controller
                 }
             }
 
-            DB::commit();
+            DB::connection($this->getConnectionName())->commit();
             return response()->json(array(
                 'submit' => 1,
                 'message' => 'data berhasil disimpan',
             ));
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             return response()->json(array(
                     'submit' => 0,
                     'message' => $e->getMessage(),
@@ -787,7 +794,7 @@ class T_PembelianController extends Controller
     }
 
     public function list_data_order(Request $request) {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiOrderDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_order.*'
@@ -843,40 +850,43 @@ class T_PembelianController extends Controller
     }
 
     public function edit_detail_from_order(Request $request){
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $id = $request->id_detail_order;
             $no = $request->no;
-            $order = TransaksiOrderDetail::find($id);
+            $order = TransaksiOrderDetail::on($this->getConnectionName())->find($id);
             if(is_null($order->id_det_nota_pembalian)) {
                 $detail = new TransaksiPembelianDetail;
+                $detail->setDynamicConnection();
                 $pembelian = new TransaksiPembelian;
+                $pembelian->setDynamicConnection();
             } else {
-                $detail = TransaksiPembelianDetail::find($order->id_det_nota_pembalian);
-                $pembelian = TransaksiPembelian::find($detail->id_nota);
+                $detail = TransaksiPembelianDetail::on($this->getConnectionName())->find($order->id_det_nota_pembalian);
+                $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($detail->id_nota);
                 /*$detail->is_deleted = 1;
                 $detail->deleted_at = date('Y-m-d H:i:s');
                 $detail->deleted_by = Auth::user()->id;                
                
                 # crete histori stok barang
-                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail->id_obat)->first(); 
+                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir-$detail->jumlah;
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::where('id_obat', $detail->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                 $stok_harga->updated_by = Auth::user()->id;
                 if($stok_harga->save()) {
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     return "Error, gagal save data di master stok harga.";
                 }
                 
                 $histori_stok = new HistoriStok;
+                $histori_stok->setDynamicConnection();
                 $histori_stok->id_obat = $detail->id_obat;
                 $histori_stok->jumlah = $detail->jumlah;
                 $histori_stok->stok_awal = $stok_before->stok_akhir;
@@ -891,24 +901,24 @@ class T_PembelianController extends Controller
                 $histori_stok->created_by = Auth::user()->id;
                 if($histori_stok->save()) {
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     return "Error, gagal save data di histori stok."; exit();
                 }
 
                 # update stok aktif 
-                $cekHistori = HistoriStok::where('id_jenis_transaksi', 2)->where('id_transaksi', $detail->id)->first();
+                $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail->id)->first();
 
                 if($cekHistori->sisa_stok < $detail->jumlah) {
                     $kurangStok = $this->kurangStok($detail->id, $detail->id_obat, $detail->jumlah);
                     if($kurangStok['status'] == 0) {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         return "Error, gagal save data, stok yang ada saat ini kurang untuk melakukan penghapusan data."; exit();
                     } else {
                         $detail->id_histori_stok = $kurangStok['array_id_histori_stok'];
                         $detail->id_histori_stok_detail = $kurangStok['array_id_histori_stok_detail'];
                         if($detail->save()) {
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             return "Error, gagal save data detail pembelian."; exit();
                         }
                     }
@@ -918,14 +928,14 @@ class T_PembelianController extends Controller
                     $cekHistori->keterangan = $keterangan;
                     if($cekHistori->save()) {
                     } else {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         return "Error, gagal update data histori stok."; exit();
                     }
                 }
 
                 if($detail->save()) {
                     # cek apakah masih ada item pada nota yang sama
-                    $jum_details = TransaksiPembelianDetail::where('is_deleted', 0)->where('id_nota', $detail->id_nota)->count();
+                    $jum_details = TransaksiPembelianDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $detail->id_nota)->count();
                      $is_sisa = 1;
                     if($jum_details == 0) {
                         $pembelian->is_deleted = 1;
@@ -933,30 +943,33 @@ class T_PembelianController extends Controller
                         $pembelian->deleted_by = Auth::user()->id;
                         if($pembelian->save()) {
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             return "Error, gagal update data pembelian."; exit();
                         }
                         $is_sisa = 0;
                     }
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     return "Error, gagal update data detail pembelian."; exit();
                 }
 
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
 
                 $detail = new TransaksiPembelianDetail;
-                $pembelian = new TransaksiPembelian;*/
+                $detail->setDynamicConnection();
+                $pembelian = new TransaksiPembelian;
+                $pembelian->setDynamicConnection();
+                */
             }
 
-            $detailOrder = TransaksiOrderDetail::find($id);
+            $detailOrder = TransaksiOrderDetail::on($this->getConnectionName())->find($id);
             /*$detailOrder->id_nota_pembelian = null;
             $detailOrder->id_det_nota_pembalian = null;
             $detailOrder->save();*/
 
             return view('pembelian_order._form_edit_detail_from_order')->with(compact('detail', 'no', 'order', 'pembelian', 'detailOrder'));
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('pembelian');
         }
@@ -964,7 +977,7 @@ class T_PembelianController extends Controller
 
     public function cek_tanda_terima_faktur(Request $request)
     {
-        $pembelian = TransaksiPembelian::find($request->id);
+        $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($request->id);
         $pembelian->is_tanda_terima = 1;
         $pembelian->tanda_terima_at = date('Y-m-d H:i:s');
         $pembelian->tanda_terima_by = Auth::user()->id;
@@ -977,8 +990,8 @@ class T_PembelianController extends Controller
     } 
 
     public function pembayaran_faktur_belum_lunas(){
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
-        $supliers = MasterSuplier::where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $date_now = date('Y-m-d');
 
         return view('pembayaran_faktur._form_pembayaran_faktur_belum_lunas')->with(compact('supliers', 'apoteks', 'date_now'));
@@ -986,7 +999,7 @@ class T_PembelianController extends Controller
 
     public function list_pembayaran_faktur_belum_lunas(Request $request)
     {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelian::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
@@ -1055,8 +1068,8 @@ class T_PembelianController extends Controller
     }
 
     public function pembayaran_faktur_lunas(){
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
-        $supliers = MasterSuplier::where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $date_now = date('Y-m-d');
 
         return view('pembayaran_faktur._form_pembayaran_faktur_lunas')->with(compact('supliers', 'apoteks', 'date_now'));
@@ -1064,7 +1077,7 @@ class T_PembelianController extends Controller
 
     public function list_pembayaran_faktur_lunas(Request $request)
     {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelian::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
@@ -1132,8 +1145,8 @@ class T_PembelianController extends Controller
     }
 
     public function pembayaran_faktur(){
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
-        $supliers = MasterSuplier::where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $date_now = date('Y-m-d');
 
         return view('pembayaran_faktur.index')->with(compact('supliers', 'apoteks', 'date_now'));
@@ -1141,7 +1154,7 @@ class T_PembelianController extends Controller
 
     public function list_pembayaran_faktur(Request $request)
     {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelian::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
@@ -1210,7 +1223,7 @@ class T_PembelianController extends Controller
 
     public function lunas_pembayaran(Request $request)
     {
-        $pembelian = TransaksiPembelian::find($request->id);
+        $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($request->id);
         $pembelian->is_lunas = 1;
         $pembelian->lunas_at = date('Y-m-d H:i:s');
         $pembelian->lunas_by = Auth::user()->id;
@@ -1224,7 +1237,7 @@ class T_PembelianController extends Controller
 
     public function lihat_detail_faktur(Request $request)
     {
-        $pembelian = TransaksiPembelian::find($request->id);
+        $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($request->id);
 
         return view('pembayaran_faktur._form_lihat_detail_faktur')->with(compact('pembelian'));
     } 
@@ -1233,7 +1246,7 @@ class T_PembelianController extends Controller
         $pembelian = TransaksiPembelian::all();
         $i = 0;
         foreach ($pembelian as $key => $val) {
-            $detail_pembelians = TransaksiPembelianDetail::where('id_nota', $val->id)->get();
+            $detail_pembelians = TransaksiPembelianDetail::on($this->getConnectionName())->where('id_nota', $val->id)->get();
             foreach ($detail_pembelians as $x => $obj) {
                 $i++;
                 $obj->harga_beli_ppn = $obj->harga_beli+($val->ppn/100*$obj->harga_beli);
@@ -1246,29 +1259,29 @@ class T_PembelianController extends Controller
 
 
     public function reload_harga_ppn_form_outlet($id) {
-        $apotek = MasterApotek::find($id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id);
         $inisial = strtolower($apotek->nama_singkat);
-        $data = DB::table('tb_m_stok_harga_'.$inisial.'')->get();
+        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->get();
         foreach ($data as $key => $val) {
-            $cari_last = TransaksiPembelianDetail::where('id_obat', $val->id_obat)->orderBy('id_old', 'DESC')->first();
+            $cari_last = TransaksiPembelianDetail::on($this->getConnectionName())->where('id_obat', $val->id_obat)->orderBy('id_old', 'DESC')->first();
             if(!empty($cari_last)) {
                 if($val->harga_beli != $cari_last->harga_beli) {
                     $data_histori_ = array('id_obat' => $val->id_obat, 'harga_beli_awal' => $val->harga_beli, 'harga_beli_akhir' => $cari_last->harga_beli, 'harga_jual_awal' => $val->harga_jual, 'harga_jual_akhir' => $val->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-                    DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                    DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
 
                     // update harga beli dan harga beli ppn
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id', $val->id)
                         ->update(['harga_beli' => $cari_last->harga_beli, 'harga_beli_ppn' => $cari_last->harga_beli_ppn, 'updated_by' => Auth::user()->id, 'updated_at' => date('Y-m-d H:i:s')]);
                 } else {
                     // update harga beli ppn
-                    DB::table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id', $val->id)
                         ->update(['harga_beli_ppn' => $cari_last->harga_beli_ppn, 'updated_by' => Auth::user()->id, 'updated_at' => date('Y-m-d H:i:s')]);
                 }
             } else {
-                DB::table('tb_m_stok_harga_'.$inisial.'')
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id', $val->id)
                         ->update(['harga_beli_ppn' => $val->harga_beli, 'updated_by' => Auth::user()->id, 'updated_at' => date('Y-m-d H:i:s')]);
             }
@@ -1280,7 +1293,7 @@ class T_PembelianController extends Controller
     }
 
     public function list_pencarian_obat(Request $request) {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama','b.no_faktur'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
         ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
@@ -1586,7 +1599,7 @@ class T_PembelianController extends Controller
 
     public function pembayaran_konsinyasi($id) 
     {
-        $pembelian = TransaksiPembelian::find($id);
+        $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
 
         $detail_pembelians = TransaksiPembelianDetail::
                                 select('tb_detail_nota_pembelian.*')
@@ -1608,19 +1621,21 @@ class T_PembelianController extends Controller
                                     'tb_detail_nota_pembelian.diskon',
                                     'tb_detail_nota_pembelian.is_retur',
                                     DB::raw("SUM(b.jumlah_bayar) as jumlah_bayar"))
-                                ->join('tb_pembayaran_konsinyasi as b', 'b.id_detail_nota', '=', 'tb_detail_nota_pembelian.id')
+                                ->leftJoin('tb_pembayaran_konsinyasi as b', 'b.id_detail_nota', '=', 'tb_detail_nota_pembelian.id')
                                 ->where('tb_detail_nota_pembelian.id', $id)
                                 ->first();
+       // dd($detail_pembelian);
 
-        $retur_pembelian_obat = ReturPembelian::where('is_deleted', 0)
+        $retur_pembelian_obat = ReturPembelian::on($this->getConnectionName())->where('is_deleted', 0)
                                             ->where('id_detail_nota', $detail_pembelian->id)
                                             ->first();
-        $kartu_debets = MasterKartu::where('id_jenis_kartu', 1)->where('is_deleted', 0)->get();
+        $kartu_debets = MasterKartu::on($this->getConnectionName())->where('id_jenis_kartu', 1)->where('is_deleted', 0)->get();
 
         if(empty($retur_pembelian_obat)) {
             $retur_pembelian_obat = new ReturPembelian;
+            $retur_pembelian_obat->setDynamicConnection();
         }
-        $alasan_returs = MasterAlasanReturPembelian::where('id', 2)->pluck('alasan', 'id');
+        $alasan_returs = MasterAlasanReturPembelian::on($this->getConnectionName())->where('id', 2)->pluck('alasan', 'id');
 
         return view('pembayaran_faktur._form_set_pembayaran_kosinyasi')->with(compact('detail_pembelian', 'alasan_returs', 'retur_pembelian_obat', 'kartu_debets'));
     }
@@ -1629,8 +1644,10 @@ class T_PembelianController extends Controller
         $counter = $request->counter;
         $no = $counter+1;
         $detail_pembelian = new TransaksiPembelianDetail;
+        $detail_pembelian->setDynamicConnection();
         $pembayaran_konsinyasi = new PembayaranKonsinyasi;
-        $kartu_debets = MasterKartu::where('id_jenis_kartu', 1)->where('is_deleted', 0)->get();
+        $pembayaran_konsinyasi->setDynamicConnection();
+        $kartu_debets = MasterKartu::on($this->getConnectionName())->where('id_jenis_kartu', 1)->where('is_deleted', 0)->get();
         return view('pembayaran_faktur._form_add_pembayaran')->with(compact('no','detail_pembelian', 'pembayaran_konsinyasi', 'kartu_debets'));
     }
 
@@ -1639,12 +1656,12 @@ class T_PembelianController extends Controller
         //dd($request);
         //echo "kurangStok";exit();
        // if(Auth::user()->id == 1) {
-            DB::beginTransaction(); 
+            DB::connection($this->getConnectionName())->beginTransaction();  
             try{
-                $detail_pembelian = TransaksiPembelianDetail::find($id);
+                $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
                 $detail_pembelian->fill($request->except('_token'));
                 $status = 0;
-                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
                 $array_id_pembayaran = array();
                 if(empty($request->is_retur)) {
@@ -1662,12 +1679,13 @@ class T_PembelianController extends Controller
 
                 $pembayaran_konsinyasis = $request->pembayaran_konsinyasi;
                 if($request->is_retur == 1) {
-                    $retur_pembelian_obat = ReturPembelian::where('is_deleted', 0)
+                    $retur_pembelian_obat = ReturPembelian::on($this->getConnectionName())->where('is_deleted', 0)
                                                 ->where('id_detail_nota', $detail_pembelian->id)
                                                 ->first();
 
                     if(empty($retur_pembelian_obat)) {
                         $retur_pembelian_obat = new ReturPembelian;
+                        $retur_pembelian_obat->setDynamicConnection();
                         $retur_pembelian_obat->id_detail_nota = $detail_pembelian->id;
                         $retur_pembelian_obat->jumlah = $request->total_sisa_bayar;
                         $retur_pembelian_obat->id_alasan_retur = $request->id_alasan_retur;
@@ -1684,7 +1702,7 @@ class T_PembelianController extends Controller
                         $retur_pembelian_obat->save();
                     }
 
-                    $pembelian = TransaksiPembelian::find($detail_pembelian->id_nota);
+                    $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($detail_pembelian->id_nota);
                     $pembelian->is_lunas = 1;
                     $pembelian->lunas_at = date('Y-m-d H:i:s');
                     $pembelian->lunas_by = Auth::user()->id;
@@ -1692,26 +1710,27 @@ class T_PembelianController extends Controller
 
 
                      // sesuaikan stok 
-                    $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir-$retur_pembelian_obat->jumlah;
                 
                     # update ke table stok harga
-                    $stok_harga = MasterStokHarga::where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_harga->stok_awal = $stok_before->stok_akhir;
                     $stok_harga->stok_akhir = $stok_now;
                     $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                     $stok_harga->updated_by = Auth::user()->id;
                     if($stok_harga->save()) {
                     } else {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         session()->flash('error', 'Error!');
                         return redirect('pembelian');
                     }
             
                     # create histori
-                    $histori_stok = HistoriStok::where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
+                    $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
                     if(empty($histori_stok)) {
                         $histori_stok = new HistoriStok;
+                        $histori_stok->setDynamicConnection();
                     }
                     $histori_stok->id_obat = $detail_pembelian->id_obat;
                     $histori_stok->jumlah = $retur_pembelian_obat->jumlah;
@@ -1728,18 +1747,18 @@ class T_PembelianController extends Controller
                     $histori_stok->created_by = Auth::user()->id;
                     if($histori_stok->save()) {
                     } else {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         session()->flash('error', 'Error!');
                         return redirect('pembelian');
                     }
 
                     # update stok aktif 
-                    $cekHistori = HistoriStok::where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
+                    $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
                     if(!is_null($cekHistori)) {
                         if($cekHistori->sisa_stok < $detail_pembelian->jumlah OR is_null($cekHistori)) {
                             $kurangStok = $this->kurangStokRetur($detail_pembelian->id, $retur_pembelian_obat->id, $detail_pembelian->id_obat, $retur_pembelian_obat->jumlah);
                             if($kurangStok['status'] == 0) {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 session()->flash('error', 'Error!');
                                 return redirect('pembelian');
                             } else {
@@ -1747,7 +1766,7 @@ class T_PembelianController extends Controller
                                 $detail_pembelian->id_histori_stok_detail = $kurangStok['array_id_histori_stok_detail'];
                                 if($detail_pembelian->save()) {
                                 } else {
-                                    DB::rollback();
+                                    DB::connection($this->getConnectionName())->rollback();
                                     session()->flash('error', 'Error!');
                                     return redirect('pembelian');
                                 }
@@ -1758,7 +1777,7 @@ class T_PembelianController extends Controller
                             $cekHistori->keterangan = $keterangan;
                             if($cekHistori->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 session()->flash('error', 'Error!');
                                 return redirect('pembelian');
                             }
@@ -1766,7 +1785,7 @@ class T_PembelianController extends Controller
                     } else {
                         $kurangStok = $this->kurangStokRetur($detail_pembelian->id, $retur_pembelian_obat->id, $detail_pembelian->id_obat, $retur_pembelian_obat->jumlah);
                         if($kurangStok['status'] == 0) {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             session()->flash('error', 'Error!');
                             return redirect('pembelian');
                         } else {
@@ -1774,14 +1793,14 @@ class T_PembelianController extends Controller
                             $detail_pembelian->id_histori_stok_detail = $kurangStok['array_id_histori_stok_detail'];
                             if($detail_pembelian->save()) {
                             } else {
-                                DB::rollback();
+                                DB::connection($this->getConnectionName())->rollback();
                                 session()->flash('error', 'Error!');
                                 return redirect('pembelian');
                             }
                         }
                     }
                 } else {
-                    $retur_pembelian_obat = ReturPembelian::where('is_deleted', 0)
+                    $retur_pembelian_obat = ReturPembelian::on($this->getConnectionName())->where('is_deleted', 0)
                                                 ->where('id_detail_nota', $detail_pembelian->id)
                                                 ->first();
 
@@ -1793,26 +1812,27 @@ class T_PembelianController extends Controller
                    
 
                         // sesuaikan stok 
-                        $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                         $stok_now = $stok_before->stok_akhir+$retur_pembelian_obat->jumlah;
                     
                         # update ke table stok harga
-                        $stok_harga = MasterStokHarga::where('id_obat', $detail_pembelian->id_obat)->first();
+                        $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
                         $stok_harga->stok_awal = $stok_before->stok_akhir;
                         $stok_harga->stok_akhir = $stok_now;
                         $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                         $stok_harga->updated_by = Auth::user()->id;
                         if($stok_harga->save()) {
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             session()->flash('error', 'Error!');
                             return redirect('pembelian');
                         }
                 
                         # create histori
-                        $histori_stok = HistoriStok::where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
+                        $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
                         if(empty($histori_stok)) {
                             $histori_stok = new HistoriStok;
+                            $histori_stok->setDynamicConnection();
                         }
                         $histori_stok->id_obat = $detail_pembelian->id_obat;
                         $histori_stok->jumlah = $retur_pembelian_obat->jumlah;
@@ -1829,7 +1849,7 @@ class T_PembelianController extends Controller
                         $histori_stok->created_by = Auth::user()->id;
                         if($histori_stok->save()) {
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             session()->flash('error', 'Error!');
                             return redirect('pembelian');
                         }
@@ -1838,9 +1858,10 @@ class T_PembelianController extends Controller
         
                 foreach ($pembayaran_konsinyasis as $pembayaran_konsinyasi) {
                     if($pembayaran_konsinyasi['id']>0){
-                        $obj = PembayaranKonsinyasi::find($pembayaran_konsinyasi['id']);
+                        $obj = PembayaranKonsinyasi::on($this->getConnectionName())->find($pembayaran_konsinyasi['id']);
                     }else{
                         $obj = new PembayaranKonsinyasi;
+                        $obj->setDynamicConnection();
                     }
 
                     $obj->id_detail_nota = $id;
@@ -1859,7 +1880,7 @@ class T_PembelianController extends Controller
                 }
 
                 if($request->total_sisa_bayar == 0) {
-                    $pembelian = TransaksiPembelian::find($detail_pembelian->id_nota);
+                    $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($detail_pembelian->id_nota);
                     $pembelian->is_lunas = 1;
                     $pembelian->lunas_at = date('Y-m-d H:i:s');
                     $pembelian->lunas_by = Auth::user()->id;
@@ -1867,16 +1888,16 @@ class T_PembelianController extends Controller
                 }
 
                 if(!empty($array_id_pembayaran)){
-                    DB::statement("DELETE FROM tb_pembayaran_konsinyasi
+                    DB::connection($this->getConnection())->statement("DELETE FROM tb_pembayaran_konsinyasi
                                     WHERE id_detail_nota=".$id." AND 
                                             id NOT IN(".implode(',', $array_id_pembayaran).")");
                 }else{
-                    DB::statement("DELETE FROM tb_pembayaran_konsinyasi 
+                    DB::connection($this->getConnection())->statement("DELETE FROM tb_pembayaran_konsinyasi 
                                     WHERE id_detail_nota=".$id);
                 }
 
                 if($status == 1){
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     session()->flash('success', 'Sukses menyimpan data!');
                     return redirect('pembelian/pembayaran_konsinyasi/'.$detail_pembelian->id_nota);
                 }else{
@@ -1884,7 +1905,7 @@ class T_PembelianController extends Controller
                     return redirect('pembelian/pembayaran_faktur/'.$detail_pembelian->id_nota);
                 }
             }catch(\Exception $e){
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 session()->flash('error', 'Error!');
                 return redirect('pembelian');
             }
@@ -1899,10 +1920,10 @@ class T_PembelianController extends Controller
     }
 
     public function list_obat_kadaluarsa(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama', 'b.no_faktur', 'c.stok_akhir'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
         ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
@@ -1960,40 +1981,42 @@ class T_PembelianController extends Controller
     }
 
     public function konfirmasi_ed($id) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $detail_pembelian = TransaksiPembelianDetail::find($id);
+        $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
         $pembelian = $detail_pembelian->nota;
-        $konfirmasi_ed = KonfirmasiED::where('id_detail_nota', $detail_pembelian->id)->first();
+        $konfirmasi_ed = KonfirmasiED::on($this->getConnectionName())->where('id_detail_nota', $detail_pembelian->id)->first();
         if(empty($konfirmasi_ed)) {
             $konfirmasi_ed = new KonfirmasiED;
+            $konfirmasi_ed->setDynamicConnection();
         }
 
-        $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
 
-        $retur_pembelian_obat = ReturPembelian::where('is_deleted', 0)
+        $retur_pembelian_obat = ReturPembelian::on($this->getConnectionName())->where('is_deleted', 0)
                                             ->where('id_detail_nota', $detail_pembelian->id)
                                             ->first();
         if(empty($retur_pembelian_obat)) {
             $retur_pembelian_obat = new ReturPembelian;
+            $retur_pembelian_obat->setDynamicConnection();
         }
 
-        $jenis_penanganans = MasterJenisPenanganan::where('is_deleted', 0)->pluck('nama', 'id');
+        $jenis_penanganans = MasterJenisPenanganan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $jenis_penanganans->prepend('-- Pilih Jenis Penanganan --','');
 
-        $alasan_returs = MasterAlasanReturPembelian::where('is_deleted',0)->pluck('alasan', 'id');
+        $alasan_returs = MasterAlasanReturPembelian::on($this->getConnectionName())->where('is_deleted',0)->pluck('alasan', 'id');
         $alasan_returs->prepend('-- Pilih Alasan Retur --','');
 
         return view('konfirmasi_ed._form')->with(compact('apotek', 'detail_pembelian', 'pembelian', 'konfirmasi_ed', 'stok_before', 'jenis_penanganans', 'alasan_returs', 'retur_pembelian_obat'));
     } 
 
     public function update_konfirmasi_ed(Request $request, $id) {
-        /*DB::beginTransaction(); 
+        /*DB::connection($this->getConnectionName())->beginTransaction();  
         try{*/
-            $detail_pembelian = TransaksiPembelianDetail::find($id);
+            $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
             $detail_pembelian->fill($request->except('_token'));
             $status = 0;
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
             $array_id_pembayaran = array();
             if($request->id_jenis_penanganan == 1) {
@@ -2003,13 +2026,14 @@ class T_PembelianController extends Controller
                 $detail_pembelian->retur_by = Auth::user()->id;
                 $detail_pembelian->save();
 
-                $retur_pembelian_obat = ReturPembelian::where('is_deleted', 0)
+                $retur_pembelian_obat = ReturPembelian::on($this->getConnectionName())->where('is_deleted', 0)
                                             ->where('id_detail_nota', $detail_pembelian->id)
                                             ->where('id_alasan_retur', 4)
                                             ->first();
 
                 if(empty($retur_pembelian_obat)) {
                     $retur_pembelian_obat = new ReturPembelian;
+                    $retur_pembelian_obat->setDynamicConnection();
                     $retur_pembelian_obat->id_detail_nota = $detail_pembelian->id;
                     $retur_pembelian_obat->jumlah = $request->jumlah_ed;
                     $retur_pembelian_obat->id_alasan_retur = 4;
@@ -2019,14 +2043,14 @@ class T_PembelianController extends Controller
                     $retur_pembelian_obat->save();
 
                     // update stok 
-                    $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir-$retur_pembelian_obat->jumlah;
 
                     # update ke table stok harga
-                    DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
-                    DB::table('tb_histori_stok_'.$inisial)->insert([
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                         'id_obat' => $detail_pembelian->id_obat,
                         'jumlah' => $retur_pembelian_obat->jumlah,
                         'stok_awal' => $stok_before->stok_akhir,
@@ -2051,7 +2075,7 @@ class T_PembelianController extends Controller
                     $status = 1;
                 }
             } else {
-                $retur_pembelian_obat = ReturPembelian::where('is_deleted', 0)
+                $retur_pembelian_obat = ReturPembelian::on($this->getConnectionName())->where('is_deleted', 0)
                                             ->where('id_detail_nota', $detail_pembelian->id)
                                             ->where('id_alasan_retur', 4)
                                             ->first();
@@ -2063,14 +2087,14 @@ class T_PembelianController extends Controller
                     $retur_pembelian_obat->save();
 
                     // update stok 
-                    $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir+$retur_pembelian_obat->jumlah;
 
                     # update ke table stok harga
-                    DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
-                    DB::table('tb_histori_stok_'.$inisial)->insert([
+                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                         'id_obat' => $detail_pembelian->id_obat,
                         'jumlah' => $retur_pembelian_obat->jumlah,
                         'stok_awal' => $stok_before->stok_akhir,
@@ -2091,7 +2115,7 @@ class T_PembelianController extends Controller
             exit();*/
 
             if($status == 1){
-                //DB::commit();
+                //DB::connection($this->getConnectionName())->commit();
                 session()->flash('success', 'Sukses menyimpan data!');
                 return redirect('pembelian/konfirmasi_ed/'.$detail_pembelian->id_nota);
             }else{
@@ -2099,7 +2123,7 @@ class T_PembelianController extends Controller
                 return redirect('pembelian/konfirmasi_ed/'.$detail_pembelian->id_nota);
             }
         /*}catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('pembelian');
         }*/
@@ -2107,7 +2131,7 @@ class T_PembelianController extends Controller
 
     public function export_ed(Request $request) 
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $rekaps = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama', 'b.tgl_faktur', 'b.no_faktur', 'c.stok_akhir'])
@@ -2204,18 +2228,18 @@ class T_PembelianController extends Controller
 
     public function reload_hb_ppn($id)
     {
-        $pembelian = TransaksiPembelian::find($id);
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $detail_pembelians = TransaksiPembelianDetail::where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();    
+        $detail_pembelians = TransaksiPembelianDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();    
         $i = 0;
         foreach($detail_pembelians as $key => $obj) {
-            $cek = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
-            $harga_before = DB::table('tb_histori_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+            $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+            $harga_before = DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
             $harga_ppn_now = ($pembelian->ppn/100 * $obj->harga_beli) + $obj->harga_beli;
             if($harga_ppn_now != $cek->harga_beli_ppn) {
                 # update ke table stok harga
-                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['harga_beli_ppn'=> $harga_ppn_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['harga_beli_ppn'=> $harga_ppn_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
                 $i++;
             }
         }
@@ -2224,18 +2248,18 @@ class T_PembelianController extends Controller
     }
 
     public function hapus_detail($id) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $detail_pembelian = TransaksiPembelianDetail::find($id);
+            $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
             $detail_pembelian->is_deleted = 1;
             $detail_pembelian->deleted_at= date('Y-m-d H:i:s');
             $detail_pembelian->deleted_by = Auth::user()->id;
 
-            $pembelian = TransaksiPembelian::find($detail_pembelian->id_nota);
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($detail_pembelian->id_nota);
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
-            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
             $jumlah = $detail_pembelian->jumlah;
             $stok_now = $stok_before->stok_akhir-$jumlah;
 
@@ -2246,10 +2270,10 @@ class T_PembelianController extends Controller
 
 
             # update ke table stok harga
-            DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::table('tb_histori_stok_'.$inisial)->insert([
+            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_pembelian->id_obat,
                 'jumlah' => $jumlah,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -2284,21 +2308,21 @@ class T_PembelianController extends Controller
 
             if($detail_pembelian->save()){
                 $pembelian->save();
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 echo 1;
             }else{
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('pembelian/'.$pembelian->id.'/edit');
         }
     }
 
     public function change_obat(Request $request) {
-        $detail_pembelian = TransaksiPembelianDetail::find($request->id_detail_pembelian);
-        $obats      = MasterObat::where('is_deleted', 0)->pluck('nama', 'id');
+        $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($request->id_detail_pembelian);
+        $obats      = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $no = $request->no;
 
         return view('pembelian._change_obat')->with(compact('detail_pembelian', 'obats', 'no'));
@@ -2306,24 +2330,24 @@ class T_PembelianController extends Controller
 
 
     public function update_obat(Request $request, $id) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $detail_pembelian = TransaksiPembelianDetail::find($id);
-            $pembelian = TransaksiPembelian::find($detail_pembelian->id_nota);
-            $apotek = MasterApotek::find($pembelian->id_apotek_nota);
+            $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($detail_pembelian->id_nota);
+            $apotek = MasterApotek::on($this->getConnectionName())->find($pembelian->id_apotek_nota);
             $inisial = strtolower($apotek->nama_singkat);
 
             if($request->id_obat_awal != $request->id_obat_akhir) {
                 // create histori stok dengan id_obat_awal
-                $stok_before_awal = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->first();
+                $stok_before_awal = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->first();
                 $jumlah = $detail_pembelian->jumlah;
                 $stok_now_awal = $stok_before_awal->stok_akhir-$jumlah;
 
                 # update ke table stok harga
-                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $request->id_obat_awal,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before_awal->stok_akhir,
@@ -2337,14 +2361,14 @@ class T_PembelianController extends Controller
                 ]);  
 
                 // create histori stok dengan id_obat_akhir
-                $stok_before_akhir = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->first();
+                $stok_before_akhir = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->first();
                 $stok_now_akhir = $stok_before_akhir->stok_akhir+$jumlah;
 
                 # update ke table stok harga
-                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $request->id_obat_akhir,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before_akhir->stok_akhir,
@@ -2362,7 +2386,7 @@ class T_PembelianController extends Controller
                 $detail_pembelian->updated_by = Auth::user()->id;
 
                 if($detail_pembelian->save()){
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo 1;
                 }else{
                     echo 0;
@@ -2371,7 +2395,7 @@ class T_PembelianController extends Controller
                 echo 0;
             }   
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('pembelian/'.$id.'/edit');
         }
@@ -2506,7 +2530,7 @@ class T_PembelianController extends Controller
             $total_pembelian_bayar = 0;
             $is_sign = 0;
         } else {
-            $pembelian = TransaksiPembelian::find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
 
             $total_pembelian = $pembelian->detail_pembelian_total[0]->jumlah;
             $total_diskon = $pembelian->detail_pembelian_total[0]->total_diskon + $pembelian->detail_pembelian_total[0]->total_diskon_persen;
@@ -2536,9 +2560,9 @@ class T_PembelianController extends Controller
             $is_sign = 1;
         }
 
-        $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
+        $last_so = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelianDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_pembelian.*', 
@@ -2672,9 +2696,10 @@ class T_PembelianController extends Controller
     }
 
     public function AddItem(Request $request) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $pembelian = new TransaksiPembelian;
+            $pembelian->setDynamicConnection();
             $pembelian->fill($request->except('_token'));
             if($pembelian->id_jenis_pembayaran == 2) {
                 $pembelian->is_tanda_terima = 1;
@@ -2710,34 +2735,34 @@ class T_PembelianController extends Controller
 
             $validator = $pembelian->validate();
             if($validator->fails()){
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Silakan lengkapi data yang wajib diisikan'));
             } else {
                 $tanggal = date('Y-m-d');
 
-                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
 
                 $result = $pembelian->save_from_array($detail_pembelians, 1);
                 if($result['status']) {
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo json_encode(array('status' => 1, 'id' => $pembelian->id, 'message' => $result['message']));
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, silakan cek kembali data yang diinputkan'));
                 }
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array('status' => 0, 'message' => $e->getMessage()));
         }
     }
 
     public function UpdateItem(Request $request) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $id = $request->id;
-            $pembelian = TransaksiPembelian::find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
             //dd($pembelian);
             if($pembelian->is_deleted != 1) {  
                 $pembelian->fill($request->except('_token'));
@@ -2776,40 +2801,40 @@ class T_PembelianController extends Controller
 
                 $tanggal = date('Y-m-d');
 
-                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
                 
                 $result = $pembelian->save_from_array($detail_pembelians, 2);
                 if($result['status']) {
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                     echo json_encode(array('status' => 1, 'id' => $pembelian->id, 'message' => $result['message']));
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, silakan cek kembali data yang diinputkan'));
                 }
             } else {
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Error, nota ini sudah dihapus, silakan tambah nota baru'));
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function DeleteItem(Request $request, $id) {
         # yang bisa didelete adalah | yang belum dikonfirm
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $detail_pembelian = TransaksiPembelianDetail::find($id);
+            $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
             $detail_pembelian->is_deleted = 1;
             $detail_pembelian->deleted_at = date('Y-m-d H:i:s');
             $detail_pembelian->deleted_by = Auth::user()->id;
            
             # crete histori stok barang
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
+            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
             $stok_now = $stok_before->stok_akhir-$detail_pembelian->jumlah;
 
             /*$arrayupdate = array(
@@ -2820,14 +2845,14 @@ class T_PembelianController extends Controller
             );*/
 
             # update ke table stok harga
-            $stok_harga = MasterStokHarga::where('id_obat', $detail_pembelian->id_obat)->first();
+            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
             $stok_harga->stok_awal = $stok_before->stok_akhir;
             $stok_harga->stok_akhir = $stok_now;
             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
             $stok_harga->updated_by = Auth::user()->id;
             if($stok_harga->save()) {
             } else {
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo json_encode(array('status' => 0));
             }
 
@@ -2847,9 +2872,10 @@ class T_PembelianController extends Controller
             );*/
 
             # create histori
-            /*$histori_stok = HistoriStok::where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
+            /*$histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
             if(empty($histori_stok)) {*/
                 $histori_stok = new HistoriStok;
+                $histori_stok->setDynamicConnection();
             //}
             $histori_stok->id_obat = $detail_pembelian->id_obat;
             $histori_stok->jumlah = $detail_pembelian->jumlah;
@@ -2865,23 +2891,23 @@ class T_PembelianController extends Controller
             $histori_stok->created_by = Auth::user()->id;
             if($histori_stok->save()) {
             } else {
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo json_encode(array('status' => 0));
             }
 
             # update stok aktif 
-            $cekHistori = HistoriStok::where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
+            $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
             if($cekHistori->sisa_stok < $detail_pembelian->jumlah) {
                 $kurangStok = $this->kurangStok($detail_pembelian->id, $detail_pembelian->id_obat, $detail_pembelian->jumlah);
                 if($kurangStok['status'] == 0) {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo json_encode(array('status' => 0));
                 } else {
                     $detail_pembelian->id_histori_stok = $kurangStok['array_id_histori_stok'];
                     $detail_pembelian->id_histori_stok_detail = $kurangStok['array_id_histori_stok_detail'];
                     if($detail_pembelian->save()) {
                     } else {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         echo 0;
                     }
                 }
@@ -2891,62 +2917,62 @@ class T_PembelianController extends Controller
                 $cekHistori->keterangan = $keterangan;
                 if($cekHistori->save()) {
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo json_encode(array('status' => 0));
                 }
             }
 
             if($detail_pembelian->save()) {
                 # cek apakah masih ada item pada nota yang sama
-                $jum_details = TransaksiPembelianDetail::where('is_deleted', 0)->where('id_nota', $detail_pembelian->id_nota)->count();
+                $jum_details = TransaksiPembelianDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $detail_pembelian->id_nota)->count();
                  $is_sisa = 1;
                 if($jum_details == 0) {
-                    $pembelian = TransaksiPembelian::find($detail_pembelian->id_nota);
+                    $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($detail_pembelian->id_nota);
                     $pembelian->is_deleted = 1;
                     $pembelian->deleted_at = date('Y-m-d H:i:s');
                     $pembelian->deleted_by = Auth::user()->id;
                     if($pembelian->save()) {
                     } else {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         echo json_encode(array('status' => 0));
                     }
                     $is_sisa = 0;
                 }
 
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 echo json_encode(array('status' => 1, 'is_sisa' => $is_sisa));
             } else {
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo json_encode(array('status' => 0));
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function destroy($id) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $pembelian = TransaksiPembelian::find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
             $pembelian->is_deleted = 1;
             $pembelian->deleted_at = date('Y-m-d H:i:s');
             $pembelian->deleted_by = Auth::user()->id;
 
             //dd($pembelian);exit();
 
-            $detail_pembelians = TransaksiPembelianDetail::where('id_nota', $pembelian->id)->where('is_deleted',0)->get();
+            $detail_pembelians = TransaksiPembelianDetail::on($this->getConnectionName())->where('id_nota', $pembelian->id)->where('is_deleted',0)->get();
             foreach ($detail_pembelians as $key => $detail_pembelian) {
                 $detail_pembelian->is_deleted = 1;
                 $detail_pembelian->deleted_at = date('Y-m-d H:i:s');
                 $detail_pembelian->deleted_by = Auth::user()->id;
                
                 # crete histori stok barang
-                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
+                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir-$detail_pembelian->jumlah;
 
                 /*$arrayupdate = array(
@@ -2957,14 +2983,14 @@ class T_PembelianController extends Controller
                 );*/
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::where('id_obat', $detail_pembelian->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                 $stok_harga->updated_by = Auth::user()->id;
                 if($stok_harga->save()) {
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo 0;
                 }
 
@@ -2984,9 +3010,10 @@ class T_PembelianController extends Controller
                 );*/
 
                 # create histori
-                /*$histori_stok = HistoriStok::where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
+                /*$histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
                 if(empty($histori_stok)) {*/
                     $histori_stok = new HistoriStok;
+                    $histori_stok->setDynamicConnection();
                 //}
                 $histori_stok->id_obat = $detail_pembelian->id_obat;
                 $histori_stok->jumlah = $detail_pembelian->jumlah;
@@ -3002,23 +3029,23 @@ class T_PembelianController extends Controller
                 $histori_stok->created_by = Auth::user()->id;
                 if($histori_stok->save()) {
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo 0;
                 }
 
                 # update stok aktif 
-                $cekHistori = HistoriStok::where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
+                $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
                 if($cekHistori->sisa_stok < $detail_pembelian->jumlah) {
                     $kurangStok = $this->kurangStok($detail_pembelian->id, $detail_pembelian->id_obat, $detail_pembelian->jumlah);
                     if($kurangStok['status'] == 0) {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         echo 0;
                     } else {
                         $detail_pembelian->id_histori_stok = $kurangStok['array_id_histori_stok'];
                         $detail_pembelian->id_histori_stok_detail = $kurangStok['array_id_histori_stok_detail'];
                         if($detail_pembelian->save()) {
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             echo 0;
                         }
                     }
@@ -3029,7 +3056,7 @@ class T_PembelianController extends Controller
                     //dd($cekHistori);
                     if($cekHistori->save()) {
                     } else {
-                        DB::rollback();
+                        DB::connection($this->getConnectionName())->rollback();
                         echo 0;
                     }
                 }
@@ -3037,27 +3064,27 @@ class T_PembelianController extends Controller
 
                 if($detail_pembelian->save()) {
                 } else {
-                    DB::rollback();
+                    DB::connection($this->getConnectionName())->rollback();
                     echo 0;
                 }
             }
 
             if($pembelian->save()){
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 echo 1;
             }else{
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo 0;
         }
     }
 
     public function kurangStok($id_detail, $id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3073,7 +3100,7 @@ class T_PembelianController extends Controller
                 # kosongkan sisa stok histori sebelumnya 
                 $sisa_stok = $cekHistori->sisa_stok - $jumlah;
                 $keterangan = $cekHistori->keterangan.', Hapus Pembelian pada IDdet.'.$id_detail.' sejumlah '.$jumlah;
-                DB::table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
                 $array_id_histori_stok[] = $cekHistori->id;
                 $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistori->id, 'jumlah' => $jumlah);
                 $hb_ppn = $cekHistori->hb_ppn;
@@ -3086,7 +3113,7 @@ class T_PembelianController extends Controller
                 $total  = 0;
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3097,7 +3124,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok melebihi jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Hapus Pembelian pada IDdet.'.$id_detail.' sejumlah '.$i;
                         $sisa = $cekHistoriLanj->sisa_stok - $i;
-                        DB::table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $i);
                         $total = $total + $cekHistoriLanj->hb_ppn * $i;
                          $i = 0;
@@ -3105,7 +3132,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok kurang dari jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Hapus Pembelian pada IDdet.'.$id_detail.' sejumlah '.$cekHistoriLanj->sisa_stok;
                         $sisa = $i - $cekHistoriLanj->sisa_stok;
-                        DB::table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
                         $i = $sisa;
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $cekHistoriLanj->sisa_stok);
                         $total = $total + $cekHistoriLanj->hb_ppn * $cekHistoriLanj->sisa_stok;
@@ -3127,7 +3154,7 @@ class T_PembelianController extends Controller
 
     public function kurangStokRetur($id_detail, $id_retur, $id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3143,7 +3170,7 @@ class T_PembelianController extends Controller
                 # kosongkan sisa stok histori sebelumnya 
                 $sisa_stok = $cekHistori->sisa_stok - $jumlah;
                 $keterangan = $cekHistori->keterangan.', Retur Pembelian pada IDRetur.'.$id_retur.' IDdet.'.$id_detail.' sejumlah '.$jumlah;
-                DB::table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
                 $array_id_histori_stok[] = $cekHistori->id;
                 $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistori->id, 'jumlah' => $jumlah);
                 $hb_ppn = $cekHistori->hb_ppn;
@@ -3156,7 +3183,7 @@ class T_PembelianController extends Controller
                 $total  = 0;
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3167,7 +3194,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok melebihi jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Retur Pembelian pada IDRetur.'.$id_retur.' IDdet.'.$id_detail.' sejumlah '.$i;
                         $sisa = $cekHistoriLanj->sisa_stok - $i;
-                        DB::table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $i);
                         $total = $total + $cekHistoriLanj->hb_ppn * $i;
                          $i = 0;
@@ -3175,7 +3202,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok kurang dari jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Retur Pembelian pada IDRetur.'.$id_retur.' IDdet.'.$id_detail.' sejumlah '.$cekHistoriLanj->sisa_stok;
                         $sisa = $i - $cekHistoriLanj->sisa_stok;
-                        DB::table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
                         $i = $sisa;
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $cekHistoriLanj->sisa_stok);
                         $total = $total + $cekHistoriLanj->hb_ppn * $cekHistoriLanj->sisa_stok;
@@ -3202,7 +3229,7 @@ class T_PembelianController extends Controller
     public function send_sign(Request $request)
     {
         if($request->sign_by != 'false' OR $request->sign_by != false) {
-            $pembelian = TransaksiPembelian::find($request->id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($request->id);
             $pembelian->is_sign = 1;
             $pembelian->sign_by = $request->sign_by;
             $pembelian->sign_at = date('Y-m-d H:i:s');
@@ -3220,7 +3247,7 @@ class T_PembelianController extends Controller
     public function batal_sign(Request $request)
     {
         if($request->sign_by != 'false' OR $request->sign_by != false) {
-            $pembelian = TransaksiPembelian::find($request->id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($request->id);
             $pembelian->is_sign = 0;
             $pembelian->sign_by = null;
             $pembelian->sign_at = null;
@@ -3238,17 +3265,17 @@ class T_PembelianController extends Controller
     } 
 
     public function UpdatePPN(Request $request) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $id = $request->id;
-            $pembelian = TransaksiPembelian::find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
             $inisial = strtolower(session('nama_apotek_singkat_active'));
             /*dd($pembelian);*/
             if($pembelian->is_deleted == 0) {  
                 $pembelian->ppn = $request->ppn;
                 $pembelian->save();
 
-                $details = TransaksiPembelianDetail::where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();
+                $details = TransaksiPembelianDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();
                 $jum_details = count($details);
                 //dd($details);
                 if($jum_details > 0) {
@@ -3258,47 +3285,47 @@ class T_PembelianController extends Controller
                         } else {
                             $obj->harga_beli_ppn = $obj->harga_beli;
                         }
-                        $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
                         if($stok_before->harga_beli != $obj->harga_beli) {
                             $data_histori_ = array('id_obat' => $obj->id_obat, 'harga_beli_awal' => $stok_before->harga_beli, 'harga_beli_akhir' => $obj->harga_beli, 'harga_jual_awal' => $stok_before->harga_jual, 'harga_jual_akhir' => $stok_before->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-                            DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                            DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                         }
 
-                        $stok_harga = MasterStokHarga::where('id_obat', $obj->id_obat)->first();
+                        $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
                         $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                         $stok_harga->harga_beli = $obj->harga_beli;
                         $stok_harga->harga_beli_ppn = $obj->harga_beli_ppn;
                         $stok_harga->updated_by = Auth::user()->id;
                         if($stok_harga->save()) {
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             echo json_encode(array('status' => 0, 'message' => 'stok harga'));
                         }
 
-                        $histori_stok = HistoriStok::where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                        $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                         $histori_stok->hb_ppn = $obj->harga_beli_ppn;
                         if($histori_stok->save()) {
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             echo json_encode(array('status' => 0, 'message' => 'histori_stok'));
                         }
 
                         if($obj->save()) {
-                            DB::commit();
+                            DB::connection($this->getConnectionName())->commit();
                         } else {
-                            DB::rollback();
+                            DB::connection($this->getConnectionName())->rollback();
                             echo json_encode(array('status' => 0, 'message' => 'detail pembelian'));
                         }
                     }
                 }
             } else {
-                DB::rollback();
+                DB::connection($this->getConnectionName())->rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Error, nota ini sudah dihapus, silakan tambah nota baru'));
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             echo json_encode(array('status' => 0, 'message' => $e->getMessage()));
         }
     }
@@ -3315,7 +3342,7 @@ class T_PembelianController extends Controller
             $total_pembelian_bayar = 0;
             $is_sign = 0;
         } else {
-            $pembelian = TransaksiPembelian::find($id);
+            $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
 
             $total_pembelian = $pembelian->detail_pembelian_total[0]->jumlah;
             $total_diskon = $pembelian->detail_pembelian_total[0]->total_diskon + $pembelian->detail_pembelian_total[0]->total_diskon_persen;
@@ -3345,14 +3372,14 @@ class T_PembelianController extends Controller
             $is_sign = 1;
         }
 
-        $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
+        $last_so = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
 
         $details = json_decode($request->id_det_order);
 
        // print_r($details);exit();
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
        /* $data = TransaksiPembelianDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_pembelian.*', 

@@ -3,9 +3,11 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DynamicConnectionTrait;
 
 class Icon extends Model
 {
+	use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Icon 
 		Author 	: 

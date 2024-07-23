@@ -3,10 +3,12 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DynamicConnectionTrait;
 
 class Message extends Model
 {
-	protected $table = 'messages';
+    use DynamicConnectionTrait;
+	  protected $table = 'messages';
     public $primaryKey = 'id';
     protected $fillable = ['id_user',
     						'message'

@@ -9,6 +9,10 @@
     .select2 {
       width: 100%!important; /* overrides computed width, 100px in your demo */
     }
+
+    /*.dataTables_filter {
+        display: none;
+    }*/
 </style>
 <?php
         $status = 'Active';

@@ -8,6 +8,7 @@ use App\MasterInvestor;
 use App\MasterApotek;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class InvestasiModal extends Model
 {
@@ -18,6 +19,7 @@ class InvestasiModal extends Model
 	*/
 
     use SoftDeletes;
+    use DynamicConnectionTrait;
     public $primaryKey = 'id';
     protected $table = 'tb_investasi_modal';
     protected $fillable = [

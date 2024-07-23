@@ -23,8 +23,11 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use App\Traits\DynamicConnectionTrait;
+
 class T_TDController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -34,7 +37,7 @@ class T_TDController extends Controller
     */
     public function index()
     {
-        $dokters = MasterDokter::where('is_deleted', 0)->get();
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->get();
         return view('transfer_dokter.index')->with(compact('dokters'));
     }
 
@@ -47,8 +50,8 @@ class T_TDController extends Controller
     */
     public function list_transfer_dokter(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
-        $apoteker = User::find($apotek->id_apoteker);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses = 0;
@@ -61,7 +64,7 @@ class T_TDController extends Controller
         }
 
         $tanggal = date('Y-m-d');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiTD::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 	            'tb_nota_transfer_dokter.*', 
@@ -115,28 +118,31 @@ class T_TDController extends Controller
     }
 
     public function create() {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $tanggal = date('Y-m-d');
         $transfer_dokter = new TransaksiTD;
+        $transfer_dokter->setDynamicConnection();
         $detail_transfer_dokters = new TransaksiTDDetail;
+        $detail_transfer_dokters->setDynamicConnection();
         $var = 1;
         return view('transfer_dokter.create')->with(compact('transfer_dokter', 'dokters', 'detail_transfer_dokters', 'var', 'apotek', 'inisial'));
     }
 
     public function store(Request $request) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $transfer_dokter = new TransaksiTD;
+            $transfer_dokter->setDynamicConnection();
             $transfer_dokter->fill($request->except('_token'));
             $transfer_dokter->id_apotek_nota = session('id_apotek_active');
             $transfer_dokter->tgl_nota = date('Y-m-d');
             $detail_transfer_dokters = $request->detail_transfer_dokter;
 
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+            $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
             $tanggal = date('Y-m-d');
 
             $validator = $transfer_dokter->validate();
@@ -145,22 +151,22 @@ class T_TDController extends Controller
                 return view('transfer_dokter.create')->with(compact('transfer_dokter', 'dokters', 'detail_transfer_dokters', 'var', 'apotek', 'inisial'))->withErrors($validator);
             }else{
                 $transfer_dokter->save_from_array($detail_transfer_dokters,1);
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 session()->flash('success', 'Sukses menyimpan data!');
                 return redirect('transfer_dokter');
             } 
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('penjualan');
         }
     }
 
     public function edit($id) {
-        $transfer_dokter = TransaksiTD::find($id);
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $transfer_dokter = TransaksiTD::on($this->getConnectionName())->find($id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $tanggal = date('Y-m-d');
 
         $detail_transfer_dokters = $transfer_dokter->detail_transfer_dokter;
@@ -174,15 +180,15 @@ class T_TDController extends Controller
     }
 
     public function update(Request $request, $id) {
-    	DB::beginTransaction(); 
+    	DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-	        $transfer_dokter = TransaksiTD::find($id);
+	        $transfer_dokter = TransaksiTD::on($this->getConnectionName())->find($id);
 	        $transfer_dokter->fill($request->except('_token'));
 	        $detail_transfer_dokters = $request->detail_transfer_dokter;
 
-	        $apotek = MasterApotek::find(session('id_apotek_active'));
+	        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
 	        $inisial = strtolower($apotek->nama_singkat);
-	        $dokters = MasterDokter::where('is_deleted', 0)->pluck('nama', 'id');
+	        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
 	        $tanggal = date('Y-m-d');
 
 	        $validator = $transfer_dokter->validate();
@@ -190,12 +196,12 @@ class T_TDController extends Controller
 	            $var = 1;
 	            return view('transfer_dokter.edit')->with(compact('transfer_dokter', 'dokters', 'detail_transfer_dokters', 'var', 'apotek', 'inisial'))->withErrors($validator);
 	        }else{
-	            $apotek = MasterApotek::find(session('id_apotek_active'));
+	            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
 	            $inisial = strtolower($apotek->nama_singkat);
 	            $total_nota = 0;
 	            foreach ($detail_transfer_dokters as $detail_transfer_dokter) {
-	                $obj = TransaksiTDDetail::find($detail_transfer_dokter['id']);
-	                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+	                $obj = TransaksiTDDetail::on($this->getConnectionName())->find($detail_transfer_dokter['id']);
+	                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 	                $selisih = $obj->jumlah - $detail_transfer_dokter['jumlah'];
 
                     $selisih_format = abs($selisih);
@@ -212,10 +218,10 @@ class T_TDController extends Controller
 	                    return redirect('transfer_dokter')->with('message', 'Sukses menyimpan data');
 	                } else {
 	                    # update ke table stok harga
-	                    DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+	                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
 	                    # create histori
-	                    DB::table('tb_histori_stok_'.$inisial)->insert([
+	                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
 	                        'id_obat' => $obj->id_obat,
 	                        'jumlah' => $selisih_format,
 	                        'stok_awal' => $stok_before->stok_akhir,
@@ -238,46 +244,46 @@ class T_TDController extends Controller
 
 	            $transfer_dokter->grand_total = $total_nota;
 	            $transfer_dokter->save();
-	            DB::commit();
+	            DB::connection($this->getConnectionName())->commit();
 	            session()->flash('success', 'Sukses memperbaharui data!');
 	            return redirect('transfer_dokter')->with('message', 'Sukses menyimpan data');
 	        }
 	   	}catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('transfer_dokter');
         }
     }
 
     public function destroy($id) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $to = TransaksiTD::find($id);
+            $to = TransaksiTD::on($this->getConnectionName())->find($id);
             $to->is_deleted = 1;
             $to->deleted_at = date('Y-m-d H:i:s');
             $to->deleted_by = Auth::user()->id;
             $to->grand_total = 0;
             
-            $detail_transfer_dokters = TransaksiTDDetail::where('id_nota', $to->id)->get();
+            $detail_transfer_dokters = TransaksiTDDetail::on($this->getConnectionName())->where('id_nota', $to->id)->get();
             foreach ($detail_transfer_dokters as $key => $val) {
-                $detail_transfer_dokter = TransaksiTDDetail::find($val->id);
+                $detail_transfer_dokter = TransaksiTDDetail::on($this->getConnectionName())->find($val->id);
                 $detail_transfer_dokter->is_deleted = 1;
                 $detail_transfer_dokter->deleted_at = date('Y-m-d H:i:s');
                 $detail_transfer_dokter->deleted_by = Auth::user()->id;
                 $detail_transfer_dokter->save();
 
-                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->first();
+                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->first();
                 $selisih = $detail_transfer_dokter->jumlah;
 
                 $id_jenis_transaksi = 25;
                 $stok_now = $stok_before->stok_akhir+$selisih;
                 # update ke table stok harga
-                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $detail_transfer_dokter->id_obat,
                     'jumlah' => $selisih,
                     'stok_awal' => $stok_before->stok_akhir,
@@ -292,13 +298,13 @@ class T_TDController extends Controller
             }
 
             if($to->save()){
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 echo 1;
             }else{
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('transfer_dokter');
         }
@@ -311,32 +317,32 @@ class T_TDController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = TransaksiTDDetail::find($id);
+        $detail = TransaksiTDDetail::on($this->getConnectionName())->find($id);
         return view('transfer_dokter._form_edit_detail')->with(compact('detail', 'no'));
     }
 
     public function hapus_detail($id) {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $detail_transfer_dokter = TransaksiTDDetail::find($id);
+            $detail_transfer_dokter = TransaksiTDDetail::on($this->getConnectionName())->find($id);
             $detail_transfer_dokter->is_deleted = 1;
             $detail_transfer_dokter->deleted_at= date('Y-m-d H:i:s');
             $detail_transfer_dokter->deleted_by = Auth::user()->id;
             $detail_transfer_dokter->save();
 
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->first();
+            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->first();
             $selisih = $detail_transfer_dokter->jumlah;
 
             $id_jenis_transaksi = 25;
             $stok_now = $stok_before->stok_akhir+$selisih;
            
             # update ke table stok harga
-            DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_dokter->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::table('tb_histori_stok_'.$inisial)->insert([
+            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_transfer_dokter->id_obat,
                 'jumlah' => $selisih,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -364,7 +370,7 @@ class T_TDController extends Controller
                 $y = $total->total_all;
             }
 
-            $transfer_dokter = TransaksiTD::find($detail_transfer_dokter->id_nota);
+            $transfer_dokter = TransaksiTD::on($this->getConnectionName())->find($detail_transfer_dokter->id_nota);
             if($y == 0) {
                 $transfer_dokter->grand_total = $y;
                 $transfer_dokter->is_deleted = 1;
@@ -373,13 +379,13 @@ class T_TDController extends Controller
             }   
 
             if($transfer_dokter->save()){
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 echo 1;
             }else{
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('transfer_dokter');
         }
@@ -387,7 +393,7 @@ class T_TDController extends Controller
 
     public function cetak_nota(Request $request)
     {   
-        $transfer_dokter = TransaksiTD::where('id', $request->id)->first();
+        $transfer_dokter = TransaksiTD::on($this->getConnectionName())->where('id', $request->id)->first();
         $detail_transfer_dokters = TransaksiTDDetail::select(['tb_detail_nota_transfer_dokter.*'])
                                                ->where('tb_detail_nota_transfer_dokter.id_nota', $transfer_dokter->id)
                                                ->get();
@@ -398,9 +404,9 @@ class T_TDController extends Controller
     public function load_data_nota_print($id) {
         $no = 0;
 
-        $nota = TransaksiTD::find($id);
-        $detail_transfer_dokters = TransaksiTDDetail::where('id_nota', $nota->id)->get();
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $nota = TransaksiTD::on($this->getConnectionName())->find($id);
+        $detail_transfer_dokters = TransaksiTDDetail::on($this->getConnectionName())->where('id_nota', $nota->id)->get();
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
 	    $inisial = strtolower($apotek->nama_singkat);
         $nama_apotek = strtoupper($apotek->nama_panjang);
         $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
@@ -460,7 +466,7 @@ class T_TDController extends Controller
     }
 
     public function list_pencarian_obat(Request $request) {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiTDDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_transfer_dokter.*', 'a.nama'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_transfer_dokter.id_obat')
         ->join('tb_nota_transfer_dokter as b', 'b.id', 'tb_detail_nota_transfer_dokter.id_nota')

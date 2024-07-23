@@ -13,12 +13,12 @@
                 }
             },
             columns: [
-               {data: 'no', name: 'no', orderable: true, searchable: true, class:'text-center'},
-                {data: 'action', name: 'action', orderable: true, searchable: true, class:'text-center'},
-                {data: 'nama_barang', name: 'nama_barang', orderable: true, searchable: true, class:'text-left'},
-                {data: 'harga_outlet', name: 'harga_outlet', orderable: true, searchable: true, class:'text-right'},
-                {data: 'jumlah', name: 'jumlah', orderable: true, searchable: true, class:'text-center'},
-                {data: 'total', name: 'total', orderable: true, searchable: true, class:'text-right'}
+               {data: 'no', name: 'no', orderable: false, searchable: false, class:'text-center'},
+                {data: 'action', name: 'action', orderable: false, searchable: false, class:'text-center'},
+                {data: 'nama_barang', name: 'nama_barang', orderable: false, searchable: false, class:'text-left'},
+                {data: 'harga_outlet', name: 'harga_outlet', orderable: false, searchable: false, class:'text-right'},
+                {data: 'jumlah', name: 'jumlah', orderable: false, searchable: false, class:'text-center'},
+                {data: 'total', name: 'total', orderable: false, searchable: false, class:'text-right'}
             ],
             rowCallback: function( row, data, iDisplayIndex ) {
                 var api = this.api();

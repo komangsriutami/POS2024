@@ -3,9 +3,11 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DynamicConnectionTrait;
 
 class IconThemify extends Model
 {
+	use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Icon Themify
 		Author 	: Sri U.

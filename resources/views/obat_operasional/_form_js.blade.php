@@ -13,13 +13,13 @@
             }
         },
         columns: [
-           {data: 'no', name: 'no', orderable: false, searchable: true, class:'text-center'},
-            {data: 'action', name: 'action', orderable: false, searchable: true, class:'text-center'},
-            {data: 'nama_barang', name: 'nama_barang', orderable: false, searchable: true, class:'text-left'},
-            {data: 'hb_ppn', name: 'hb_ppn', orderable: false, searchable: true, class:'text-right'},
-            {data: 'harga_jual', name: 'harga_jual', orderable: false, searchable: true, class:'text-right'},
-            {data: 'jumlah', name: 'jumlah', orderable: false, searchable: true, class:'text-center'},
-            {data: 'total', name: 'total', orderable: false, searchable: true, class:'text-right'}
+           {data: 'no', name: 'no', orderable: false, searchable: false, class:'text-center'},
+            {data: 'action', name: 'action', orderable: false, searchable: false, class:'text-center'},
+            {data: 'nama_barang', name: 'nama_barang', orderable: false, searchable: false, class:'text-left'},
+            {data: 'hb_ppn', name: 'hb_ppn', orderable: false, searchable: false, class:'text-right'},
+            {data: 'harga_jual', name: 'harga_jual', orderable: false, searchable: false, class:'text-right'},
+            {data: 'jumlah', name: 'jumlah', orderable: false, searchable: false, class:'text-center'},
+            {data: 'total', name: 'total', orderable: false, searchable: false, class:'text-right'}
         ],
         rowCallback: function( row, data, iDisplayIndex ) {
             var api = this.api();

@@ -11,9 +11,11 @@ use App;
 use Datatables;
 use DB;
 use Excel;
+use App\Traits\DynamicConnectionTrait;
 
 class M_ProdusenController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,7 +42,7 @@ class M_ProdusenController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterProdusen::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_produsen.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_produsen.is_deleted','=','0');
@@ -86,11 +88,12 @@ class M_ProdusenController extends Controller
     public function create()
     {
     	$produsen = new MasterProdusen;
+        $produsen->setDynamicConnection();
 
-        $kabupatens = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Provinsi --','');
 
         return view('produsen.create')->with(compact('produsen', 'provinsis', 'kabupatens'));
@@ -106,12 +109,13 @@ class M_ProdusenController extends Controller
     public function store(Request $request)
     {
         $produsen = new MasterProdusen;
+        $produsen->setDynamicConnection();
         $produsen->fill($request->except('_token'));
 
-        $kabupatens      = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens      = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis      = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis      = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis ->prepend('-- Pilih Provinsi --','');
 
         $validator = $produsen->validate();
@@ -145,12 +149,12 @@ class M_ProdusenController extends Controller
     */
     public function edit($id)
     {
-        $produsen 		= MasterProdusen::find($id);
+        $produsen 		= MasterProdusen::on($this->getConnectionName())->find($id);
 
-        $kabupatens     = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens     = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis     = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis     = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Provinsi --','');
 
         return view('produsen.edit')->with(compact('produsen', 'kabupatens', 'provinsis'));
@@ -165,7 +169,7 @@ class M_ProdusenController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $produsen = MasterProdusen::find($id);
+        $produsen = MasterProdusen::on($this->getConnectionName())->find($id);
         $produsen->fill($request->except('_token'));
 
         $validator = $produsen->validate();
@@ -186,7 +190,7 @@ class M_ProdusenController extends Controller
     */
     public function destroy($id)
     {
-        $produsen = MasterProdusen::find($id);
+        $produsen = MasterProdusen::on($this->getConnectionName())->find($id);
         $produsen->is_deleted = 1;
         if($produsen->save()){
             echo 1;

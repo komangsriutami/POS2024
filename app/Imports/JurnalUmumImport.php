@@ -62,6 +62,8 @@ class JurnalUmumImport implements ToCollection
 
 
                         $jurnaldetail = new JurnalUmumDetail;
+                        $jurnaldetail->setDynamicConnection();
+
 
                         if(!is_null($row[0])){
                             // dd("sini");

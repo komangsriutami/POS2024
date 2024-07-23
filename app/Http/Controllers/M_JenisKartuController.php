@@ -8,8 +8,11 @@ use App\MasterJenisKartu;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
+
 class M_JenisKartuController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -37,7 +40,7 @@ class M_JenisKartuController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterJenisKartu::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_kartu.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_jenis_kartu.is_deleted','=','0');
@@ -72,6 +75,7 @@ class M_JenisKartuController extends Controller
     public function create()
     {
     	$jenis_kartu = new MasterJenisKartu;
+        $jenis_kartu->setDynamicConnection();
 
         return view('jenis_kartu.create')->with(compact('jenis_kartu'));
     }
@@ -86,6 +90,7 @@ class M_JenisKartuController extends Controller
     public function store(Request $request)
     {
         $jenis_kartu = new MasterJenisKartu;
+        $jenis_kartu->setDynamicConnection();
         $jenis_kartu->fill($request->except('_token'));
 
         $validator = $jenis_kartu->validate();
@@ -119,7 +124,7 @@ class M_JenisKartuController extends Controller
     */
     public function edit($id)
     {
-        $jenis_kartu = MasterJenisKartu::find($id);
+        $jenis_kartu = MasterJenisKartu::on($this->getConnectionName())->find($id);
 
         return view('jenis_kartu.edit')->with(compact('jenis_kartu'));
     }
@@ -133,7 +138,7 @@ class M_JenisKartuController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $jenis_kartu = MasterJenisKartu::find($id);
+        $jenis_kartu = MasterJenisKartu::on($this->getConnectionName())->find($id);
         $jenis_kartu->fill($request->except('_token'));
 
         $validator = $jenis_kartu->validate();
@@ -154,7 +159,7 @@ class M_JenisKartuController extends Controller
     */
     public function destroy($id)
     {
-        $jenis_kartu = MasterJenisKartu::find($id);
+        $jenis_kartu = MasterJenisKartu::on($this->getConnectionName())->find($id);
         $jenis_kartu->is_deleted = 1;
         if($jenis_kartu->save()){
             echo 1;

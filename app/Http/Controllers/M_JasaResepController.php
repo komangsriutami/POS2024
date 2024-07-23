@@ -8,9 +8,11 @@ use App\MasterJasaResep;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class M_JasaResepController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -38,7 +40,7 @@ class M_JasaResepController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterJasaResep::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jasa_resep.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_jasa_resep.is_deleted','=','0');
@@ -73,6 +75,7 @@ class M_JasaResepController extends Controller
     public function create()
     {
     	$jasa_resep = new MasterJasaResep;
+        $jasa_resep->setDynamicConnection();
 
         return view('jasa_resep.create')->with(compact('jasa_resep'));
     }
@@ -87,6 +90,7 @@ class M_JasaResepController extends Controller
     public function store(Request $request)
     {
         $jasa_resep = new MasterJasaResep;
+        $jasa_resep->setDynamicConnection();
         $jasa_resep->fill($request->except('_token'));
 
         $validator = $jasa_resep->validate();
@@ -120,7 +124,7 @@ class M_JasaResepController extends Controller
     */
     public function edit($id)
     {
-        $jasa_resep = MasterJasaResep::find($id);
+        $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($id);
 
         return view('jasa_resep.edit')->with(compact('jasa_resep'));
     }
@@ -134,7 +138,7 @@ class M_JasaResepController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $jasa_resep = MasterJasaResep::find($id);
+        $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($id);
         $jasa_resep->fill($request->except('_token'));
 
         $validator = $jasa_resep->validate();
@@ -155,7 +159,7 @@ class M_JasaResepController extends Controller
     */
     public function destroy($id)
     {
-        $jasa_resep = MasterJasaResep::find($id);
+        $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($id);
         $jasa_resep->is_deleted = 1;
         if($jasa_resep->save()){
             echo 1;

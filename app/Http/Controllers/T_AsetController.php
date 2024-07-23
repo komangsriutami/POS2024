@@ -15,9 +15,11 @@ use Datatables;
 use DB;
 use Auth;
 use Seatreserved;
+use App\Traits\DynamicConnectionTrait;
 
 class T_AsetController extends Controller
 {
+    use DynamicConnectionTrait;
     protected $flag_trx = 2;
     /**
      * Display a listing of the resource.
@@ -36,7 +38,7 @@ class T_AsetController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = InputAset::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_transaksi_aset.*'])
             ->where(function ($query) use ($request) {
                 $query->orwhere('tb_transaksi_aset.is_deleted', '=', '0');
@@ -80,13 +82,15 @@ class T_AsetController extends Controller
      */
     public function create()
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 1;
         $aset = new InputAset();
+        $aset->setDynamicConnection();
         $detail_asets = new DetailInputAset();
+        $detail_asets->setDynamicConnection();
 
         return view('manajemen_aset.create')->with(compact('aset', 'detail_asets', 'apotek', 'inisial', 'apoteks', 'var'));
     }
@@ -99,15 +103,16 @@ class T_AsetController extends Controller
      */
     public function store(Request $request)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $aset = new InputAset;
+            $aset->setDynamicConnection();
             $aset->fill($request->except('_token'));
 
             $detail_asets = $request->detail_aset;
             $jum = count($detail_asets);
             $tanggal = date('Y-m-d');
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
             $validator = $aset->validate();
             if($validator->fails() AND $jum > 0){
@@ -119,6 +124,7 @@ class T_AsetController extends Controller
                 // ---- save jurnal ---- //
                 $statusjurnalumum = 0;
                 $jurnal_umum = new JurnalUmum;
+                $jurnal_umum->setDynamicConnection();
                 $jurnal_umum->id_apotek = $aset->id_apotek;
                 $jurnal_umum->flag_trx = $this->flag_trx;
                 $jurnal_umum->kode_referensi = $aset->id;
@@ -140,6 +146,7 @@ class T_AsetController extends Controller
                     if($statusjurnalumum){
                         // insert detil jurnal 
                         $detiljurnal = new JurnalUmumDetail;
+                        $detiljurnal->setDynamicConnection();
                         $detiljurnal->id_jurnal = $jurnal_umum->id; 
                         $detiljurnal->id_kode_akun = $detail->id_kode_akun; 
                         $detiljurnal->flag_trx = $this->flag_trx; 
@@ -162,12 +169,12 @@ class T_AsetController extends Controller
                     $jurnal_umum->save();
                 }
 
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 session()->flash('success', 'Sukses menyimpan data!');
                 return redirect('manajemen_aset');
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('manajemen_aset');
         }
@@ -185,12 +192,12 @@ class T_AsetController extends Controller
      */
     public function edit($id)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 0;
-        $aset = InputAset::find($id);
+        $aset = InputAset::on($this->getConnectionName())->find($id);
         $detail_asets = $aset->detail_transfer_outlet;
 
         return view('manajemen_aset.edit')->with(compact('aset', 'detail_asets', 'apotek', 'inisial', 'apoteks', 'var'));
@@ -205,15 +212,15 @@ class T_AsetController extends Controller
      */
     public function update(Request $request, $id)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try{
-            $aset = InputAset::find($id);
+            $aset = InputAset::on($this->getConnectionName())->find($id);
             $aset->fill($request->except('_token'));
 
             $detail_asets = $request->detail_aset;
             $jum = count($detail_asets);
             $tanggal = date('Y-m-d');
-            $apotek = MasterApotek::find(session('id_apotek_active'));
+            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
             $validator = $aset->validate();
             if($validator->fails() AND $jum > 0){
@@ -223,14 +230,15 @@ class T_AsetController extends Controller
                 $aset->save_from_array($detail_asets, 2);
                 
                 // check jurnal umum //
-                $check_jurnal_umum = JurnalUmum::where("flag_trx",$this->flag_trx)->where("kode_referensi",$aset->id)
+                $check_jurnal_umum = JurnalUmum::on($this->getConnectionName())->where("flag_trx",$this->flag_trx)->where("kode_referensi",$aset->id)
                                     ->whereNull('deleted_by')->first();
                 if(!empty($check_jurnal_umum)){
-                    $jurnal_umum = JurnalUmum::find($check_jurnal_umum->id);    
+                    $jurnal_umum = JurnalUmum::on($this->getConnectionName())->find($check_jurnal_umum->id);    
                     $jurnal_umum->updated_by = Auth::user()->id;
                     $jurnal_umum->updated_at = Date("Y-m-d H:i:s");
                 } else {
                     $jurnal_umum = new JurnalUmum; 
+                    $jurnal_umum->setDynamicConnection();
                     $jurnal_umum->created_by = Auth::user()->id;
                     $jurnal_umum->created_at = Date("Y-m-d H:i:s");
                 }
@@ -254,19 +262,21 @@ class T_AsetController extends Controller
                     $statusdetiljurnal[$detail->id] = 0;
                     if($statusjurnalumum){
                         // cek detil jurnal sudah ada atau tidak //
-                        $check_detil_jurnal = JurnalUmumDetail::where('flag_trx',$this->flag_trx)
+                        $check_detil_jurnal = JurnalUmumDetail::on($this->getConnectionName())->where('flag_trx',$this->flag_trx)
                                             ->where("kode_referensi",$detail->id)
                                             ->whereNull('deleted_by')
                                             ->first();
 
                         if(empty($check_detil_jurnal)){
                             $detiljurnal = new JurnalUmumDetail;
+                            $detiljurnal->setDynamicConnection();
                             $detiljurnal->created_by = Auth::user()->id;
                             $detiljurnal->created_at = Date("Y-m-d H:i:s");
                         } else {
-                            $detiljurnal = JurnalUmumDetail::find($check_detil_jurnal->id);
+                            $detiljurnal = JurnalUmumDetail::on($this->getConnectionName())->find($check_detil_jurnal->id);
                             if(empty($detiljurnal)){
                                 $detiljurnal = new JurnalUmumDetail;
+                                $detiljurnal->setDynamicConnection();
                                 $detiljurnal->created_by = Auth::user()->id;
                                 $detiljurnal->created_at = Date("Y-m-d H:i:s");
                             } else {
@@ -295,12 +305,12 @@ class T_AsetController extends Controller
                     $jurnal_umum->save();
                 }
 
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 session()->flash('success', 'Sukses menyimpan data!');
                 return redirect('manajemen_aset');
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('manajemen_aset');
         }
@@ -315,9 +325,9 @@ class T_AsetController extends Controller
     public function destroy($id)
     {
         $success = true;
-        DB::beginTransaction();
+        DB::connection($this->getConnectionName())->beginTransaction(); 
         try{
-            $aset = InputAset::find($id);
+            $aset = InputAset::on($this->getConnectionName())->find($id);
             $aset->is_deleted = 1;
             $aset->deleted_at = date('Y-m-d H:i:s');
             $aset->deleted_by = Auth::user()->id;
@@ -325,7 +335,7 @@ class T_AsetController extends Controller
             $detail_asets = $aset->detail_aset;
             $i = 0;
             foreach ($detail_asets as $key => $detail) {
-                $detail = DetailInputAset::find($detail->id);
+                $detail = DetailInputAset::on($this->getConnectionName())->find($detail->id);
                 $detail->is_deleted = 1;
                 $detail->deleted_at= date('Y-m-d H:i:s');
                 $detail->deleted_by = Auth::user()->id;
@@ -335,16 +345,16 @@ class T_AsetController extends Controller
 
             if($i > 0){
                 if($aset->save()) {
-                    $jurnal_umum = JurnalUmum::where("flag_trx",$this->flag_trx)->where("kode_referensi",$aset->id)
+                    $jurnal_umum = JurnalUmum::on($this->getConnectionName())->where("flag_trx",$this->flag_trx)->where("kode_referensi",$aset->id)
                                 ->update([
                                     "deleted_at" => date('Y-m-d H:i:s'),
                                     "deleted_by" => Auth::user()->id
                                 ]);
-                    DB::commit();
+                    DB::connection($this->getConnectionName())->commit();
                 }
             }
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             $success = false;
         }
 
@@ -356,7 +366,7 @@ class T_AsetController extends Controller
     }
 
     public function cari_aset(Request $request) {
-        $aset = MasterAset::where('kode_aset', $request->kode_aset)->first();
+        $aset = MasterAset::on($this->getConnectionName())->where('kode_aset', $request->kode_aset)->first();
         $cek_ = 0;
         
         if(!empty($aset)) {
@@ -368,7 +378,7 @@ class T_AsetController extends Controller
     }
 
     public function cari_aset_dialog(Request $request) {
-        $aset = MasterAset::find($request->id_aset);
+        $aset = MasterAset::on($this->getConnectionName())->find($request->id_aset);
 
         return json_encode($aset);
     }
@@ -381,7 +391,7 @@ class T_AsetController extends Controller
     public function get_data_aset(Request $request)
     {
         $kode_aset = $request->kode_aset;
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterAset::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_aset.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_aset.is_deleted','=','0');
@@ -419,22 +429,22 @@ class T_AsetController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = DetailInputAset::find($id);
+        $detail = DetailInputAset::on($this->getConnectionName())->find($id);
         return view('manajemen_aset._form_edit_detail')->with(compact('detail', 'no'));
     }
 
     public function hapus_detail($id) {
         $success = true;
-        DB::beginTransaction();
+        DB::connection($this->getConnectionName())->beginTransaction(); 
         try{
-            $detail = DetailInputAset::find($id);
+            $detail = DetailInputAset::on($this->getConnectionName())->find($id);
             $detail->is_deleted = 1;
             $detail->deleted_at= date('Y-m-d H:i:s');
             $detail->deleted_by = Auth::user()->id;
             $detail->save();
-            DB::commit();
+            DB::connection($this->getConnectionName())->commit();
         }catch(\Exception $e){
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             $success = false;
         }
 

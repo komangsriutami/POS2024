@@ -16,9 +16,11 @@ use Datatables;
 use DB;
 use Excel;
 use DateTimeInterface;
+use App\Traits\DynamicConnectionTrait;
 
 class M_ApotekController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -47,7 +49,7 @@ class M_ApotekController extends Controller
         $order_dir = $order[0]['dir'];
 
         $super_admin = session('super_admin');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterApotek::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_apotek.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_apotek.is_deleted','=','0');
@@ -180,11 +182,12 @@ class M_ApotekController extends Controller
     public function create()
     {
     	$apotek = new MasterApotek;
+        $apotek->setDynamicConnection();
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $apotekers      = User::where('is_deleted', 0)->pluck('nama', 'id');
+        $apotekers      = User::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $apotekers->prepend('-- Pilih Apoteker --','');
 
         return view('apotek.create')->with(compact('apotek', 'group_apoteks', 'apotekers'));
@@ -200,12 +203,13 @@ class M_ApotekController extends Controller
     public function store(Request $request)
     {
         $apotek = new MasterApotek;
+        $apotek->setDynamicConnection();
         $apotek->fill($request->except('_token'));
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $apotekers      = User::where('is_deleted', 0)->pluck('nama', 'id');
+        $apotekers      = User::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $apotekers->prepend('-- Pilih Apoteker --','');
 
         $validator = $apotek->validate();
@@ -216,9 +220,9 @@ class M_ApotekController extends Controller
             $inisial = strtolower($apotek->nama_singkat);
             if (Schema::hasTable('tb_m_stok_harga_'.$inisial.'')) {
             } else {
-                \DB::statement('CREATE TABLE tb_m_stok_harga_'.$inisial.' LIKE sample_tb_m_stok_harga');
-                \DB::statement('CREATE TABLE tb_histori_harga_'.$inisial.' LIKE sample_tb_histori_harga');
-                \DB::statement('CREATE TABLE tb_histori_stok_'.$inisial.' LIKE sample_tb_histori_stok');
+                \DB::connection($this->getConnection())->statement('CREATE TABLE tb_m_stok_harga_'.$inisial.' LIKE sample_tb_m_stok_harga');
+                \DB::connection($this->getConnection())->statement('CREATE TABLE tb_histori_harga_'.$inisial.' LIKE sample_tb_histori_harga');
+                \DB::connection($this->getConnection())->statement('CREATE TABLE tb_histori_stok_'.$inisial.' LIKE sample_tb_histori_stok');
             }
 
             session()->flash('success', 'Sukses menyimpan data!');
@@ -247,7 +251,7 @@ class M_ApotekController extends Controller
     */
     public function edit($id)
     {
-        $apotek 		= MasterApotek::find($id);
+        $apotek 		= MasterApotek::on($this->getConnectionName())->find($id);
 
         /*$group_apotek =  MasterGroupApotek::addSelect(['id_apotek' => MasterApotek::select('nama_singkat')
     ->whereColumn('id_group_apotek', 'tb_m_group_apotek.id')
@@ -262,10 +266,10 @@ class M_ApotekController extends Controller
         print_r($apotek);
         exit();*/
         
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $apotekers      = User::where('is_deleted', 0)->pluck('nama', 'id');
+        $apotekers      = User::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $apotekers->prepend('-- Pilih Apoteker --','');
 
         return view('apotek.edit')->with(compact('apotek', 'group_apoteks', 'apotekers'));
@@ -280,7 +284,7 @@ class M_ApotekController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $apotek = MasterApotek::find($id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id);
         $apotek->fill($request->except('_token'));
 
         $validator = $apotek->validate();
@@ -291,9 +295,9 @@ class M_ApotekController extends Controller
             $inisial = strtolower($apotek->nama_singkat);
             if (Schema::hasTable('tb_m_stok_harga_'.$inisial.'')) {
             } else {
-                \DB::statement('CREATE TABLE tb_m_stok_harga_'.$inisial.' LIKE sample_tb_m_stok_harga');
-                \DB::statement('CREATE TABLE tb_histori_harga_'.$inisial.' LIKE sample_tb_histori_harga');
-                \DB::statement('CREATE TABLE tb_histori_stok_'.$inisial.' LIKE sample_tb_histori_stok');
+                \DB::connection($this->getConnection())->statement('CREATE TABLE tb_m_stok_harga_'.$inisial.' LIKE sample_tb_m_stok_harga');
+                \DB::connection($this->getConnection())->statement('CREATE TABLE tb_histori_harga_'.$inisial.' LIKE sample_tb_histori_harga');
+                \DB::connection($this->getConnection())->statement('CREATE TABLE tb_histori_stok_'.$inisial.' LIKE sample_tb_histori_stok');
             }
 
             echo json_encode(array('status' => 1));
@@ -309,7 +313,7 @@ class M_ApotekController extends Controller
     */
     public function destroy($id)
     {
-        $apotek = MasterApotek::find($id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id);
         $apotek->is_deleted = 1;
         $apotek->is_sync = 0;
         $apotek->sync_at = null;
@@ -370,7 +374,7 @@ class M_ApotekController extends Controller
         $sync_at = date('Y-m-d H:i:s');
         $created_at = date('Y-m-d H:i:s');
 
-        $apotek = MasterApotek::find($request->id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($request->id);
         $obats = MasterObat::select([
                                 'id as id_obat', 
                                 'nama as nama', 
@@ -393,9 +397,9 @@ class M_ApotekController extends Controller
     
         if(count($obats) > 0) {
             $inisial = strtolower($apotek->nama_singkat);
-            DB::table('tb_m_stok_harga_'.$inisial.'')->insert($obats);
+            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->insert($obats);
 
-            $data_terupdate = DB::table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('COUNT(*) as jum_terupdate'), DB::raw('MAX(id_obat) as sync_last_id')])->first();
+            $data_terupdate = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('COUNT(*) as jum_terupdate'), DB::raw('MAX(id_obat) as sync_last_id')])->first();
 
             if(!empty($data_terupdate) && $data_terupdate->jum_terupdate > 0) {
                 $apotek->is_sync = 1;
@@ -415,14 +419,14 @@ class M_ApotekController extends Controller
     }
 
     public function add_table_stok_harga(Request $request) {
-        $apotek = MasterApotek::find($request->id);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($request->id);
         $inisial = strtolower($apotek->nama_singkat);
         if (Schema::hasTable('tb_m_stok_harga_'.$inisial.'')) {
             echo 0;
         } else {
-            \DB::statement('CREATE TABLE tb_m_stok_harga_'.$inisial.' LIKE sample_tb_m_stok_harga');
-            \DB::statement('CREATE TABLE tb_histori_harga_'.$inisial.' LIKE sample_tb_histori_harga');
-            \DB::statement('CREATE TABLE tb_histori_stok_'.$inisial.' LIKE sample_tb_histori_stok');
+            \DB::connection($this->getConnection())->statement('CREATE TABLE tb_m_stok_harga_'.$inisial.' LIKE sample_tb_m_stok_harga');
+            \DB::connection($this->getConnection())->statement('CREATE TABLE tb_histori_harga_'.$inisial.' LIKE sample_tb_histori_harga');
+            \DB::connection($this->getConnection())->statement('CREATE TABLE tb_histori_stok_'.$inisial.' LIKE sample_tb_histori_stok');
             echo 1;
         }
     }

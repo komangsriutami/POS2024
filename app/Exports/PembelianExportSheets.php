@@ -252,7 +252,7 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
                 $cached_data = Cache::get('resume_dead_stok_'.$this->id_pencarian.'_'.Auth::user()->id.'_list_data_'.$this->id_apotek);
             }
             if($cached_data == null) {
-                $awal = DB::table('tb_detail_nota_penjualan as a')
+                $awal = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan as a')
                 ->select([
                     'a.id_obat',
                     DB::raw('SUM(a.jumlah) as jumlah_pemakaian')
@@ -265,8 +265,8 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
                 ->whereRaw('b.is_deleted = 0')
                 ->groupBy('a.id_obat');
 
-                DB::statement(DB::raw('set @rownum = 0'));
-                $all = DB::table('tb_m_stok_harga_'.$this->inisial.' as c')
+                DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+                $all = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$this->inisial.' as c')
                 ->select([
                     DB::raw('IFNULL(y.id_obat, 0) as id_det'),
                     DB::raw('IFNULL(y.jumlah_pemakaian, 0) as jumlah_pemakaian'),
@@ -278,7 +278,7 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
                 ->join('tb_m_produsen as p', 'p.id', '=', 'o.id_produsen')
                 ->leftJoin(DB::raw("({$awal->toSql()}) as y"), 'y.id_obat', '=', 'c.id_obat');
 
-                $data = DB::table(DB::raw("({$all->toSql()}) as j"))
+                $data = DB::connection($this->getConnectionName())->table(DB::raw("({$all->toSql()}) as j"))
                 ->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'j.*'

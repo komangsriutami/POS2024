@@ -5,9 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterJenisPaketSistem extends Model
 {
+    use DynamicConnectionTrait;
         /* 
 		Model 	: Untuk Master Jenis Paket Sistem 
 		Author 	: Wiwan Gussanda.

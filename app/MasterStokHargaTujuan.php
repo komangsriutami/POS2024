@@ -4,10 +4,12 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DynamicConnectionTrait;
 
 class MasterStokHargaTujuan extends Model
 {
     use HasFactory;
+    use DynamicConnectionTrait;
 
     protected $table = null;
     public $primaryKey = 'id';

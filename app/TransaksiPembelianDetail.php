@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use KyslikColumnSortableSortable;
+use App\Traits\DynamicConnectionTrait;
 
 class TransaksiPembelianDetail extends Model
 {
+    use DynamicConnectionTrait;
     protected $table = 'tb_detail_nota_pembelian';
     public $primaryKey = 'id';
     protected $fillable = ['id_nota',

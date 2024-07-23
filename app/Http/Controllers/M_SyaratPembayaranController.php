@@ -8,9 +8,11 @@ use DB;
 use View;
 
 use App\MasterSyaratPembayaran;
+use App\Traits\DynamicConnectionTrait;
 
 class M_SyaratPembayaranController extends Controller
 {
+    use DynamicConnectionTrait;
     /**
      * Display a listing of the resource.
      *
@@ -29,6 +31,7 @@ class M_SyaratPembayaranController extends Controller
     public function create(Request $request)
     {
         $syarat_pembayaran = new MasterSyaratPembayaran;
+        $syarat_pembayaran->setDynamicConnection();
         $method = "POST";
         $route = ['syaratpembayaran.store'];
 
@@ -54,6 +57,7 @@ class M_SyaratPembayaranController extends Controller
     {
         // dd($request->input());
         $syarat_pembayaran = new MasterSyaratPembayaran;
+        $syarat_pembayaran->setDynamicConnection();
         $syarat_pembayaran->fill($request->except('_token'));
 
         $validator = $syarat_pembayaran->validate();

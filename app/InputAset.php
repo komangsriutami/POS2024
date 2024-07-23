@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use DB;
+use App\Traits\DynamicConnectionTrait;
+
 class InputAset extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Input Aset
 		Author 	: Agus Yudi.
@@ -72,9 +75,10 @@ class InputAset extends Model
         foreach ($detail_asets as $detail_aset) {
             if(!in_array($detail_aset['id_aset'], $array_id_aset)){
                 if($detail_aset['id']>0){
-                    $obj = DetailInputAset::find($detail_aset['id']);
+                    $obj = DetailInputAset::on($this->getConnectionName())->find($detail_aset['id']);
                 }else{
                     $obj = new DetailInputAset;
+                    $obj->setDynamicConnection();
                 }
 
                 $obj->id_transaksi_aset = $this->id;
@@ -97,11 +101,11 @@ class InputAset extends Model
         }
 
         if(!empty($array_id_aset)){
-            DB::statement("DELETE FROM tb_detail_transaksi_aset
+            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_transaksi_aset
                             WHERE id_transaksi_aset=".$this->id." AND 
                                     id NOT IN(".implode(',', $array_id_aset).")");
         }else{
-            DB::statement("DELETE FROM tb_detail_transaksi_aset 
+            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_transaksi_aset 
                             WHERE id_transaksi_aset=".$this->id);
         }
         

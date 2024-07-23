@@ -5,9 +5,12 @@ namespace App;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
+use App\Traits\DynamicConnectionTrait;
+
 class MasterPengumuman extends Model
 {
     use HasFactory;
+    use DynamicConnectionTrait;
 
     protected $table = 'tb_pengumuman';
     public $primaryKey = 'id';

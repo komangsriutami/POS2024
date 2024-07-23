@@ -11,9 +11,11 @@ use App\MasterAgama;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class M_InvestorController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : Menampilkan halaman index investor
@@ -40,7 +42,7 @@ class M_InvestorController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterInvestor::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_investor.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_investor.is_deleted','=','0');
@@ -78,14 +80,15 @@ class M_InvestorController extends Controller
     public function create()
     {
     	$investor = new MasterInvestor;
+        $investor->setDynamicConnection();
 
-        $jenis_kelamin = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamin->prepend('-- Pilih Jenis Kelamin --','');
 
-        $agama = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+        $agama = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
         $agama->prepend('-- Pilih Agama --','');
 
-        $kewarganegaraan = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraan->prepend('-- Pilih Kewarganegaraan --','');
 
         return view('investor.create')->with(compact('investor','jenis_kelamin','agama','kewarganegaraan'));
@@ -101,17 +104,18 @@ class M_InvestorController extends Controller
     public function store(Request $request)
     {
         $investor = new MasterInvestor;
+        $investor->setDynamicConnection();
         $investor->fill($request->except('_token'));
 
         $validator = $investor->validate();
         if($validator->fails()){
-            $jenis_kelamin = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+            $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
             $jenis_kelamin->prepend('-- Pilih Jenis Kelamin --','');
 
-            $agama = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+            $agama = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
             $agama->prepend('-- Pilih Agama --','');
 
-            $kewarganegaraan = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+            $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
             $kewarganegaraan->prepend('-- Pilih Kewarganegaraan --','');
 
             return view('investor.create')->with(compact('investor','jenis_kelamin','agama','kewarganegaraan'))->withErrors($validator);
@@ -143,15 +147,15 @@ class M_InvestorController extends Controller
     */
     public function edit($id)
     {
-        $investor = MasterInvestor::find($id);
+        $investor = MasterInvestor::on($this->getConnectionName())->find($id);
 
-        $jenis_kelamin = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamin->prepend('-- Pilih Jenis Kelamin --','');
 
-        $agama = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+        $agama = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
         $agama->prepend('-- Pilih Agama --','');
 
-        $kewarganegaraan = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraan->prepend('-- Pilih Kewarganegaraan --','');
 
         return view('investor.edit')->with(compact('investor','jenis_kelamin','agama','kewarganegaraan'));
@@ -166,7 +170,7 @@ class M_InvestorController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $investor = MasterInvestor::find($id);
+        $investor = MasterInvestor::on($this->getConnectionName())->find($id);
         $investor->fill($request->except('_token'));
 
         $validator = $investor->validate();
@@ -187,7 +191,7 @@ class M_InvestorController extends Controller
     */
     public function destroy($id)
     {
-        $investor = MasterInvestor::find($id);
+        $investor = MasterInvestor::on($this->getConnectionName())->find($id);
         $investor->save_delete();
         if($investor->delete()){
             echo 1;

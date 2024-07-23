@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use DB;
-
+use App\Traits\DynamicConnectionTrait;
 class TransaksiPenjualanClosing extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Transaksi Penjualan Closing
 		Author 	: Sri Utami

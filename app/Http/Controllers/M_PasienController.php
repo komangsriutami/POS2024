@@ -18,9 +18,11 @@ use Illuminate\Support\Str;
 
 use Auth;
 use Mail;
+use App\Traits\DynamicConnectionTrait;
 
 class M_PasienController extends Controller
 {
+    use DynamicConnectionTrait;
     # untuk menampilkan halaman awal
     public function index()
     {
@@ -30,7 +32,7 @@ class M_PasienController extends Controller
     # untuk menampilkan mengambil data dari database
     public function get_data(Request $request)
     {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterPasien::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_pasien.*'])
             ->where(function ($query) use ($request) {
                 //$query->where('pasien.is_deleted','=','0');
@@ -62,17 +64,18 @@ class M_PasienController extends Controller
     public function create()
     {
         $data_ = new MasterPasien; //inisialisasi array
+        $data_->setDynamicConnection();
 
-        $jenis_kelamins      = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins      = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Status --', '');
 
-        $kewarganegaraans      = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans      = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Status --', '');
 
-        $agamas      = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas      = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Status --', '');
 
-        $gol_darahs      = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $gol_darahs      = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $gol_darahs->prepend('-- Pilih Status --', '');
 
         return view('pasien.create')->with(compact('data_', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'gol_darahs'));
@@ -82,18 +85,19 @@ class M_PasienController extends Controller
     public function store(Request $request)
     {
         $data_ = new MasterPasien;
+        $data_->setDynamicConnection();
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
-        $jenis_kelamins      = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins      = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Status --', '');
 
-        $kewarganegaraans      = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans      = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Status --', '');
 
-        $agamas      = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas      = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Status --', '');
 
-        $gol_darahs      = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $gol_darahs      = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $gol_darahs->prepend('-- Pilih Status --', '');
 
         $validator = $data_->validate();
@@ -117,7 +121,7 @@ class M_PasienController extends Controller
     # untuk menampilakn data detail show
     public function show($id)
     {
-        $data_ = MasterPasien::find($id);
+        $data_ = MasterPasien::on($this->getConnectionName())->find($id);
 
         return view('pasien.show')->with(compact('data_'));
     }
@@ -125,18 +129,18 @@ class M_PasienController extends Controller
     # untuk menampilkan form edit
     public function edit($id)
     {
-        $data_ = MasterPasien::find($id);
+        $data_ = MasterPasien::on($this->getConnectionName())->find($id);
 
-        $jenis_kelamins      = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins      = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Status --', '');
 
-        $kewarganegaraans      = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans      = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Status --', '');
 
-        $agamas      = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas      = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Status --', '');
 
-        $gol_darahs      = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $gol_darahs      = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $gol_darahs->prepend('-- Pilih Status --', '');
 
         return view('pasien.edit')->with(compact('data_', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'gol_darahs'));
@@ -145,7 +149,7 @@ class M_PasienController extends Controller
     # untuk menyimpan data edit
     public function update(Request $request, $id)
     {
-        $data_ = MasterPasien::find($id);
+        $data_ = MasterPasien::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         $validator = $data_->validate();
@@ -167,7 +171,7 @@ class M_PasienController extends Controller
     # untuk menghapus data
     public function destroy($id)
     {
-        $data_ = MasterPasien::find($id);
+        $data_ = MasterPasien::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_by = Auth::user()->id;
         $data_->deleted_at = date('Y-m-d H:i:s');
@@ -201,7 +205,8 @@ class M_PasienController extends Controller
     public function invite_view(Request $request)
     {
         $pasien = new MasterPasien;
-        $roles = RbacRole::where('is_deleted', 0)->get();
+        $pasien->setDynamicConnection();
+        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->get();
         return view('pasien.invite')->with(compact('pasien', 'roles'));
     }
 
@@ -214,9 +219,10 @@ class M_PasienController extends Controller
     */
     public function invite_submit(Request $request)
     {
-        DB::beginTransaction(); 
+        DB::connection($this->getConnectionName())->beginTransaction();  
         try {
             $pasien = new MasterPasien;
+            $pasien->setDynamicConnection();
             $pasien->fill($request->except('_token'));
             $pasien->remember_token = $this->getToken();
             $pasien->created_at = date('Y-m-d H:i:s');
@@ -224,7 +230,7 @@ class M_PasienController extends Controller
 
             $validator = $pasien->validate_invite();
             if($validator->fails()){
-                $roles = RbacRole::where('is_deleted', 0)->get();
+                $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->get();
                 return view('pasien.invite')
                     ->with(compact('pasien', 'roles'))
                     ->withErrors($validator);
@@ -232,19 +238,20 @@ class M_PasienController extends Controller
                 $pasien->save();
                 foreach ($request->roles as $role) {
                     $rbac_user_role = new RbacUserRole;
+                    $rbac_user_role->setDynamicConnection();
                     $rbac_user_role->id_user = $pasien->id;
                     $rbac_user_role->id_role = $role;
                     $rbac_user_role->save();
                 }
                 $link = route('confirm_pasien', $pasien->remember_token);
                 Mail::to($pasien->email)->send(new \App\Mail\MailInvitePasien($pasien, $link));
-                DB::commit();
+                DB::connection($this->getConnectionName())->commit();
                 session()->flash('success', 'Sukses invite pasien!');
                 return redirect('pasien');
             }
         } catch(\Exception $e){
             dd($e);
-            DB::rollback();
+            DB::connection($this->getConnectionName())->rollback();
             session()->flash('error', 'Error!');
             return redirect('pasien');
         }
@@ -259,18 +266,18 @@ class M_PasienController extends Controller
     */
     public function invite_confirm(Request $request)
     {
-        $pasien = MasterPasien::where('remember_token', $request->token)->first();
+        $pasien = MasterPasien::on($this->getConnectionName())->where('remember_token', $request->token)->first();
 
-        $jenis_kelamins      = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins      = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Status --', '');
 
-        $kewarganegaraans      = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans      = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Status --', '');
 
-        $agamas      = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas      = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Status --', '');
 
-        $gol_darahs      = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $gol_darahs      = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $gol_darahs->prepend('-- Pilih Status --', '');
 
         return view('frontend.confirm_invite_pasien')->with(compact(
@@ -290,21 +297,21 @@ class M_PasienController extends Controller
         =======================================================================================
     */
     public function invite_confirm_post(Request $request){
-        $pasien = MasterPasien::where('id', $request->id)->first();
+        $pasien = MasterPasien::on($this->getConnectionName())->where('id', $request->id)->first();
         $pasien->fill($request->except('_token'));
         
         $validator = $pasien->validator_confirm_pasien();
         if($validator->fails()){
-            $jenis_kelamins      = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+            $jenis_kelamins      = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
             $jenis_kelamins->prepend('-- Pilih Status --', '');
 
-            $kewarganegaraans      = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+            $kewarganegaraans      = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
             $kewarganegaraans->prepend('-- Pilih Status --', '');
 
-            $agamas      = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
+            $agamas      = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
             $agamas->prepend('-- Pilih Status --', '');
 
-            $gol_darahs      = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
+            $gol_darahs      = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
             $gol_darahs->prepend('-- Pilih Status --', '');
             
             return view('frontend.confirm_invite_pasien')

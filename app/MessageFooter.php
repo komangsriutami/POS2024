@@ -4,9 +4,11 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
+use App\Traits\DynamicConnectionTrait;
 
 class MessageFooter extends Model
 {
+    use DynamicConnectionTrait;
     /*
 		Model 	: Untuk Message
 		Author 	: Tangkas.

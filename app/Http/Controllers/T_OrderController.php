@@ -23,9 +23,13 @@ use Auth;
 use Hash;
 use Crypt;
 use Storage;
+use App\Traits\DynamicConnectionTrait;
+
 class T_OrderController extends Controller
 {
+    use DynamicConnectionTrait;
     public function index() {
+       // echo "sementara ditutup, sampai so selesai";exit();
         $cek2_ = session('apotek_order_aktif');
         if($cek2_ == null) {
             session(['apotek_order_aktif'=> '']);
@@ -41,7 +45,7 @@ class T_OrderController extends Controller
             session(['status_order_aktif'=> 0]);
         }
 
-        $apoteks = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
         $id_suplier = DefectaOutlet::select(['id_suplier_order'])->where('id_apotek', session('id_apotek_active'))->where('id_process', session('status_order_aktif'))->where('is_deleted', 0)->where('id_status', 1)->get(); // ->where('id_status', 1)
@@ -66,7 +70,7 @@ class T_OrderController extends Controller
         $id_suplier = session('suplier_order_aktif');
         $id_process = session('status_order_aktif');
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = DefectaOutlet::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
@@ -122,7 +126,7 @@ class T_OrderController extends Controller
             }
         })
         ->editcolumn('total_stok', function($data) use($request){
-            $dt = DB::table('tb_m_stok_harga_'.session('nama_apotek_singkat_active'))->where('id_obat', $data->id_obat)->first();
+            $dt = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.session('nama_apotek_singkat_active'))->where('id_obat', $data->id_obat)->first();
             return $dt->stok_akhir;
         })
         ->editcolumn('total_buffer', function($data) use($request){
@@ -163,6 +167,7 @@ class T_OrderController extends Controller
 
     public function create() {
         $order = new TransaksiOrder;
+        $order->setDynamicConnection();
         $supliers = MasterSuplier::whereIn('id', [$order->id_suplier, 155])->where('is_deleted', 0)->pluck('nama', 'id');
         $apoteks = MasterApotek::whereIn('id', [$order->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
@@ -181,6 +186,7 @@ class T_OrderController extends Controller
 
     public function store(Request $request) {
         $order = new TransaksiOrder;
+        $order->setDynamicConnection();
         $order->fill($request->except('_token'));
         $generateNomor =  $this->generateNomor();
         $generateNomor = json_decode($generateNomor);
@@ -226,7 +232,9 @@ class T_OrderController extends Controller
 
             $apoteks = MasterApotek::whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $order = new TransaksiOrder;
+            $order->setDynamicConnection();
             $detail_orders = new TransaksiOrderDetail;
+            $detail_orders->setDynamicConnection();
             $tanggal = date('Y-m-d');
             $var = 1;
 
@@ -244,7 +252,7 @@ class T_OrderController extends Controller
     }
 
     public function edit($id) {
-        $order = TransaksiOrder::find($id);
+        $order = TransaksiOrder::on($this->getConnectionName())->find($id);
         $supliers = MasterSuplier::whereIn('id', [$order->id_suplier, 155])->where('is_deleted', 0)->pluck('nama', 'id');
         $apoteks = MasterApotek::whereIn('id', [$order->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
@@ -256,13 +264,13 @@ class T_OrderController extends Controller
         $satuans = MasterSatuan::pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $detail_orders = TransaksiOrderDetail::where('id_nota', $order->id)->where('is_deleted', 0)->get();
+        $detail_orders = TransaksiOrderDetail::on($this->getConnectionName())->where('id_nota', $order->id)->where('is_deleted', 0)->get();
 
         return view('order.edit')->with(compact('order', 'supliers','apoteks', 'tanggal', 'var', 'jenisSP', 'detail_orders', 'satuans'));
     }
 
     public function update(Request $request, $id) {
-        $order = TransaksiOrder::find($id);
+        $order = TransaksiOrder::on($this->getConnectionName())->find($id);
         $order->fill($request->except('_token'));
         if(is_null($order->kode) || $order->kode == "") {
             $generateNomor =  $this->generateNomor();
@@ -285,7 +293,7 @@ class T_OrderController extends Controller
 
     public function destroy($id)
     {
-        $order = TransaksiOrder::find($id);
+        $order = TransaksiOrder::on($this->getConnectionName())->find($id);
         $order->is_deleted = 1;
         $order->deleted_at = date('Y-m-d H:i:s');
         $order->deleted_by = Auth::user()->id;
@@ -298,7 +306,7 @@ class T_OrderController extends Controller
             $val->deleted_by = Auth::user()->id;
             $val->save();
 
-            $defecta = DefectaOutlet::find($val->id_defecta);
+            $defecta = DefectaOutlet::on($this->getConnectionName())->find($val->id_defecta);
             $defecta->id_process = 0;
             $defecta->updated_at = date('Y-m-d H:i:s');
             $defecta->updated_by = Auth::id();
@@ -331,7 +339,7 @@ class T_OrderController extends Controller
     {
         $id_apotek = session('apotek_order_aktif');
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = DefectaOutlet::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
@@ -396,7 +404,7 @@ class T_OrderController extends Controller
             return '<span class="badge bg-"><i class="fa "></i> Process</span>';
         })
         ->addcolumn('action', function($data) {
-           // $d_ = DefectaOutlet::where('id_stok_harga', $data->id)->where('id_apotek', $apotek->id)->first();
+           // $d_ = DefectaOutlet::on($this->getConnectionName())->where('id_stok_harga', $data->id)->where('id_apotek', $apotek->id)->first();
             $btn = '<div class="btn-group">';
             if ($data->id_status == 0){
                 $btn .= '<span class="btn btn-info btn-sm" onClick="set_status_defecta('.$data->id.', 1)" data-toggle="tooltip" data-placement="top" title="Order">Order</span>';
@@ -457,18 +465,20 @@ class T_OrderController extends Controller
 
         $apoteks = MasterApotek::whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $order = new TransaksiOrder;
+        $order->setDynamicConnection();
         $detail_orders = new TransaksiOrderDetail;
+        $detail_orders->setDynamicConnection();
         $tanggal = date('Y-m-d');
         $var = 1;
 
-        $satuans      = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
         return view('order.create')->with(compact('defectas', 'supliers', 'order', 'detail_orders', 'tanggal', 'var', 'apoteks', 'jenisSP', 'satuans'));
     }
 
     public function cari_obat(Request $request) {
-        $obat = MasterObat::where('barcode', $request->barcode)->first();
+        $obat = MasterObat::on($this->getConnectionName())->where('barcode', $request->barcode)->first();
 
         $cek_ = 0;
         
@@ -487,11 +497,11 @@ class T_OrderController extends Controller
 
     public function list_data_obat(Request $request)
     {
-        $apotek = MasterApotek::find($request->id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($request->id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
 
-        DB::statement(DB::raw('set @rownum = 0'));
-        $data = DB::table('tb_m_stok_harga_'.$inisial.' as a')
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
         ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'a.*',
@@ -527,7 +537,7 @@ class T_OrderController extends Controller
     }
 
     public function cari_obat_dialog(Request $request) {
-        $obat = MasterObat::find($request->id_obat);
+        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
 
         return json_encode($obat);
     }
@@ -543,12 +553,12 @@ class T_OrderController extends Controller
             $defecta->jumlah_penjualan = 0;
             $defecta->margin = 0;
         }
-        $apotek = MasterApotek::find($defecta->id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($defecta->id_apotek);
         return view('order._form_edit_detail')->with(compact('defecta', 'no', 'apotek'));
     }
 
     public function update_defecta(Request $request, $id) {
-        $defecta = DefectaOutlet::find($id);
+        $defecta = DefectaOutlet::on($this->getConnectionName())->find($id);
         $defecta->jumlah_order = $request->jumlah_order;
         $defecta->komentar = $request->komentar;
 
@@ -568,7 +578,7 @@ class T_OrderController extends Controller
     }
 
     public function data_order() {
-        $apoteks = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
         $id_suplier = DefectaOutlet::select(['id_suplier_order'])->where('id_apotek', session('id_apotek_active'))->where('is_deleted', 0)->get(); // ->where('id_status', 1)
@@ -583,7 +593,7 @@ class T_OrderController extends Controller
     }
 
     public function list_data_order(Request $request) {
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = TransaksiOrder::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_order.*',
@@ -707,13 +717,13 @@ class T_OrderController extends Controller
                         ->leftjoin('tb_m_obat as a', 'a.id', 'tb_detail_nota_order.id_obat')
                         ->where('tb_detail_nota_order.id', $id)
                         ->first();
-        $order = TransaksiOrder::find($detail->id_nota);
-        $apotek = MasterApotek::find($order->id_apotek);
+        $order = TransaksiOrder::on($this->getConnectionName())->find($detail->id_nota);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($order->id_apotek);
         return view('order._form_edit_order')->with(compact('detail', 'no', 'apotek'));
     }
 
     public function update_order_detail(Request $request, $id) {
-        $detail = TransaksiOrderDetail::find($id);
+        $detail = TransaksiOrderDetail::on($this->getConnectionName())->find($id);
         $detail->jumlah = $request->jumlah;
         $detail->keterangan = $request->keterangan;
 
@@ -733,7 +743,7 @@ class T_OrderController extends Controller
 
     public function generateNomor()
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $last = TransaksiOrder::select(DB::raw('MAX(nomor) as max'))->whereYear('tgl_nota', date('Y'))->where('is_deleted', 0)->first();
         $now = $last->max+1;
         if(empty($last)){
@@ -754,11 +764,11 @@ class T_OrderController extends Controller
 
     public function GetExportPdfSPA4($id) {
         $id = decrypt($id);
-        $outlet = MasterApotek::find(session('id_apotek_active'));
-        $apoteker = User::find($outlet->id_apoteker);
-        $order = TransaksiOrder::find($id);
-        $suplier = MasterSuplier::find($order->id_suplier);
-        $detail_orders = TransaksiOrderDetail::where('id_nota', $order->id)->where('is_deleted', 0)->get();
+        $outlet = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apoteker = User::on($this->getConnectionName())->find($outlet->id_apoteker);
+        $order = TransaksiOrder::on($this->getConnectionName())->find($id);
+        $suplier = MasterSuplier::on($this->getConnectionName())->find($order->id_suplier);
+        $detail_orders = TransaksiOrderDetail::on($this->getConnectionName())->where('id_nota', $order->id)->where('is_deleted', 0)->get();
 
         //$order->file = null;
         $fileTTD = '';
@@ -766,7 +776,7 @@ class T_OrderController extends Controller
             /*$split_co = explode('.' , $apoteker->file);
             $ext_co = end($split_co);
             $mime = 'image/'.$ext_co;
-            $ttd = DB::table('tb_users_ttd')->where('id_user', $apoteker->id)->first();
+            $ttd = DB::connection($this->getConnectionName())->table('tb_users_ttd')->where('id_user', $apoteker->id)->first();
             $fileTTD = '<img src="data:'.$mime.';base64, '.$ttd->image.'" width="50" height="50">';*/
             //echo '<img src="data:image/jpg;base64, '.$ttd->image.'" width="50" height="50"></a>';exit();
         }
@@ -1252,11 +1262,11 @@ class T_OrderController extends Controller
 
     public function GetExportPdfSPA5($id) {
         $id = decrypt($id);
-        $outlet = MasterApotek::find(session('id_apotek_active'));
-        $apoteker = User::find($outlet->id_apoteker);
-        $order = TransaksiOrder::find($id);
-        $suplier = MasterSuplier::find($order->id_suplier);
-        $detail_orders = TransaksiOrderDetail::where('id_nota', $order->id)->where('is_deleted', 0)->get();
+        $outlet = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apoteker = User::on($this->getConnectionName())->find($outlet->id_apoteker);
+        $order = TransaksiOrder::on($this->getConnectionName())->find($id);
+        $suplier = MasterSuplier::on($this->getConnectionName())->find($order->id_suplier);
+        $detail_orders = TransaksiOrderDetail::on($this->getConnectionName())->where('id_nota', $order->id)->where('is_deleted', 0)->get();
 
         //$order->file = null;
         $fileTTD = '';
@@ -1264,7 +1274,7 @@ class T_OrderController extends Controller
             /*$split_co = explode('.' , $apoteker->file);
             $ext_co = end($split_co);
             $mime = 'image/'.$ext_co;
-            $ttd = DB::table('tb_users_ttd')->where('id_user', $apoteker->id)->first();
+            $ttd = DB::connection($this->getConnectionName())->table('tb_users_ttd')->where('id_user', $apoteker->id)->first();
             $fileTTD = '<img src="data:'.$mime.';base64, '.$ttd->image.'" width="50" height="50">';*/
             //echo '<img src="data:image/jpg;base64, '.$ttd->image.'" width="50" height="50"></a>';exit();
         }
@@ -1570,8 +1580,9 @@ class T_OrderController extends Controller
 
     public function create_manual() {
         $order = new TransaksiOrder;
-        $supliers = MasterSuplier::where('is_deleted', 0)->pluck('nama', 'id');
-        $apoteks = MasterApotek::where('id', session('id_apotek_active'))->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $order->setDynamicConnection();
+        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->where('id', session('id_apotek_active'))->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 2;
 
@@ -1590,12 +1601,12 @@ class T_OrderController extends Controller
 
     public function send_sign(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
-        $user = User::find($apotek->id_apoteker);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $user = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         if($request->password != 'false' OR $request->password != false) {
             $pass = $request->password;
             if (Hash::check($pass, $user->password)) {
-                $data_ = TransaksiOrder::find($request->id);
+                $data_ = TransaksiOrder::on($this->getConnectionName())->find($request->id);
                 $data_->is_sign = 1;
                 $data_->sign_by = Auth::id();
                 $data_->sign_at = date('Y-m-d H:i:s');
@@ -1616,12 +1627,12 @@ class T_OrderController extends Controller
 
     public function send_unsign(Request $request)
     {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
-        $user = User::find($apotek->id_apoteker);
+        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $user = User::on($this->getConnectionName())->find($apotek->id_apoteker);
         if($request->password != 'false' OR $request->password != false) {
             $pass = $request->password;
             if (Hash::check($pass, $user->password)) {
-                $data_ = TransaksiOrder::find($request->id);
+                $data_ = TransaksiOrder::on($this->getConnectionName())->find($request->id);
                 $data_->is_sign = 0;
                 $data_->sign_by = null;
                 $data_->sign_at = null;

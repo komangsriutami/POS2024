@@ -9,9 +9,11 @@ use App\MasterGroupApotek;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class M_KlinikController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,7 +42,7 @@ class M_KlinikController extends Controller
         $order_dir = $order[0]['dir'];
 
         $super_admin = session('super_admin');
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterKlinik::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_klinik.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_klinik.is_deleted','=','0');
@@ -80,8 +82,9 @@ class M_KlinikController extends Controller
     public function create()
     {
     	$klinik = new MasterKlinik;
+        $klinik->setDynamicConnection();
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
         return view('klinik.create')->with(compact('klinik', 'group_apoteks'));
@@ -97,9 +100,10 @@ class M_KlinikController extends Controller
     public function store(Request $request)
     {
         $klinik = new MasterKlinik;
+        $klinik->setDynamicConnection();
         $klinik->fill($request->except('_token'));
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
         $validator = $klinik->validate();
@@ -133,9 +137,9 @@ class M_KlinikController extends Controller
     */
     public function edit($id)
     {
-        $klinik 		= MasterKlinik::find($id);
+        $klinik 		= MasterKlinik::on($this->getConnectionName())->find($id);
 
-        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
         return view('klinik.edit')->with(compact('klinik', 'group_apoteks'));
@@ -150,7 +154,7 @@ class M_KlinikController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $klinik = MasterKlinik::find($id);
+        $klinik = MasterKlinik::on($this->getConnectionName())->find($id);
         $klinik->fill($request->except('_token'));
 
         $validator = $klinik->validate();
@@ -171,7 +175,7 @@ class M_KlinikController extends Controller
     */
     public function destroy($id)
     {
-        $klinik = MasterKlinik::find($id);
+        $klinik = MasterKlinik::on($this->getConnectionName())->find($id);
         $klinik->is_deleted = 1;
         if($klinik->save()){
             echo 1;

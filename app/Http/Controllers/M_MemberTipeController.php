@@ -10,9 +10,11 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class M_MemberTipeController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,7 +42,7 @@ class M_MemberTipeController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterMemberTipe::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_tipe_member.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_tipe_member.is_deleted','=','0');
@@ -75,6 +77,7 @@ class M_MemberTipeController extends Controller
     public function create()
     {
         $member_tipe = new MasterMemberTipe;
+        $member_tipe->setDynamicConnection();
 
         return view('member_tipe.create')->with(compact('member_tipe'));
     }
@@ -89,6 +92,7 @@ class M_MemberTipeController extends Controller
     public function store(Request $request)
     {
         $member_tipe = new MasterMemberTipe;
+        $member_tipe->setDynamicConnection();
         $member_tipe->fill($request->except('_token'));
 
         $validator = $member_tipe->validate();
@@ -124,7 +128,7 @@ class M_MemberTipeController extends Controller
     */
     public function edit($id)
     {
-        $member_tipe = MasterMemberTipe::find($id);
+        $member_tipe = MasterMemberTipe::on($this->getConnectionName())->find($id);
 
         return view('member_tipe.edit')->with(compact('member_tipe'));
     }
@@ -138,7 +142,7 @@ class M_MemberTipeController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $member_tipe = MasterMemberTipe::find($id);
+        $member_tipe = MasterMemberTipe::on($this->getConnectionName())->find($id);
         $member_tipe->fill($request->except('_token'));
 
         $validator = $member_tipe->validate();
@@ -161,7 +165,7 @@ class M_MemberTipeController extends Controller
     */
     public function destroy($id)
     {
-        $member_tipe = MasterMemberTipe::find($id);
+        $member_tipe = MasterMemberTipe::on($this->getConnectionName())->find($id);
         $member_tipe->is_deleted = 1;
         if($member_tipe->save()){
             echo 1;

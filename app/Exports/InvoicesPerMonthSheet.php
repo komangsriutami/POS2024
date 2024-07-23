@@ -60,7 +60,7 @@ class InvoicesPerMonthSheet implements FromCollection, WithTitle, WithColumnWidt
             $date = date ("Y-m-d", strtotime($i));
             $data = array($date);
 
-            $cek_absen = Absensi::where('is_deleted', 0)->where('tgl', $date)->where('id_user', $this->id_user)->first(); //
+            $cek_absen = Absensi::on($this->getConnectionName())->where('is_deleted', 0)->where('tgl', $date)->where('id_user', $this->id_user)->first(); //
             if(!empty($cek_absen)) {
                 if($cek_absen->jam_datang != null && $cek_absen->jam_pulang == null) {
                     $jam1 = 0;

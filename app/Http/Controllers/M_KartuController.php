@@ -9,9 +9,11 @@ use App\MasterJenisKartu;
 use App;
 use Datatables;
 use DB;
+use App\Traits\DynamicConnectionTrait;
 
 class M_KartuController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -39,7 +41,7 @@ class M_KartuController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterKartu::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kartu_debet_credit.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_kartu_debet_credit.is_deleted','=','0');
@@ -77,8 +79,9 @@ class M_KartuController extends Controller
     public function create()
     {
     	$kartu = new MasterKartu;
+        $kartu->setDynamicConnection();
 
-    	$jenis_kartus = MasterJenisKartu::where('is_deleted', 0)->pluck('nama', 'id');
+    	$jenis_kartus = MasterJenisKartu::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $jenis_kartus->prepend('-- Pilih Jenis Kartu --','');
 
         return view('kartu.create')->with(compact('kartu', 'jenis_kartus'));
@@ -94,9 +97,10 @@ class M_KartuController extends Controller
     public function store(Request $request)
     {
         $kartu = new MasterKartu;
+        $kartu->setDynamicConnection();
         $kartu->fill($request->except('_token'));
 
-        $jenis_kartus = MasterJenisKartu::where('is_deleted', 0)->pluck('nama', 'id');
+        $jenis_kartus = MasterJenisKartu::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $jenis_kartus->prepend('-- Pilih Jenis Kartu --','');
 
         $validator = $kartu->validate();
@@ -130,9 +134,9 @@ class M_KartuController extends Controller
     */
     public function edit($id)
     {
-        $kartu = MasterKartu::find($id);
+        $kartu = MasterKartu::on($this->getConnectionName())->find($id);
 
-        $jenis_kartus = MasterJenisKartu::where('is_deleted', 0)->pluck('nama', 'id');
+        $jenis_kartus = MasterJenisKartu::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
         $jenis_kartus->prepend('-- Pilih Jenis Kartu --','');
 
         return view('kartu.edit')->with(compact('kartu', 'jenis_kartus'));
@@ -147,7 +151,7 @@ class M_KartuController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $kartu = MasterKartu::find($id);
+        $kartu = MasterKartu::on($this->getConnectionName())->find($id);
         $kartu->fill($request->except('_token'));
 
         $validator = $kartu->validate();
@@ -168,7 +172,7 @@ class M_KartuController extends Controller
     */
     public function destroy($id)
     {
-        $kartu = MasterKartu::find($id);
+        $kartu = MasterKartu::on($this->getConnectionName())->find($id);
         $kartu->is_deleted = 1;
         if($kartu->save()){
             echo 1;

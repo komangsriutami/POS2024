@@ -10,8 +10,10 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 class M_KewarganegaraanController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -39,7 +41,7 @@ class M_KewarganegaraanController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::statement(DB::raw('set @rownum = 0'));
+        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
         $data = MasterKewarganegaraan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kewarganegaraan.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_kewarganegaraan.is_deleted','=','0');
@@ -74,6 +76,7 @@ class M_KewarganegaraanController extends Controller
     public function create()
     {
         $kewarganegaraan = new MasterKewarganegaraan;
+        $kewarganegaraan->setDynamicConnection();
 
         return view('kewarganegaraan.create')->with(compact('kewarganegaraan'));
     }
@@ -88,6 +91,7 @@ class M_KewarganegaraanController extends Controller
     public function store(Request $request)
     {
         $kewarganegaraan = new MasterKewarganegaraan;
+        $kewarganegaraan->setDynamicConnection();
         $kewarganegaraan->fill($request->except('_token'));
 
         $validator = $kewarganegaraan->validate();
@@ -123,7 +127,7 @@ class M_KewarganegaraanController extends Controller
     */
     public function edit($id)
     {
-        $kewarganegaraan = MasterKewarganegaraan::find($id);
+        $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->find($id);
 
         return view('kewarganegaraan.edit')->with(compact('kewarganegaraan'));
     }
@@ -137,7 +141,7 @@ class M_KewarganegaraanController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $kewarganegaraan = MasterKewarganegaraan::find($id);
+        $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->find($id);
         $kewarganegaraan->fill($request->except('_token'));
 
         $validator = $kewarganegaraan->validate();
@@ -160,7 +164,7 @@ class M_KewarganegaraanController extends Controller
     */
     public function destroy($id)
     {
-        $kewarganegaraan = MasterKewarganegaraan::find($id);
+        $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->find($id);
         $kewarganegaraan->is_deleted = 1;
         if($kewarganegaraan->save()){
             echo 1;

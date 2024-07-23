@@ -10,9 +10,11 @@ use Datatables;
 use DB;
 use Route;
 use URL;
+use App\Traits\DynamicConnectionTrait;
 
 class PermissionController extends Controller
 {
+    use DynamicConnectionTrait;
     /*
         =================================================================================================================
         For     : Tampilan index Permission
@@ -25,7 +27,7 @@ class PermissionController extends Controller
         $app = app();
         $routes = $app->routes->getRoutes();
 
-        $menus = RbacMenu::where('is_deleted', 0)->where('link', '!=', '#')->pluck('nama_panjang','id');
+        $menus = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('link', '!=', '#')->pluck('nama_panjang','id');
         $menus->prepend('-- Pilih Menu --','');
 
         return view('permission.index')->with(compact('menus', 'routes'));
@@ -163,7 +165,7 @@ class PermissionController extends Controller
     */
     public function destroy($id)
     {
-        $permission = RbacPermission::find($id);
+        $permission = RbacPermission::on($this->getConnectionName())->find($id);
         $permission->is_deleted = 1;
 
         if($permission->save()){
@@ -196,12 +198,13 @@ class PermissionController extends Controller
         foreach ($routes as $route) {
             $i++;
             $route_name = $route->getName();
-            $cek = RbacPermission::where('nama', $route_name)->first();
+            $cek = RbacPermission::on($this->getConnectionName())->where('nama', $route_name)->first();
 
             if(empty($cek)) {
                 $permission = new RbacPermission;
+                $permission->setDynamicConnection();
             } else {
-                $permission = RbacPermission::find($cek->id);
+                $permission = RbacPermission::on($this->getConnectionName())->find($cek->id);
             }
 
             
@@ -215,7 +218,7 @@ class PermissionController extends Controller
                 if($route_name != "") {
                     $split_id = explode('.' , $route->getName());
                     $permission->group = $split_id[0];
-                    $menu = RbacMenu::where('route_group', $split_id[0])->first();
+                    $menu = RbacMenu::on($this->getConnectionName())->where('route_group', $split_id[0])->first();
                     
                     if(!empty($menu)) {
                         $permission->id_menu = $menu->id;
@@ -233,11 +236,11 @@ class PermissionController extends Controller
         }
 
        /* if(!empty($array_id_permission)){
-            DB::statement("DELETE FROM rbac_permissions
+            DB::connection($this->getConnection())->statement("DELETE FROM rbac_permissions
                             WHERE id_menu=".$this->id." AND 
                                     id NOT IN(".implode(',', $array_id_permission).")");
         }else{
-            DB::statement("DELETE FROM rbac_permissions 
+            DB::connection($this->getConnection())->statement("DELETE FROM rbac_permissions 
                             WHERE id_menu=".$this->id);
         }*/
 

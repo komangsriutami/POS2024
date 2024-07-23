@@ -17,11 +17,11 @@ class TOImport implements ToCollection
         $array = array();
         foreach ($rows as $row) 
         {
-            $cek = MasterObat::where('nama', $row[0])->first();
+            $cek = MasterObat::on($this->getConnectionName())->where('nama', $row[0])->first();
             if(!empty($cek)) {
-                $detail = TransaksiTODetail::where('id_nota', 12909)->where('id_obat', $cek->id)->first();
+                $detail = TransaksiTODetail::on($this->getConnectionName())->where('id_nota', 12909)->where('id_obat', $cek->id)->first();
                 if(!empty($detail)) {
-                     TransaksiTODetail::where('id_nota', 12909)->where('id_obat', $cek->id)
+                     TransaksiTODetail::on($this->getConnectionName())->where('id_nota', 12909)->where('id_obat', $cek->id)
                     ->update([
                         'jumlah' => $row[1], 
                         'harga_outlet' => $row[3]/$row[1], 
@@ -39,6 +39,7 @@ class TOImport implements ToCollection
                     $i++;
                 } else {
                     $detail = new TransaksiTODetail;
+                    $detail->setDynamicConnection();
                     $detail->id_nota = 12909;
                     $detail->id_obat = $cek->id;
                     $detail->jumlah = $row[1];

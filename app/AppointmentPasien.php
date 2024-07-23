@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
 
 class AppointmentPasien extends Model
 {
     use SoftDeletes;
+    use DynamicConnectionTrait;
 
     protected $table = 'tb_appointment_pasien';
     public $primaryKey = 'id';

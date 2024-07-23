@@ -62,14 +62,14 @@ class DefectaCronPG extends Command
         $last_id_obat_ex = 0;
         $id_apotek = 4;
         $skip = 0;
-        $apotek = MasterApotek::find($id_apotek);
+        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
-        $cek = DB::table('tb_bantu_transaksi_update_pg')->orderBy('id', 'DESC')->first();
+        $cek = DB::connection($this->getConnectionName())->table('tb_bantu_transaksi_update_pg')->orderBy('id', 'DESC')->first();
         if(!empty($cek)) {
             $last_id_obat_ex = $cek->last_id_obat_after;
             if($last_id_obat_ex >= $last_id_obat) {
                 # selesai : 1. hapus data di tb_bantu_transaksi_update_pg dan ulang dari 0
-                DB::table('tb_bantu_transaksi_update_pg')->truncate();
+                DB::connection($this->getConnectionName())->table('tb_bantu_transaksi_update_pg')->truncate();
                 $skip = 1;
             } else {
                 $last_id_obat_ex = $last_id_obat_ex+1;
@@ -81,10 +81,10 @@ class DefectaCronPG extends Command
         }
 
         if($skip != 1) {
-            DB::table('tb_bantu_transaksi_update_pg')
+            DB::connection($this->getConnectionName())->table('tb_bantu_transaksi_update_pg')
                 ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after, 'id_apotek' => $id_apotek, 'created_at' => date('Y-m-d H:i:s')]);
             
-            $obats = DB::table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
+            $obats = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
             $x=0;
             $data_ = array();
             $now = date('Y-m-d');
@@ -94,7 +94,7 @@ class DefectaCronPG extends Command
                 $y2 = 0;
                 $y3 = 0;
                 for ($i=1; $i <=3 ; $i++) { 
-                    $data_ = DB::table('tb_detail_nota_penjualan')
+                    $data_ = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
                     ->select([
                                 DB::raw('SUM(tb_detail_nota_penjualan.jumlah-tb_detail_nota_penjualan.jumlah_cn) AS jumlah')
                                 ])
@@ -142,7 +142,7 @@ class DefectaCronPG extends Command
                 $y = $a + $b * 4; // a + bx;
                 $abc = ceil($y);
 
-                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
+                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
                 $x++;
             }
 

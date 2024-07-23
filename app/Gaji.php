@@ -4,8 +4,11 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Validator;
+use App\Traits\DynamicConnectionTrait;
+
 class Gaji extends Model
 {
+    use DynamicConnectionTrait;
     protected $table = 'tb_skema_gaji';
     public $primaryKey = 'id';
     public  $timestamps = false;

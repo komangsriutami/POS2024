@@ -5,8 +5,11 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
+use App\Traits\DynamicConnectionTrait;
+
 class MasterKodeAkun extends Model
 {
+    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Kode Akuntansi
 		Author 	: Surya Adiputra.
