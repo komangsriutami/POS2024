@@ -90,6 +90,9 @@ class M_KewarganegaraanController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $kewarganegaraan = new MasterKewarganegaraan;
         $kewarganegaraan->setDynamicConnection();
         $kewarganegaraan->fill($request->except('_token'));
@@ -141,6 +144,9 @@ class M_KewarganegaraanController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->find($id);
         $kewarganegaraan->fill($request->except('_token'));
 
@@ -164,6 +170,9 @@ class M_KewarganegaraanController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->find($id);
         $kewarganegaraan->is_deleted = 1;
         if($kewarganegaraan->save()){

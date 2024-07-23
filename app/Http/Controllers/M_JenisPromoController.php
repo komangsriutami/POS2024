@@ -91,6 +91,9 @@ class M_JenisPromoController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_promo = new MasterJenisPromo;
         $jenis_promo->setDynamicConnection();
         $jenis_promo->fill($request->except('_token'));
@@ -142,6 +145,9 @@ class M_JenisPromoController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_promo = MasterJenisPromo::on($this->getConnectionName())->find($id);
         $jenis_promo->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_JenisPromoController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_promo = MasterJenisPromo::on($this->getConnectionName())->find($id);
         $jenis_promo->is_deleted = 1;
         if($jenis_promo->save()){

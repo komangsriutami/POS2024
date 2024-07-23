@@ -89,6 +89,9 @@ class M_AsetController extends Controller
      */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $aset = new MasterAset();
         $aset->setDynamicConnection();
         $aset->fill($request->except('_token'));
@@ -143,6 +146,9 @@ class M_AsetController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $aset = MasterAset::on($this->getConnectionName())->find($id);
         $aset->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_AsetController extends Controller
      */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $aset = MasterAset::on($this->getConnectionName())->find($id);
         $aset->is_deleted = 1;
         $aset->deleted_at = date('Y-m-d H:i:s');

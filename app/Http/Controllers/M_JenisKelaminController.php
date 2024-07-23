@@ -90,6 +90,9 @@ class M_JenisKelaminController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_kelamin = new MasterJenisKelamin;
         $jenis_kelamin->setDynamicConnection();
         $jenis_kelamin->fill($request->except('_token'));
@@ -141,6 +144,9 @@ class M_JenisKelaminController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->find($id);
         $jenis_kelamin->fill($request->except('_token'));
 
@@ -164,6 +170,9 @@ class M_JenisKelaminController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->find($id);
         $jenis_kelamin->is_deleted = 1;
         if($jenis_kelamin->save()){

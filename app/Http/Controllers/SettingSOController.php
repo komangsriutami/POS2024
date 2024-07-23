@@ -146,6 +146,9 @@ class SettingSOController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_so = new SettingStokOpnam;
         $setting_so->setDynamicConnection();
         $setting_so->fill($request->except('_token'));
@@ -202,6 +205,9 @@ class SettingSOController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($id);
         $setting_so->fill($request->except('_token'));
 
@@ -225,6 +231,9 @@ class SettingSOController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_so = SettingStokOpnam::on($this->getConnectionName())->find($id);
         $setting_so->is_deleted = 1;
         $setting_so->deleted_by = Auth::user()->id;
@@ -238,6 +247,9 @@ class SettingSOController extends Controller
     }
 
     public function reload_data_awal(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         ini_set('memory_limit', '-1'); 
         ini_set('max_execution_time', '0');
 
@@ -337,6 +349,9 @@ class SettingSOController extends Controller
     }
 
     public function reload_data_akhir(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         ini_set('memory_limit', '-1'); 
         ini_set('max_execution_time', '0');
         DB::connection($this->getConnectionName())->beginTransaction();  
@@ -609,6 +624,9 @@ class SettingSOController extends Controller
     }
 
     public function backup_data_so(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         ini_set('memory_limit', '-1'); 
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{

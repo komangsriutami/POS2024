@@ -148,6 +148,9 @@ class M_MemberController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $member = new MasterMember;
         $member->setDynamicConnection();
         $member->fill($request->except('_token', 'password'));
@@ -237,6 +240,9 @@ class M_MemberController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $member = MasterMember::on($this->getConnectionName())->find($id);
         $member->fill($request->except('_token', 'password'));
 
@@ -266,6 +272,9 @@ class M_MemberController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $member = MasterMember::on($this->getConnectionName())->find($id);
         $member->is_deleted = 1;
         if($member->save()){

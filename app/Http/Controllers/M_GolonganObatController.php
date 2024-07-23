@@ -91,6 +91,9 @@ class M_GolonganObatController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $golongan_obat = new MasterGolonganObat;
         $golongan_obat->setDynamicConnection();
         $golongan_obat->fill($request->except('_token'));
@@ -142,6 +145,9 @@ class M_GolonganObatController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $golongan_obat = MasterGolonganObat::on($this->getConnectionName())->find($id);
         $golongan_obat->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_GolonganObatController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $golongan_obat = MasterGolonganObat::on($this->getConnectionName())->find($id);
         $golongan_obat->is_deleted = 1;
         if($golongan_obat->save()){

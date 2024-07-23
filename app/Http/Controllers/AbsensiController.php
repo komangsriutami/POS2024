@@ -110,6 +110,10 @@ class AbsensiController extends Controller
      */
     public function create()
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         $absensi = new Absensi;
         $absensi->setDynamicConnection();
 
@@ -128,6 +132,10 @@ class AbsensiController extends Controller
      */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         if ($request->id_status == 1) {
             $absensi = new Absensi;
             $absensi->setDynamicConnection();
@@ -209,6 +217,10 @@ class AbsensiController extends Controller
      */
     public function edit($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         $absensi = Absensi::on($this->getConnectionName())->find($id);
         return view('absensi.edit')->with(compact('absensi'));
     }
@@ -222,7 +234,10 @@ class AbsensiController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+        
         $absensi = Absensi::on($this->getConnectionName())->find($id);
         $absensi->fill($request->except('_token'));
 
@@ -244,6 +259,10 @@ class AbsensiController extends Controller
     public function destroy($id)
     {
         //
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+        
         $absensi = Absensi::on($this->getConnectionName())->find($id);
         $absensi->is_deleted = 1;
         if($absensi->save()){
@@ -255,6 +274,10 @@ class AbsensiController extends Controller
     }
 
     public function add_absensi() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         if(Auth::user()->is_admin == 1) {
             $users = User::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
             $users->prepend('--- Pilih User ---','');

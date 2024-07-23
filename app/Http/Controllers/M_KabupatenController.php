@@ -96,6 +96,9 @@ class M_KabupatenController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $kabupaten = new MasterKabupaten;
         $kabupaten->setDynamicConnection();
         $kabupaten->fill($request->except('_token'));
@@ -151,6 +154,9 @@ class M_KabupatenController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $kabupaten = MasterKabupaten::on($this->getConnectionName())->find($id);
         $kabupaten->fill($request->except('_token'));
 
@@ -172,6 +178,9 @@ class M_KabupatenController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $kabupaten = MasterKabupaten::on($this->getConnectionName())->find($id);
         $kabupaten->is_deleted = 1;
         if($kabupaten->save()){

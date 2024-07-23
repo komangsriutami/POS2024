@@ -119,6 +119,9 @@ class M_SuplierController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $suplier = new MasterSuplier;
         $suplier->setDynamicConnection();
         $suplier->fill($request->except('_token'));
@@ -180,6 +183,9 @@ class M_SuplierController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $suplier = MasterSuplier::on($this->getConnectionName())->find($id);
         $suplier->fill($request->except('_token'));
 
@@ -201,6 +207,9 @@ class M_SuplierController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $suplier = MasterSuplier::on($this->getConnectionName())->find($id);
         $suplier->is_deleted = 1;
         if($suplier->save()){

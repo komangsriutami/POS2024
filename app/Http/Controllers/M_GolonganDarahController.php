@@ -91,6 +91,9 @@ class M_GolonganDarahController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $golongan_darah = new MasterGolonganDarah;
         $golongan_darah->setDynamicConnection();
         $golongan_darah->fill($request->except('_token'));
@@ -142,6 +145,9 @@ class M_GolonganDarahController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $golongan_darah = MasterGolonganDarah::on($this->getConnectionName())->find($id);
         $golongan_darah->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_GolonganDarahController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $golongan_darah = MasterGolonganDarah::on($this->getConnectionName())->find($id);
         $golongan_darah->is_deleted = 1;
         if($golongan_darah->save()){

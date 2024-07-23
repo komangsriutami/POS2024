@@ -103,6 +103,9 @@ class M_InvestorController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $investor = new MasterInvestor;
         $investor->setDynamicConnection();
         $investor->fill($request->except('_token'));
@@ -170,6 +173,9 @@ class M_InvestorController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $investor = MasterInvestor::on($this->getConnectionName())->find($id);
         $investor->fill($request->except('_token'));
 
@@ -191,6 +197,9 @@ class M_InvestorController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $investor = MasterInvestor::on($this->getConnectionName())->find($id);
         $investor->save_delete();
         if($investor->delete()){

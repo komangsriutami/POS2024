@@ -431,6 +431,10 @@ class BiayaController extends Controller
      */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
              // dd($request->id_akun_pajak);
@@ -789,6 +793,10 @@ class BiayaController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             // dd($request->input());
@@ -1303,6 +1311,10 @@ class BiayaController extends Controller
      */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+        
         $id = Crypt::decrypt($id);
         $biaya = Biaya::on($this->getConnectionName())->find($id);
         if($biaya){

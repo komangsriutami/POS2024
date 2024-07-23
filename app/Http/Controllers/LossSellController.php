@@ -160,6 +160,9 @@ class LossSellController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = new LossSell;
         $data_->setDynamicConnection();
         $data_->fill($request->except('_token'));
@@ -226,6 +229,9 @@ class LossSellController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = LossSell::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token'));
 
@@ -259,6 +265,9 @@ class LossSellController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = LossSell::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_by = Auth::user()->id;

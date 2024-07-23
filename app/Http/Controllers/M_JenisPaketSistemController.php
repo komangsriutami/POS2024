@@ -91,6 +91,9 @@ class M_JenisPaketSistemController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_paket_sistem = new MasterJenisPaketSistem;
         $jenis_paket_sistem->setDynamicConnection();
         $jenis_paket_sistem->fill($request->except('_token'));
@@ -141,6 +144,9 @@ class M_JenisPaketSistemController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_paket_sistem = MasterJenisPaketSistem::on($this->getConnectionName())->find($id);
         $jenis_paket_sistem->fill($request->except('_token'));
 
@@ -164,6 +170,9 @@ class M_JenisPaketSistemController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_paket_sistem = MasterJenisPaketSistem::on($this->getConnectionName())->find($id);
         $jenis_paket_sistem->is_deleted = 1;
         if($jenis_paket_sistem->save()){

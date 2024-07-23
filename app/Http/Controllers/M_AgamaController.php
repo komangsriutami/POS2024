@@ -91,6 +91,9 @@ class M_AgamaController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $agama = new MasterAgama;
         $agama->setDynamicConnection();
         $agama->fill($request->except('_token'));
@@ -142,6 +145,9 @@ class M_AgamaController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $agama = MasterAgama::on($this->getConnectionName())->find($id);
         $agama->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_AgamaController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $agama = MasterAgama::on($this->getConnectionName())->find($id);
         $agama->is_deleted = 1;
         if($agama->save()){

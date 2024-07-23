@@ -89,6 +89,9 @@ class M_JenisKartuController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_kartu = new MasterJenisKartu;
         $jenis_kartu->setDynamicConnection();
         $jenis_kartu->fill($request->except('_token'));
@@ -138,6 +141,9 @@ class M_JenisKartuController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_kartu = MasterJenisKartu::on($this->getConnectionName())->find($id);
         $jenis_kartu->fill($request->except('_token'));
 
@@ -159,6 +165,9 @@ class M_JenisKartuController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_kartu = MasterJenisKartu::on($this->getConnectionName())->find($id);
         $jenis_kartu->is_deleted = 1;
         if($jenis_kartu->save()){

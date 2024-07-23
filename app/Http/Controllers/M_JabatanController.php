@@ -93,6 +93,9 @@ class M_JabatanController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jabatan = new MasterJabatan;
         $jabatan->setDynamicConnection();
         $jabatan->fill($request->except('_token'));
@@ -145,6 +148,9 @@ class M_JabatanController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jabatan = MasterJabatan::on($this->getConnectionName())->find($id);
         $jabatan->fill($request->except('_token'));
 
@@ -168,6 +174,9 @@ class M_JabatanController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jabatan = MasterJabatan::on($this->getConnectionName())->find($id);
         $jabatan->is_deleted = 1;
         if($jabatan->save()){

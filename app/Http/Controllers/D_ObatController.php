@@ -307,6 +307,9 @@ class D_ObatController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        } 
         $obat = MasterObat::on($this->getConnectionName())->find($id);
         $id_apotek = session('id_apotek_active');
         $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
@@ -333,6 +336,9 @@ class D_ObatController extends Controller
     }
 
     public function sycn_harga_obat_all() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
 
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
@@ -428,6 +434,10 @@ class D_ObatController extends Controller
     }*/
 
     public function sycn_harga_obat(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
@@ -456,6 +466,10 @@ class D_ObatController extends Controller
 
     public function disabled_obat(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
@@ -2046,6 +2060,9 @@ class D_ObatController extends Controller
     }
 
     public function reload_data_pembelian() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $det_pembelians = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian') 
                                 ->select([
                                     'tb_detail_nota_pembelian.*', 
@@ -2082,6 +2099,9 @@ class D_ObatController extends Controller
 
 
     public function reload_data_histori() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $id_apotek = 1;
         $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
@@ -2100,6 +2120,9 @@ class D_ObatController extends Controller
     }
 
     public function sycn_harga_obat_tahap_satu(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $obat = MasterObat::select(['id'])->orderBy('id', 'DESC')->first();
         $last_id_obat = $obat->id;
         $last_id_obat_ex = 0;
@@ -2905,6 +2928,9 @@ class D_ObatController extends Controller
     }
 
     public function gunakan_hb(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
@@ -3118,6 +3144,9 @@ class D_ObatController extends Controller
     }
 
     public function gunakan_hb_ppn(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
@@ -3387,6 +3416,9 @@ class D_ObatController extends Controller
 
 
     public function gunakan_hj(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
@@ -3406,6 +3438,9 @@ class D_ObatController extends Controller
 
     public function import_obat_to_excel(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         /*if(Input::hasFile('import_file')){
             $path = $request->file('import_file');
             Excel::import(new HJStaticImport, $path);
@@ -3450,6 +3485,9 @@ class D_ObatController extends Controller
     }
 
     public function perbaikan_data(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
@@ -3588,6 +3626,9 @@ class D_ObatController extends Controller
 
     public function set_status_harga_outlet(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $stok = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
@@ -3610,6 +3651,9 @@ class D_ObatController extends Controller
     }
 
     public function reload_hpp_from_another_outlet() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
       /*  $obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->get();*/
@@ -3636,6 +3680,9 @@ class D_ObatController extends Controller
     }
 
     public function reload_data_histori_transaksi(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $historis = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id_obat', $request->id)->where('is_reload_histori', 0)->get();
@@ -4048,6 +4095,9 @@ class D_ObatController extends Controller
 
 
     public function reload_data_histori_data() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         ini_set('memory_limit', '-1'); 
         $obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->whereBetween('id', [101, 200])->get();
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));

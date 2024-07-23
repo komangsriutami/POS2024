@@ -234,6 +234,9 @@ class JurnalUmumController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             // dd($request->buktifile);
@@ -581,6 +584,9 @@ class JurnalUmumController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             // dd($request->input());
@@ -778,6 +784,9 @@ class JurnalUmumController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $id = Crypt::decrypt($id);
         // dd($id);
         $detail = JurnalUmumDetail::on($this->getConnectionName())->find($id);
@@ -799,6 +808,9 @@ class JurnalUmumController extends Controller
     */
     public function destroyJurnal($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $id = Crypt::decrypt($id);
         // dd($id);
         $detail = JurnalUmum::on($this->getConnectionName())->find($id);
@@ -869,6 +881,9 @@ class JurnalUmumController extends Controller
     */
     public function saldoawalset(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         // dd($request->input());
         if(isset($request->saldoawal)){
             $jurnal = JurnalUmum::on($this->getConnectionName())->where('is_saldoawal',1)->where('id_apotek',session('id_apotek_active'))->first();
@@ -1105,6 +1120,9 @@ class JurnalUmumController extends Controller
     */
     public function ReloadDataProcess(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         // dd($request->input());
         $id_apotek = session('id_apotek_active');
         $tgl_nota = Date('Y-m-d');
@@ -1233,6 +1251,9 @@ class JurnalUmumController extends Controller
     */
     protected function CheckReloadStatus($var_reloadstatus)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         /* 
         * 1. cek apakah ada data reload status. cek : id_apotek, tglreload, id_reloaddata 
         * 2. kalau tidak ada new $dtreloadstatus.
@@ -1274,6 +1295,9 @@ class JurnalUmumController extends Controller
     */
     public function saveLoadData($param_jurnal,$param_detail)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         try {
             
 
@@ -1312,6 +1336,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadpiutangtransaksi($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- PIUTANG USAHA -------------------------------- #
         # masuk ke akun id : 7 => 1-10100 - Piutang Usaha (debit) 
         # masuk ke akun id : 81 => 4-40100 - Diskon Penjualan (debit - dikurangi) 
@@ -1431,6 +1458,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadpiutangbelumditagih($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- PIUTANG BELUM DITAGIH ------------------------- #
         # masuk ke akun id : 8 => 1-10101 - Piutang Belum Ditagih (debit)
         # masuk ke akun id : 81 => 4-40100 - Diskon Penjualan (kredit - dikurangi) 
@@ -1551,6 +1581,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadpiutangantaroutlet($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- PIUTANG ANTAR OUTLET ------------------------- #
         # masuk ke akun id : 10 s/d 15 => 1-10103 s/d 1-10108 - Piutang Antar-Outlet [x] (debit)
         # masuk ke akun id : 17 => 1-10200 - Persediaan Barang (kredit)
@@ -1670,6 +1703,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadpersediaanbarang($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- PERSEDIAAN BARANG ----------------------------- #
         # id akun 84 : 5-50000 Harga Pokok Penjualan (debit)
         # id akun 17 : 1-10200 Persediaan Barang (kredit)
@@ -1783,6 +1819,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadhutangusaha($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- HUTANG USAHA --------------------------------------------------- #
         # akun id : 46, 2-20100 Hutang Usaha (kredit) => total
         # akun id : 24, 1-10500 PPN Masukan (kredit) => ppn
@@ -1908,6 +1947,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadhutangusahabelumditagih($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- HUTANG USAHA BELUM DITAGIH -------------------- #
         # akun id : 47, 2-20211 Hutang Belum Ditagih (kredit) => total
         # akun id : 24, 1-10500 PPN Masukan (kredit) => ppn
@@ -2034,6 +2076,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadhutangantaroutlet($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- HUTANG ANTAR OUTLET ------------------------- #
         # masuk ke akun id : 49 s/d 54 => 2-20213 s/d 2-20218 - Hutang Antar-Outlet [x] (debit)
         # masuk ke akun id : 17 => 1-10200 - Persediaan Barang (kredit)
@@ -2156,6 +2201,9 @@ class JurnalUmumController extends Controller
     */ /*------- BELUM ------------*/
     public function reloadpenjualan($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- PENJUALAN ------------------------------------- #
         # akun id : 79, 4-40000 Penjualan (kredit)
         #
@@ -2331,6 +2379,9 @@ class JurnalUmumController extends Controller
     */
     public function reloaddiskonpenjualan($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- DISKON PENJUALAN ------------------------------------- #
         # akun id : 81, 4-40100 Diskon Penjualan (kredit)
         # akun id : 2, 1-10002 Kas Kecil (debit)
@@ -2429,6 +2480,9 @@ class JurnalUmumController extends Controller
     */
     public function reloadreturpenjualan($id,$id_apotek,$tgl_nota)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # ----- RETUR PENJUALAN ------------------------------------- #
         # RETUR terhadap PERSEDIAAN
         # akun id : 82, 4-40200 Retur Penjualan (kredit)

@@ -167,6 +167,9 @@ class M_ObatController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $obat = new MasterObat;
         $obat->setDynamicConnection();
         $obat->fill($request->except('_token'));
@@ -258,6 +261,9 @@ class M_ObatController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $obat = MasterObat::on($this->getConnectionName())->find($id);
         $harga_beli_awal = $obat->harga_beli;
         $harga_jual_awal = $obat->harga_jual;
@@ -301,6 +307,9 @@ class M_ObatController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $obat = MasterObat::on($this->getConnectionName())->find($id);
         $obat->is_deleted = 1;
         $obat->deleted_by = Auth::user()->id;
@@ -532,6 +541,9 @@ class M_ObatController extends Controller
     }
 
     public function sync_obat_outlet($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $obat = MasterObat::on($this->getConnectionName())->find($id);
         $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
 

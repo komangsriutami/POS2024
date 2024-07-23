@@ -85,6 +85,9 @@ class M_PaketWDController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $paket_wd = new MasterPaketWD;
         $paket_wd->setDynamicConnection();
         $paket_wd->fill($request->except('_token'));
@@ -134,6 +137,9 @@ class M_PaketWDController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $paket_wd = MasterPaketWD::on($this->getConnectionName())->find($id);
         $paket_wd->fill($request->except('_token'));
 
@@ -155,6 +161,9 @@ class M_PaketWDController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $paket_wd = MasterPaketWD::on($this->getConnectionName())->find($id);
         $paket_wd->is_deleted = 1;
         if($paket_wd->save()){

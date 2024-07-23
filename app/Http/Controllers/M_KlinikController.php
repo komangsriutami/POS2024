@@ -99,6 +99,9 @@ class M_KlinikController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $klinik = new MasterKlinik;
         $klinik->setDynamicConnection();
         $klinik->fill($request->except('_token'));
@@ -154,6 +157,9 @@ class M_KlinikController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $klinik = MasterKlinik::on($this->getConnectionName())->find($id);
         $klinik->fill($request->except('_token'));
 
@@ -175,6 +181,9 @@ class M_KlinikController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $klinik = MasterKlinik::on($this->getConnectionName())->find($id);
         $klinik->is_deleted = 1;
         if($klinik->save()){

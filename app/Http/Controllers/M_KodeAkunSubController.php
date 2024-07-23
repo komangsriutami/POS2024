@@ -99,6 +99,9 @@ class M_KodeAkunSubController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $sub_kode_akuntansi = new MasterKodeAkunSub;
         $sub_kode_akuntansi->setDynamicConnection();
         $sub_kode_akuntansi->fill($request->except('_token'));
@@ -154,6 +157,9 @@ class M_KodeAkunSubController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $sub_kode_akuntansi = MasterKodeAkunSub::on($this->getConnectionName())->find($id);
         $sub_kode_akuntansi->fill($request->except('_token'));
 
@@ -175,6 +181,9 @@ class M_KodeAkunSubController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $sub_kode_akuntansi = MasterKodeAkun::on($this->getConnectionName())->find($id);
         $sub_kode_akuntansi->is_deleted = 1;
         $sub_kode_akuntansi->deleted_at = date('Y-m-d H:i:s');

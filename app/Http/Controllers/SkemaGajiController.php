@@ -102,7 +102,9 @@ class SkemaGajiController extends Controller
     */
     public function store(Request $request)
     {
-
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $skema_gaji = new SkemaGaji;
         $skema_gaji->setDynamicConnection();
         $skema_gaji->fill($request->except('_token'));
@@ -155,6 +157,9 @@ class SkemaGajiController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $skema_gaji = SkemaGaji::on($this->getConnectionName())->find($id);
         $skema_gaji->fill($request->except('_token'));
         $skema_gaji->id_group_apotek = Auth::user()->id_group_apotek;
@@ -179,6 +184,9 @@ class SkemaGajiController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $skema_gaji = SkemaGaji::on($this->getConnectionName())->find($id);
         $skema_gaji->is_deleted = 1;
         $skema_gaji->deleted_at = date('Y-m-d H:i:s');

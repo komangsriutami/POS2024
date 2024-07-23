@@ -118,6 +118,9 @@ class InvestasiModalController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $investasi_modal = new InvestasiModal;
         $investasi_modal->setDynamicConnection();
         $investasi_modal->fill($request->except('_token'));
@@ -190,6 +193,9 @@ class InvestasiModalController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $investasi_modal = InvestasiModal::on($this->getConnectionName())->find($id);
         $investasi_modal->fill($request->except('_token'));
 
@@ -232,6 +238,9 @@ class InvestasiModalController extends Controller
     */
     private function updatePersentaseKepemilikan($id_apotek)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $investasi_modal_at_apotek = InvestasiModal::on($this->getConnectionName())->where('id_apotek',$id_apotek)->get();
         $investasi_modal_sum_saham = InvestasiModal::on($this->getConnectionName())->where('id_apotek',$id_apotek)->sum('jumlah_modal');
         foreach ($investasi_modal_at_apotek as $value) {

@@ -260,6 +260,9 @@ class M_DokterController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # Tangkas
         $data_ = new MasterDokter;
         $data_->setDynamicConnection();
@@ -364,6 +367,9 @@ class M_DokterController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = MasterDokter::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
         if(isset($request->is_ganti_password)) {
@@ -437,6 +443,9 @@ class M_DokterController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = MasterDokter::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');

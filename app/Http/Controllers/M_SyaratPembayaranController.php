@@ -55,6 +55,9 @@ class M_SyaratPembayaranController extends Controller
      */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         // dd($request->input());
         $syarat_pembayaran = new MasterSyaratPembayaran;
         $syarat_pembayaran->setDynamicConnection();

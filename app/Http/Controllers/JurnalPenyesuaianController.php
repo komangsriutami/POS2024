@@ -184,6 +184,9 @@ class JurnalPenyesuaianController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         // dd($request->input());
         DB::connection($this->getConnectionName())->beginTransaction();  
         try {
@@ -349,6 +352,9 @@ class JurnalPenyesuaianController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction(); 
         try {
             
@@ -549,6 +555,9 @@ class JurnalPenyesuaianController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $id = Crypt::decrypt($id);
         // dd($id);
         $detail = JurnalUmum::on($this->getConnectionName())->find($id);

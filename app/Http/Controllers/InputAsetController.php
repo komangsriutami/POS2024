@@ -103,6 +103,9 @@ class InputAsetController extends Controller
      */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $aset = new InputAset;
@@ -159,6 +162,9 @@ class InputAsetController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $aset = InputAset::on($this->getConnectionName())->find($id);
@@ -194,6 +200,9 @@ class InputAsetController extends Controller
      */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $success = true;
         DB::connection($this->getConnectionName())->beginTransaction(); 
         try{
@@ -293,6 +302,9 @@ class InputAsetController extends Controller
     }
 
     public function hapus_detail($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $success = true;
         DB::connection($this->getConnectionName())->beginTransaction(); 
         try{

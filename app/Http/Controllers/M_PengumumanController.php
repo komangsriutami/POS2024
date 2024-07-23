@@ -141,6 +141,9 @@ class M_PengumumanController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = new MasterPengumuman;
         $data_->setDynamicConnection();
         $data_->fill($request->except('_token'));
@@ -227,6 +230,9 @@ class M_PengumumanController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = MasterPengumuman::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token'));
         $data_->id_role_penerima = json_encode($request->id_role_penerima);
@@ -288,6 +294,9 @@ class M_PengumumanController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = MasterPengumuman::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_by = Auth::user()->id;

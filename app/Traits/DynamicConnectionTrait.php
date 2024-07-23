@@ -44,4 +44,15 @@ trait DynamicConnectionTrait
         }
         return $conn;
     }
+
+    public function getAccess() {
+        $access = 1;
+        if(session('id_tahun_active') != "" OR !is_null(session('id_tahun_active'))) {
+            $tahun = session('id_tahun_active');
+            if (date('Y') != $tahun) {
+                $access = 0;
+            } 
+        }
+        return $access;
+    }
 }

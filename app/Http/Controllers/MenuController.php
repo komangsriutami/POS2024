@@ -171,6 +171,9 @@ class MenuController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $menu = new RbacMenu;
         $menu->setDynamicConnection();
         $menu->fill($request->except('_token'));
@@ -244,6 +247,9 @@ class MenuController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $menu = RbacMenu::on($this->getConnectionName())->find($id);
         $menu->fill($request->except('_token'));
         $menu->sub_parent = 0;
@@ -275,6 +281,9 @@ class MenuController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $menu = RbacMenu::on($this->getConnectionName())->find($id);
         $menu->is_deleted = 1;
 

@@ -91,6 +91,9 @@ class M_MemberTipeController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $member_tipe = new MasterMemberTipe;
         $member_tipe->setDynamicConnection();
         $member_tipe->fill($request->except('_token'));
@@ -142,6 +145,9 @@ class M_MemberTipeController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $member_tipe = MasterMemberTipe::on($this->getConnectionName())->find($id);
         $member_tipe->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_MemberTipeController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $member_tipe = MasterMemberTipe::on($this->getConnectionName())->find($id);
         $member_tipe->is_deleted = 1;
         if($member_tipe->save()){

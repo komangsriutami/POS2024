@@ -202,6 +202,9 @@ class M_ApotekController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = new MasterApotek;
         $apotek->setDynamicConnection();
         $apotek->fill($request->except('_token'));
@@ -284,6 +287,9 @@ class M_ApotekController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find($id);
         $apotek->fill($request->except('_token'));
 
@@ -313,6 +319,9 @@ class M_ApotekController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find($id);
         $apotek->is_deleted = 1;
         $apotek->is_sync = 0;
@@ -419,6 +428,9 @@ class M_ApotekController extends Controller
     }
 
     public function add_table_stok_harga(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find($request->id);
         $inisial = strtolower($apotek->nama_singkat);
         if (Schema::hasTable('tb_m_stok_harga_'.$inisial.'')) {

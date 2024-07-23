@@ -200,6 +200,9 @@ class UserController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $user = new User;
         $user->setDynamicConnection();
         $user->fill($request->except('_token', 'password'));
@@ -300,6 +303,9 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $user = User::on($this->getConnectionName())->find($id);
         $user->fill($request->except('_token', 'password'));
 
@@ -412,6 +418,9 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $user = User::on($this->getConnectionName())->find($id);
         $user->user_roles()->delete();
         $user->is_deleted = 1;
@@ -471,7 +480,9 @@ class UserController extends Controller
     */
     public function update_profile(Request $request, $id)
     {
-
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $user = User::on($this->getConnectionName())->find($id);
         $url_file = $user->file;
         $user->fill($request->except('_token', 'password'));

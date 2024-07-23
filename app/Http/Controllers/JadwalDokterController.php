@@ -141,7 +141,9 @@ class JadwalDokterController extends Controller
      */
     public function store(Request $request)
     {
-        
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $split                      = explode("-", $request->tgl);
         $start       = date('Y-m-d',strtotime($split[0]));
         $end      = date('Y-m-d',strtotime($split[1]));
@@ -235,7 +237,9 @@ class JadwalDokterController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($id);
         $jadwal_dokter->fill($request->except('_token'));
 
@@ -256,6 +260,9 @@ class JadwalDokterController extends Controller
      */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         //
         // $jadwal_dokter = JadwalDokter::on($this->getConnectionName())->find($id);
         // $jadwal_dokter->is_deleted = 1;

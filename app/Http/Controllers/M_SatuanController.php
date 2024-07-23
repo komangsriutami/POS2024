@@ -89,6 +89,9 @@ class M_SatuanController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $satuan = new MasterSatuan;
         $satuan->setDynamicConnection();
         $satuan->fill($request->except('_token'));
@@ -138,6 +141,10 @@ class M_SatuanController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         $satuan = MasterSatuan::on($this->getConnectionName())->find($id);
         $satuan->fill($request->except('_token'));
 
@@ -159,6 +166,9 @@ class M_SatuanController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $satuan = MasterSatuan::on($this->getConnectionName())->find($id);
         $satuan->is_deleted = 1;
         if($satuan->save()){

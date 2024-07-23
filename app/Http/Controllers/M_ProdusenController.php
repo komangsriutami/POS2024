@@ -108,6 +108,9 @@ class M_ProdusenController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $produsen = new MasterProdusen;
         $produsen->setDynamicConnection();
         $produsen->fill($request->except('_token'));
@@ -169,6 +172,9 @@ class M_ProdusenController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $produsen = MasterProdusen::on($this->getConnectionName())->find($id);
         $produsen->fill($request->except('_token'));
 
@@ -190,6 +196,9 @@ class M_ProdusenController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $produsen = MasterProdusen::on($this->getConnectionName())->find($id);
         $produsen->is_deleted = 1;
         if($produsen->save()){

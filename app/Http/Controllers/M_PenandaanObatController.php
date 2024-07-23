@@ -89,6 +89,9 @@ class M_PenandaanObatController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $penandaan_obat = new MasterPenandaanObat;
         $penandaan_obat->setDynamicConnection();
         $penandaan_obat->fill($request->except('_token'));
@@ -138,6 +141,9 @@ class M_PenandaanObatController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $penandaan_obat = MasterPenandaanObat::on($this->getConnectionName())->find($id);
         $penandaan_obat->fill($request->except('_token'));
 
@@ -159,6 +165,9 @@ class M_PenandaanObatController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $penandaan_obat = MasterPenandaanObat::on($this->getConnectionName())->find($id);
         $penandaan_obat->is_deleted = 1;
         if($penandaan_obat->save()){

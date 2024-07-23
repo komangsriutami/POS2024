@@ -98,6 +98,9 @@ class M_PajakController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $pajak = new MasterPajak;
         $pajak->setDynamicConnection();
         $pajak->fill($request->except('_token'));
@@ -153,6 +156,9 @@ class M_PajakController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $pajak = MasterPajak::on($this->getConnectionName())->find($id);
         $pajak->fill($request->except('_token'));
 
@@ -174,6 +180,9 @@ class M_PajakController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $pajak = MasterPajak::on($this->getConnectionName())->find($id);
         $pajak->is_deleted = 1;
         if($pajak->save()){

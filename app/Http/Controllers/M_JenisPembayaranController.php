@@ -91,6 +91,9 @@ class M_JenisPembayaranController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_pembayaran = new MasterJenisPembayaran;
         $jenis_pembayaran->setDynamicConnection();
         $jenis_pembayaran->fill($request->except('_token'));
@@ -142,6 +145,9 @@ class M_JenisPembayaranController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_pembayaran = MasterJenisPembayaran::on($this->getConnectionName())->find($id);
         $jenis_pembayaran->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_JenisPembayaranController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_pembayaran = MasterJenisPembayaran::on($this->getConnectionName())->find($id);
         $jenis_pembayaran->is_deleted = 1;
         if($jenis_pembayaran->save()){

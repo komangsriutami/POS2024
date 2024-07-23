@@ -91,6 +91,9 @@ class M_JenisPembelianController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_pembelian = new MasterJenisPembelian;
         $jenis_pembelian->setDynamicConnection();
         $jenis_pembelian->fill($request->except('_token'));
@@ -142,6 +145,9 @@ class M_JenisPembelianController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_pembelian = MasterJenisPembelian::on($this->getConnectionName())->find($id);
         $jenis_pembelian->fill($request->except('_token'));
 
@@ -165,6 +171,9 @@ class M_JenisPembelianController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $jenis_pembelian = MasterJenisPembelian::on($this->getConnectionName())->find($id);
         $jenis_pembelian->is_deleted = 1;
         if($jenis_pembelian->save()){

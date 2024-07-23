@@ -93,6 +93,9 @@ class M_StatusKaryawanController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $status_karyawan = new MasterStatusKaryawan;
         $status_karyawan->setDynamicConnection();
         $status_karyawan->fill($request->except('_token'));
@@ -145,6 +148,9 @@ class M_StatusKaryawanController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $status_karyawan = MasterStatusKaryawan::on($this->getConnectionName())->find($id);
         $status_karyawan->fill($request->except('_token'));
 
@@ -168,6 +174,9 @@ class M_StatusKaryawanController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $status_karyawan = MasterStatusKaryawan::on($this->getConnectionName())->find($id);
         $status_karyawan->is_deleted = 1;
         if($status_karyawan->save()){

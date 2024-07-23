@@ -126,6 +126,9 @@ class RoleController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $role = new RbacRole;
         $role->setDynamicConnection();
         $role->fill($request->except('_token'));
@@ -246,6 +249,9 @@ class RoleController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $role = RbacRole::on($this->getConnectionName())->find($id);
         $role->fill($request->except('_token'));
 
@@ -278,6 +284,9 @@ class RoleController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $role = RbacRole::on($this->getConnectionName())->find($id);
         $role->is_deleted = 1;
 
