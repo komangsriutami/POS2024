@@ -70,7 +70,7 @@ class S_PGController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->get();
 
@@ -81,7 +81,7 @@ class S_PGController extends Controller
                 foreach($rekaps as $rekap) {
                     $no++;
                     
-                    /*$cek = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_obat', $rekap->id_obat)->where('id_jenis_transaksi', 11)->orderBy('created_at', 'DESC')->first();
+                    /*$cek = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial.'')->where('id_obat', $rekap->id_obat)->where('id_jenis_transaksi', 11)->orderBy('created_at', 'DESC')->first();
                     $so = 'Tidak';
                     if(!empty($cek)) {
                         $tgl_cek = date('Y-m-d', strtotime($cek->created_at));
@@ -174,7 +174,7 @@ class S_PGController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->get();
 
@@ -265,18 +265,18 @@ class S_PGController extends Controller
         }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->first();
 
-        $last = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
+        $last = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial.'')
                 ->where('id_obat', $cek->id_obat)
                 ->where('id_jenis_transaksi', '!=', 11)
                 ->orderBy('id', 'DESC')
                 ->first();
 
         if(!empty($last)) {
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->update(['stok_awal_so' => $last->stok_akhir]);
         }

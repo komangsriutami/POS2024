@@ -11,6 +11,7 @@ class HistoriStok extends Model
     use HasFactory;
     use DynamicConnectionTrait;
 
+    protected $connection = 'mysql';
     protected $table = null;
     public $primaryKey = 'id';
     protected $fillable = ['id_obat', 'jumlah', 'stok_awal', 'stok_akhir', 'id_jenis_transaksi', 'id_transaksi', 'batch', 'ed', 'hb_ppn', 'keterangan', 'sisa_stok'];

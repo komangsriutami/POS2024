@@ -134,7 +134,7 @@ class TransaksiPembelian extends Model
                     # update stok ke 
                     $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                     $inisial = strtolower($apotek->nama_singkat);
-                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir+$obj->jumlah;
 
 
@@ -155,7 +155,7 @@ class TransaksiPembelian extends Model
                     );*/
 
                     # update ke table stok harga
-                    $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
+                    $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
                     $stok_harga->stok_awal = $stok_before->stok_akhir;
                     $stok_harga->stok_akhir = $stok_now;
                     $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -186,10 +186,9 @@ class TransaksiPembelian extends Model
                     );*/
 
                     # create histori
-                    $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                    $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                     if(empty($histori_stok)) {
                         $histori_stok = new HistoriStok;
-                        $histori_stok->setDynamicConnection();
                     }
                     $histori_stok->id_obat = $obj->id_obat;
                     $histori_stok->jumlah = $obj->jumlah;

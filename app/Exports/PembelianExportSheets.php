@@ -266,7 +266,7 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
                 ->groupBy('a.id_obat');
 
                 DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-                $all = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$this->inisial.' as c')
+                $all = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$this->inisial.' as c')
                 ->select([
                     DB::raw('IFNULL(y.id_obat, 0) as id_det'),
                     DB::raw('IFNULL(y.jumlah_pemakaian, 0) as jumlah_pemakaian'),

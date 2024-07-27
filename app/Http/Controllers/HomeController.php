@@ -4472,7 +4472,7 @@ class HomeController extends Controller
 
             $i++;
 
-            $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+            $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
             $omzet = $obj->omzet;
 
@@ -5021,7 +5021,7 @@ class HomeController extends Controller
             }
 
             foreach ($collection as $item) {
-                $stok_akhir = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
+                $stok_akhir = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)
                     ->select(
                         'id_obat',
                         'stok_akhir',
@@ -5953,7 +5953,7 @@ class HomeController extends Controller
 
        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
 
-        $all = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as c')
+        $all = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as c')
 
                     ->select([
 
@@ -5999,7 +5999,7 @@ class HomeController extends Controller
 
 
 
-        /*$data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        /*$data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
 
                     ->select([
 
@@ -8266,7 +8266,7 @@ class HomeController extends Controller
 
         foreach ($get_noid as $key => $obj) {
 
-           /* $cek = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
+           /* $cek = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
 
             $cek->harga_beli_ppn = $obj->hb_ppn;
 
@@ -8274,7 +8274,7 @@ class HomeController extends Controller
 
 
 
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->update(['harga_beli_ppn' => $obj->hb_ppn]);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->update(['harga_beli_ppn' => $obj->hb_ppn]);
 
             $i++;
 

@@ -193,7 +193,7 @@ class T_DefectaController extends Controller
         }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
         $defecta = new DefectaOutlet;
         $defecta->setDynamicConnection();
@@ -223,7 +223,7 @@ class T_DefectaController extends Controller
             echo json_encode(array('status' => 0));
         }else{
             if($defecta->save()) {
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
                 echo json_encode(array('status' => 1));
             } else {
                 echo json_encode(array('status' => 0));
@@ -269,7 +269,7 @@ class T_DefectaController extends Controller
 
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
         $defecta = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
                     ->where('id_obat', $request->id_obat)
@@ -302,7 +302,7 @@ class T_DefectaController extends Controller
             echo json_encode(array('status' => 0));
         }else{
             if($defecta->save()) {
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
                 echo json_encode(array('status' => 1));
             } else {
                 echo json_encode(array('status' => 0));
@@ -340,7 +340,7 @@ class T_DefectaController extends Controller
 
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->first();
+        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->first();
         $last_hitung = date('d-m-Y H:i:s'); //, strtotime($data_->last_hitung)
         //echo "asdasdsa";exit();
         return view('defecta.input')->with(compact('last_hitung'));
@@ -372,7 +372,7 @@ class T_DefectaController extends Controller
                             
 
             //$data = collect();
-            $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
+            $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)
                                 ->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_m_stok_harga_'.$inisial.'.id',
@@ -403,7 +403,7 @@ class T_DefectaController extends Controller
             /*$x = $data->get();
             dd($x);*/
         } else {
-            $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
+            $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)
                                 ->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_m_stok_harga_'.$inisial.'.id',
@@ -503,7 +503,7 @@ class T_DefectaController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
 
         $j = 0;
-        $obats = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->limit(50)->get();
+        $obats = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->limit(50)->get();
         foreach ($obats as $key => $obj) {
             $total_buffer = 0;
             $y1 = 0; 
@@ -558,7 +558,7 @@ class T_DefectaController extends Controller
             $y = $a + $b * 4; // a + bx;
             $abc = ceil($y);
 
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
             $j++;
         }
 
@@ -571,7 +571,7 @@ class T_DefectaController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
         $id_stok_harga = $request->id_stok_harga;
         $id_defecta = $request->id_defecta;
-        $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id', $id_stok_harga)->first();
+        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id', $id_stok_harga)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($data_->id_obat);
         $jumlah_pemakaian = $request->jumlah;
         $margin = $request->margin;
@@ -755,7 +755,7 @@ class T_DefectaController extends Controller
             foreach($apoteks as $obj) {
                 $i++;
                 $inisial = strtolower($obj->nama_singkat);
-                $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                 $info .= $obj->nama_singkat.' : '.$cek_->stok_akhir;
                 if($i != count($apoteks)) {
                     $info .= ' | ';
@@ -788,7 +788,7 @@ class T_DefectaController extends Controller
             foreach($apoteks as $obj) {
                 $i++;
                 $inisial = strtolower($obj->nama_singkat);
-                $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                 if($cek_->stok_akhir > $data->total_stok) {
                     $ada_ = 1;
                 }
@@ -1220,7 +1220,7 @@ class T_DefectaController extends Controller
             ->groupBy('a.id');
     
             // ambil data stok akhir per bulan
-            $query_histori_stok = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+            $query_histori_stok = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                 ->select([
                     'id_obat',
                     DB::raw('cast(stok_awal as SIGNED) as stok_awal'),
@@ -1482,7 +1482,7 @@ class T_DefectaController extends Controller
     public function add_keranjang(Request $request){
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
         $defecta = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
                     ->where('id_obat', $request->id_obat)
@@ -1773,7 +1773,7 @@ class T_DefectaController extends Controller
     public function add_keranjang_transfer(Request $request){
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
         $defecta = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
                     ->where('id_obat', $request->id_obat)
@@ -1795,7 +1795,7 @@ class T_DefectaController extends Controller
         foreach($apoteks as $obj) {
             $i++;
             $inisial = strtolower($obj);
-            $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+            $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
             $info .= $obj.' : '.$cek_->stok_akhir;
             if($i != count($apoteks)) {
                 $info .= ' | ';
@@ -1861,7 +1861,7 @@ class T_DefectaController extends Controller
         foreach($apoteks as $obj) {
             $i++;
             $inisialx = strtolower($obj->nama_singkat);
-            $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisialx)->where('id_obat', $request->id_obat)->first();
+            $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisialx)->where('id_obat', $request->id_obat)->first();
             $info .= $obj->nama_singkat.' : '.$cek_->stok_akhir;
             if($i != count($apoteks)) {
                 $info .= ' | ';

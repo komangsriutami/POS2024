@@ -126,7 +126,7 @@ class ServiceController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($var);
         $inisial = strtolower($apotek->nama_singkat);
 
-        $list = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $list = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                     DB::raw(''.$var.' as STORE_NUMBER'),
                     'tb_m_stok_harga_'.$inisial.'.id_obat as NO_SKU', 
@@ -153,7 +153,7 @@ class ServiceController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 
@@ -179,7 +179,7 @@ class ServiceController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 
@@ -206,7 +206,7 @@ class ServiceController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 
@@ -233,7 +233,7 @@ class ServiceController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 

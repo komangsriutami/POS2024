@@ -386,15 +386,15 @@ class T_TOController extends Controller
                 $detail_transfer_outlet->deleted_by = Auth::user()->id;
                 $detail_transfer_outlet->save();
 
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
                 $jumlah = $detail_transfer_outlet->jumlah;
                 $stok_now = $stok_before->stok_akhir+$jumlah;
 
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $detail_transfer_outlet->id_obat,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before->stok_akhir,
@@ -408,14 +408,14 @@ class T_TOController extends Controller
                 ]);  
 
                 // turn off -> because add konfirmasi transfer barang
-                /*$stok_before2 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+                /*$stok_before2 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
                 $stok_now2 = $stok_before2->stok_akhir-$detail_transfer_outlet->jumlah;
 
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial2)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial2)->insert([
                     'id_obat' => $detail_transfer_outlet->id_obat,
                     'jumlah' => $detail_transfer_outlet->jumlah,
                     'stok_awal' => $stok_before2->stok_akhir,
@@ -471,15 +471,15 @@ class T_TOController extends Controller
             $apotek2 = MasterApotek::on($this->getConnectionName())->find($transfer_outlet->id_apotek_tujuan);
             $inisial2 = strtolower($apotek2->nama_singkat);
 
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
             $jumlah = $detail_transfer_outlet->jumlah;
             $stok_now = $stok_before->stok_akhir+$jumlah;
 
             # update ke table stok harga
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+            DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_transfer_outlet->id_obat,
                 'jumlah' => $jumlah,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -493,14 +493,14 @@ class T_TOController extends Controller
             ]);  
 
             // turn off -> because add konfirmasi transfer barang
-            /*$stok_before2 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+            /*$stok_before2 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
             $stok_now2 = $stok_before2->stok_akhir-$detail_transfer_outlet->jumlah;
 
             # update ke table stok harga
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial2)->insert([
+            DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial2)->insert([
                 'id_obat' => $detail_transfer_outlet->id_obat,
                 'jumlah' => $detail_transfer_outlet->jumlah,
                 'stok_awal' => $stok_before2->stok_akhir,
@@ -1061,22 +1061,22 @@ class T_TOController extends Controller
 
                 foreach ($detail_transfer_outlets as $key => $detail_transfer_outlet) {
                     # cek apakah transaksinya telah diterima sebelumnya
-                    $cek_ = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial_awal)
+                    $cek_ = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial_awal)
                             ->where('id_obat', $detail_transfer_outlet->id_obat)
                             ->where('id_transaksi', $detail_transfer_outlet->id)
                             ->first();
 
                     if($cek_) {
                         // create histori stok hapus data pembelian dengan id_apotek_awal
-                        $stok_before_awal = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial_awal)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+                        $stok_before_awal = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial_awal)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
                         $jumlah = $detail_transfer_outlet->jumlah;
                         $stok_now_awal = $stok_before_awal->stok_akhir-$jumlah;
 
                         # update ke table stok harga
-                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial_awal)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                        DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial_awal)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                         # create histori
-                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial_awal)->insert([
+                        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial_awal)->insert([
                             'id_obat' => $detail_transfer_outlet->id_obat,
                             'jumlah' => $jumlah,
                             'stok_awal' => $stok_before_awal->stok_akhir,
@@ -1092,15 +1092,15 @@ class T_TOController extends Controller
 
                     // turn off -> because add konfirmasi transfer barang
                     // create gistori stok yang baru dengan id_apotek_baru
-                    /*$stok_before_akhir = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial_akhir)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+                    /*$stok_before_akhir = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial_akhir)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
                     $jumlah = $detail_transfer_outlet->jumlah;
                     $stok_now_akhir = $stok_before_akhir->stok_akhir+$jumlah;
 
                     # update ke table stok harga
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial_akhir)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial_akhir)->where('id_obat', $detail_transfer_outlet->id_obat)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
-                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial_akhir)->insert([
+                    DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial_akhir)->insert([
                         'id_obat' => $detail_transfer_outlet->id_obat,
                         'jumlah' => $jumlah,
                         'stok_awal' => $stok_before_akhir->stok_akhir,
@@ -1156,15 +1156,15 @@ class T_TOController extends Controller
 
             if($request->id_obat_awal != $request->id_obat_akhir) {
                 // create histori stok dengan id_obat_awal
-                $stok_before_awal = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->first();
+                $stok_before_awal = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->first();
                 $jumlah = $detail_transfer_outlet->jumlah;
                 $stok_now_awal = $stok_before_awal->stok_akhir-$jumlah;
 
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $request->id_obat_awal,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before_awal->stok_akhir,
@@ -1179,14 +1179,14 @@ class T_TOController extends Controller
 
                 // turn off -> because add konfirmasi transfer barang
                 // create histori stok dengan id_obat_akhir
-                /*$stok_before_akhir = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->first();
+                /*$stok_before_akhir = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->first();
                 $stok_now_akhir = $stok_before_akhir->stok_akhir+$jumlah;
 
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $request->id_obat_akhir,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before_akhir->stok_akhir,
@@ -1723,14 +1723,13 @@ class T_TOController extends Controller
                     // jika barang diterima buat histori
                     if($obj->is_status == 1) {
                         // turn off -> because add konfirmasi transfer barang
-                        $stok_before2 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->first();
-                        $outlet1 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial1)->where('id_obat', $obj->id_obat)->first();
+                        $stok_before2 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->first();
+                        $outlet1 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial1)->where('id_obat', $obj->id_obat)->first();
 
                         $stok_now2 = $stok_before2->stok_akhir+$obj->jumlah;
 
                         # update ke table stok harga
                         /*$stok_harga = new MasterStokHargaTujuan;
-                        $stok_harga->setDynamicConnection();
                         $stok_harga->setTable('tb_m_stok_harga_'.$inisial2);
                         $stok_harga->where('id_obat', $obj->id_obat)->first();
                         $stok_harga->stok_awal = $stok_before2->stok_akhir;
@@ -1745,16 +1744,14 @@ class T_TOController extends Controller
                             return redirect('transfer_outlet/konfirm/'.$id)->with('message', 'Gagal update data ke master stok!');
                         }*/
 
-                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                        DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                         # create histori
                         $histori_stok = new HistoriStokTujuan;
-                        $histori_stok->setDynamicConnection();
                         $histori_stok->setTable('tb_histori_stok_'.$inisial2);
                         $histori_stok->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 3)->where('id_transaksi', $obj->id)->first();
                         if(empty($histori_stok)) {
                             $histori_stok = new HistoriStokTujuan;
-                            $histori_stok->setDynamicConnection();
                             $histori_stok->setTable('tb_histori_stok_'.$inisial2);
                         }
                         $histori_stok->id_obat = $obj->id_obat;
@@ -1778,7 +1775,7 @@ class T_TOController extends Controller
                             return redirect('transfer_outlet/konfirm/'.$id)->with('message', 'Gagal create histori stok!');
                         }
                       
-                        /*DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial2)->insert([
+                        /*DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial2)->insert([
                             'id_obat' => $obj->id_obat,
                             'jumlah' => $obj->jumlah,
                             'stok_awal' => $stok_before2->stok_akhir,
@@ -1799,7 +1796,7 @@ class T_TOController extends Controller
 
                             // update harga obat
                             DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial2.'')->insert($data_histori_);
-                            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $outlet1->harga_beli, 'harga_beli_ppn' => $obj->harga_outlet, 'updated_by' => Auth::user()->id]);
+                            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $outlet1->harga_beli, 'harga_beli_ppn' => $obj->harga_outlet, 'updated_by' => Auth::user()->id]);
                         }
                     }
                     $i++;
@@ -1850,14 +1847,13 @@ class T_TOController extends Controller
                         // jika barang diterima buat histori
                         if($obj->is_status == 1) {
                             // turn off -> because add konfirmasi transfer barang
-                            $stok_before2 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->first();
-                            $outlet1 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial1)->where('id_obat', $obj->id_obat)->first();
+                            $stok_before2 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->first();
+                            $outlet1 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial1)->where('id_obat', $obj->id_obat)->first();
 
                             $stok_now2 = $stok_before2->stok_akhir+$obj->jumlah;
 
                             # update ke table stok harga
                             /*$stok_harga = new MasterStokHargaTujuan;
-                            $stok_harga->setDynamicConnection();
                             $stok_harga->setTable('tb_m_stok_harga_'.$inisial2);
                             $stok_harga->where('id_obat', $obj->id_obat)->first();
                             $stok_harga->stok_awal = $stok_before2->stok_akhir;
@@ -1872,16 +1868,14 @@ class T_TOController extends Controller
                                 return redirect('transfer_outlet/konfirm/'.$id)->with('message', 'Gagal update data ke master stok!');
                             }*/
 
-                            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                             # create histori
                             $histori_stok = new HistoriStokTujuan;
-                            $histori_stok->setDynamicConnection();
                             $histori_stok->setTable('tb_histori_stok_'.$inisial2);
                             $histori_stok->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 3)->where('id_transaksi', $obj->id)->first();
                             if(empty($histori_stok)) {
                                 $histori_stok = new HistoriStokTujuan;
-                                $histori_stok->setDynamicConnection();
                                 $histori_stok->setTable('tb_histori_stok_'.$inisial2);
                             }
                             $histori_stok->id_obat = $obj->id_obat;
@@ -1905,7 +1899,7 @@ class T_TOController extends Controller
                                 return redirect('transfer_outlet/konfirm/'.$id)->with('message', 'Gagal create histori stok!');
                             }
                           
-                            /*DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial2)->insert([
+                            /*DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial2)->insert([
                                 'id_obat' => $obj->id_obat,
                                 'jumlah' => $obj->jumlah,
                                 'stok_awal' => $stok_before2->stok_akhir,
@@ -1926,7 +1920,7 @@ class T_TOController extends Controller
 
                                 // update harga obat
                                 DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial2.'')->insert($data_histori_);
-                                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $outlet1->harga_beli, 'harga_beli_ppn' => $obj->harga_outlet, 'updated_by' => Auth::user()->id]);
+                                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $outlet1->harga_beli, 'harga_beli_ppn' => $obj->harga_outlet, 'updated_by' => Auth::user()->id]);
                             }
                         }
                         $i++;
@@ -2429,7 +2423,7 @@ class T_TOController extends Controller
             # crete histori stok barang
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first(); 
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first(); 
             $stok_now = $stok_before->stok_akhir+$detail_transfer_outlet->jumlah;
 
             /*$arrayupdate = array(
@@ -2440,7 +2434,7 @@ class T_TOController extends Controller
             );*/
 
             # update ke table stok harga
-            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_transfer_outlet->id_obat)->first();
             $stok_harga->stok_awal = $stok_before->stok_akhir;
             $stok_harga->stok_akhir = $stok_now;
             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -2467,10 +2461,9 @@ class T_TOController extends Controller
             );*/
 
             # create histori
-            $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_transfer_outlet->id_obat)->where('jumlah', $detail_transfer_outlet->jumlah)->where('id_jenis_transaksi', 17)->where('id_transaksi', $detail_transfer_outlet->id)->first();
+            $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_transfer_outlet->id_obat)->where('jumlah', $detail_transfer_outlet->jumlah)->where('id_jenis_transaksi', 17)->where('id_transaksi', $detail_transfer_outlet->id)->first();
             if(empty($histori_stok)) {
                 $histori_stok = new HistoriStok;
-                $histori_stok->setDynamicConnection();
             }
             $histori_stok->id_obat = $detail_transfer_outlet->id_obat;
             $histori_stok->jumlah = $detail_transfer_outlet->jumlah;
@@ -2497,7 +2490,7 @@ class T_TOController extends Controller
                 echo json_encode(array('status' => 0));
             } else {
                 foreach ($histori_stok_details as $y => $hist) {
-                    $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                     $keterangan = $cekHistori->keterangan.', Hapus TO pada IDdet.'.$detail_transfer_outlet->id.' sejumlah '.$hist->jumlah;
                     $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                     $cekHistori->keterangan = $keterangan;
@@ -2560,7 +2553,7 @@ class T_TOController extends Controller
                 # crete histori stok barang
                 $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first(); 
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir+$detail_transfer_outlet->jumlah;
 
                 /*$arrayupdate = array(
@@ -2571,7 +2564,7 @@ class T_TOController extends Controller
                 );*/
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_transfer_outlet->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_transfer_outlet->id_obat)->first();
                 $stok_harga->stok_awa = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -2598,10 +2591,9 @@ class T_TOController extends Controller
                 );*/
 
                 # create histori
-                $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_transfer_outlet->id_obat)->where('jumlah', $detail_transfer_outlet->jumlah)->where('id_jenis_transaksi', 17)->where('id_transaksi', $detail_transfer_outlet->id)->first();
+                $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_transfer_outlet->id_obat)->where('jumlah', $detail_transfer_outlet->jumlah)->where('id_jenis_transaksi', 17)->where('id_transaksi', $detail_transfer_outlet->id)->first();
                 if(empty($histori_stok)) {
                     $histori_stok = new HistoriStok;
-                    $histori_stok->setDynamicConnection();
                 }
                 $histori_stok->id_obat = $detail_transfer_outlet->id_obat;
                 $histori_stok->jumlah = $detail_transfer_outlet->jumlah;
@@ -2628,7 +2620,7 @@ class T_TOController extends Controller
                     echo json_encode(array('status' => 0));
                 } else {
                     foreach ($histori_stok_details as $y => $hist) {
-                        $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                        $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                         $keterangan = $cekHistori->keterangan.', Hapus TO pada IDdet.'.$detail_transfer_outlet->id.' sejumlah '.$hist->jumlah;
                         $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                         $cekHistori->keterangan = $keterangan;
@@ -2733,21 +2725,19 @@ class T_TOController extends Controller
                 // jika barang diterima buat histori
                 if($obj->is_status == 1) {
                     // turn off -> because add konfirmasi transfer barang
-                    $stok_before2 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->first();
-                    $outlet1 = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial1)->where('id_obat', $obj->id_obat)->first();
+                    $stok_before2 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->first();
+                    $outlet1 = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial1)->where('id_obat', $obj->id_obat)->first();
 
                     $stok_now2 = $stok_before2->stok_akhir+$obj->jumlah;
 
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['stok_awal'=> $stok_before2->stok_akhir, 'stok_akhir'=> $stok_now2, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
                     $histori_stok = new HistoriStokTujuan;
-                    $histori_stok->setDynamicConnection();
                     $histori_stok->setTable('tb_histori_stok_'.$inisial2);
                     $histori_stok->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 3)->where('id_transaksi', $obj->id)->first();
                     if(empty($histori_stok)) {
                         $histori_stok = new HistoriStokTujuan;
-                        $histori_stok->setDynamicConnection();
                         $histori_stok->setTable('tb_histori_stok_'.$inisial2);
                     }
                     $histori_stok->id_obat = $obj->id_obat;
@@ -2776,7 +2766,7 @@ class T_TOController extends Controller
 
                         // update harga obat
                         DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial2.'')->insert($data_histori_);
-                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $outlet1->harga_beli, 'harga_beli_ppn' => $obj->harga_outlet, 'updated_by' => Auth::user()->id]);
+                        DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial2)->where('id_obat', $obj->id_obat)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $outlet1->harga_beli, 'harga_beli_ppn' => $obj->harga_outlet, 'updated_by' => Auth::user()->id]);
                     }
                 }
                 $i++;

@@ -170,7 +170,7 @@ class LossSellController extends Controller
         $data_->id_apotek = session('id_apotek_active');
 
         if(!empty($data_->id_obat)) {
-            $obat = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $data_->id_obat)->first();
+            $obat = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $data_->id_obat)->first();
             $data_->harga = $obat->harga_jual;
             $data_->total = $data_->jumlah*$data_->harga;
         } else {
@@ -236,7 +236,7 @@ class LossSellController extends Controller
         $data_->fill($request->except('_token'));
 
         if(!empty($data_->id_obat)) {
-            $obat = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $data_->id_obat)->first();
+            $obat = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $data_->id_obat)->first();
             $data_->harga = $obat->harga_jual;
             $data_->total = $data_->jumlah*$data_->harga;
         } else {

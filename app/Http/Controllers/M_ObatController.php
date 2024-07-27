@@ -201,7 +201,7 @@ class M_ObatController extends Controller
 
             foreach ($apoteks as $key => $val) {
                 $inisial = strtolower($val->nama_singkat);
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
                 $val->is_sync = 1;
                 $val->sync_by = $sync_by;
                 $val->sync_at = $sync_at;
@@ -287,10 +287,10 @@ class M_ObatController extends Controller
                 // update harga obat masing2 outlet
                 foreach ($apoteks as $key => $obj) {
                     $inisial = strtolower($obj->nama_singkat);
-                    $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+                    $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
                     if($cek->is_status_harga == 0) {
                         DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
-                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
+                        DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
                     }
                 }
             }
@@ -319,9 +319,9 @@ class M_ObatController extends Controller
             // update harga obat masing2 outlet
             foreach ($apoteks as $key => $obj) {
                 $inisial = strtolower($obj->nama_singkat);
-                $cek_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+                $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
                 if(!empty($cek_)) {
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['is_deleted' => 1, 'deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => Auth::user()->id]);
                 }
             }
             echo 1;
@@ -418,10 +418,10 @@ class M_ObatController extends Controller
                 // update harga obat masing2 outlet
                 foreach ($apoteks as $key => $obj) {
                     $inisial = strtolower($obj->nama_singkat);
-                    $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+                    $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
                     if($cek->is_status_harga == 0) {
                         DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
-                        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_beli_ppn' => $request->harga_beli_ppn, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
+                        DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['updated_at' => date('Y-m-d H:i:s'), 'harga_beli' => $request->harga_beli, 'harga_beli_ppn' => $request->harga_beli_ppn, 'harga_jual' => $request->harga_jual, 'updated_by' => Auth::user()->id]);
                     }
                 }
 
@@ -442,7 +442,7 @@ class M_ObatController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*', 'tb_m_obat.nama', 'tb_m_obat.sku', 'tb_m_obat.isi_tab', 'tb_m_obat.isi_strip', 'tb_m_produsen.nama as produsen', 'tb_m_penandaan_obat.nama as penandaan_obat', 'tb_m_golongan_obat.keterangan as golongan_obat'])
+        $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*', 'tb_m_obat.nama', 'tb_m_obat.sku', 'tb_m_obat.isi_tab', 'tb_m_obat.isi_strip', 'tb_m_produsen.nama as produsen', 'tb_m_penandaan_obat.nama as penandaan_obat', 'tb_m_golongan_obat.keterangan as golongan_obat'])
                     ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
                     ->join('tb_m_produsen', 'tb_m_produsen.id', '=', 'tb_m_obat.id_produsen')
                     ->join('tb_m_penandaan_obat', 'tb_m_penandaan_obat.id', '=', 'tb_m_obat.id_penandaan_obat')
@@ -553,10 +553,10 @@ class M_ObatController extends Controller
 
         foreach ($apoteks as $key => $val) {
             $inisial = strtolower($val->nama_singkat);
-            $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+            $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
             
             if(empty($cek)) {
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->insert($array_);
                 $val->is_sync = 1;
                 $val->sync_by = $sync_by;
                 $val->sync_at = $sync_at;

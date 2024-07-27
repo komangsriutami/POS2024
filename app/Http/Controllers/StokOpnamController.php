@@ -43,7 +43,7 @@ class StokOpnamController extends Controller
             $datenow = date('d-m-Y H:i:s');
         	$cek = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', $id_apotek)->where('tgl_so', $now)->first();
             $total_barang = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->count();
-            $total_so = MasterStokHarga::on($this->getConnectionName())->where('is_deleted', 0)->where('is_so', 1)->count();
+            $total_so = MasterStokHarga::on($this->getConnectionDefault())->where('is_deleted', 0)->where('is_so', 1)->count();
             $total = MasterStokHarga::select([
                             DB::raw('SUM(stok_tersedia) as total_tersedia'),
                             DB::raw('SUM(stok_found) as total_found'),
@@ -55,8 +55,8 @@ class StokOpnamController extends Controller
                         ->where('is_deleted', 0)->where('is_so', 1)
                         ->first();
 
-            $jumlah_item_found = MasterStokHarga::on($this->getConnectionName())->where('found','>', 0)->where('is_deleted', 0)->where('is_so', 1)->count();
-            $jumlah_item_missing = MasterStokHarga::on($this->getConnectionName())->where('missing','>', 0)->where('is_deleted', 0)->where('is_so', 1)->count();
+            $jumlah_item_found = MasterStokHarga::on($this->getConnectionDefault())->where('found','>', 0)->where('is_deleted', 0)->where('is_so', 1)->count();
+            $jumlah_item_missing = MasterStokHarga::on($this->getConnectionDefault())->where('missing','>', 0)->where('is_deleted', 0)->where('is_so', 1)->count();
         	if($id_apotek != $id_apotek) {
         		$apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         		return view('so.page_not_select_apotek')->with(compact('apotek'));
@@ -101,7 +101,7 @@ class StokOpnamController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->get();
 
@@ -268,7 +268,7 @@ class StokOpnamController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
        
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                     ->where('tb_m_stok_harga_'.$inisial.'.is_deleted', 0)
                     ->get();
 
@@ -359,18 +359,18 @@ class StokOpnamController extends Controller
         }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->first();
 
-        $last = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')
+        $last = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial.'')
                 ->where('id_obat', $cek->id_obat)
                 ->where('id_jenis_transaksi', '!=', 11)
                 ->orderBy('id', 'DESC')
                 ->first();
 
         if(!empty($last)) {
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $request->id)
                 ->update(['stok_awal_so' => $last->stok_akhir]);
         }
@@ -390,7 +390,7 @@ class StokOpnamController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
         $so_status_aktif = session('so_status_aktif');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*'])
+        $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_stok_harga_'.$inisial.'.*'])
         ->where(function($query) use($request, $inisial, $so_status_aktif){
             $query->where('tb_m_stok_harga_'.$inisial.'.is_deleted','=','0');
             if($so_status_aktif == 2) {
@@ -440,7 +440,7 @@ class StokOpnamController extends Controller
     public function edit_stok($id) {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $obat = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $obat = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id', $id)
                 ->first();
 
@@ -459,10 +459,10 @@ class StokOpnamController extends Controller
             $inisial = strtolower($apotek->nama_singkat);
             $id_so = session('id_so');
             $keterangan = "-";
-            $stok_before = MasterStokHarga::on($this->getConnectionName())->find($request->id);
+            $stok_before = MasterStokHarga::on($this->getConnectionDefault())->find($request->id);
             
             if(is_null($stok_before->id_histori_stok_awal) OR $stok_before->id_histori_stok_awal =='' OR $stok_before->id_histori_stok_awal =='[]' ) {
-                $historis =DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id_obat', $stok_before->id_obat)
+                $historis =DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id_obat', $stok_before->id_obat)
                         ->whereIn('id_jenis_transaksi', [2,3,11,9])
                         ->where('sisa_stok', '<=', 0)
                         ->orderBy('id', 'DESC')
@@ -477,9 +477,9 @@ class StokOpnamController extends Controller
                      // dd($array_id_histori_stok_awal);
 
                 # update dlu ke histori awal
-                 DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id)->update(['id_histori_stok_awal'=> json_encode($array_id_histori_stok_awal), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                 DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id)->update(['id_histori_stok_awal'=> json_encode($array_id_histori_stok_awal), 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
-                $stok_before = MasterStokHarga::on($this->getConnectionName())->find($request->id);
+                $stok_before = MasterStokHarga::on($this->getConnectionDefault())->find($request->id);
                 $array_id_histori_stok_awal = json_decode($stok_before->id_histori_stok_awal);
                 //dd($array_id_histori_stok_awal);exit();
 
@@ -487,10 +487,10 @@ class StokOpnamController extends Controller
                 $array_id_histori_stok_awal = json_decode($stok_before->id_histori_stok_awal);
             }
           
-            $total_penjualan = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 1)->whereDate('created_at', date('Y-m-d'))->first();
-            $total_hapus = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 15)->whereDate('created_at', date('Y-m-d'))->first();
-            $total_retur = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 5)->whereDate('created_at', date('Y-m-d'))->first();
-            $total_batal_retur = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 6)->whereDate('created_at', date('Y-m-d'))->first();
+            $total_penjualan = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 1)->whereDate('created_at', date('Y-m-d'))->first();
+            $total_hapus = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 15)->whereDate('created_at', date('Y-m-d'))->first();
+            $total_retur = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 5)->whereDate('created_at', date('Y-m-d'))->first();
+            $total_batal_retur = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->select([DB::raw('SUM(jumlah) as total')])->where('id_obat', $request->id_obat)->where('id_jenis_transaksi', 6)->whereDate('created_at', date('Y-m-d'))->first();
             $count_penjualan = ($total_penjualan->total+$total_batal_retur->total)-($total_hapus->total+$total_retur->total);
             $stok_awal_so = $request->stok_awal_so;
             $stok_awal = $stok_awal_so-$count_penjualan;
@@ -506,7 +506,7 @@ class StokOpnamController extends Controller
             $jumlah = 0;
             $hpp_khusus_0 = 0;
             foreach ($array_id_histori_stok_awal as $y => $hist) {
-                $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                 # cari hbppn
                 $total_hpp = $total_hpp + ($hist->jumlah * $hist->hb_ppn);
                 $jumlah = $jumlah + $hist->jumlah;
@@ -542,7 +542,7 @@ class StokOpnamController extends Controller
             $stok_tersedia = ceil($stok_tersedia);
 
             # kosongkan juga jika sudah ada stok opnam sebelumnya
-            $befores = HistoriStok::on($this->getConnectionName())->where('id_obat', $request->id_obat)->where('id_transaksi', $id_so)->get();
+            $befores = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $request->id_obat)->where('id_transaksi', $id_so)->get();
             foreach ($befores as $y => $hist) {
                 # kosongkan semua stok
                 if(!is_null($cekHistori->keterangan)) {
@@ -624,7 +624,6 @@ class StokOpnamController extends Controller
 
             # create histori
             $histori_stok = new HistoriStok;
-            $histori_stok->setDynamicConnection();
             if($histori_stok->insert($arrayinsert_)) {
                 DB::connection($this->getConnectionName())->commit();
                 echo json_encode(array('status' => 1, 'total_penjualan' => $count_penjualan, 'id' => $request->id_obat, 'selisih' => $selisih));
@@ -641,7 +640,7 @@ class StokOpnamController extends Controller
 
     public function kurangStok($id_so, $id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>=', 1)
@@ -657,7 +656,7 @@ class StokOpnamController extends Controller
            // print_r($cekHistori);exit();
             foreach ($cekHistori as $key => $val) {
                 $keterangan = $val->keterangan.', Rest Stok (SO) pada ID.'.$id_so.' sejumlah '.$val->sisa_stok;
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $val->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $val->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
                 $array_id_histori_stok[] = $val->id;
                 $array_id_histori_stok_detail[] = array('id_histori_stok' => $val->id, 'jumlah' => $val->sisa_stok);
                 $total = $total + $val->hb_ppn * $val->sisa_stok;
@@ -672,14 +671,14 @@ class StokOpnamController extends Controller
             return $rsp;
         } else {
             # jika seluruh stok telah habis maka
-            $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+            $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
             ->where('id_obat', $id_obat)
             ->whereIn('id_jenis_transaksi', [2,3,11,9])
             ->orderBy('id', 'DESC')
             ->first();
 
             if(is_null($cekHistoriLanj)) {
-                $stokharga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)
+                $stokharga = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)
                     ->where('id_obat', $id_obat)
                     ->first();
                     
@@ -702,7 +701,7 @@ class StokOpnamController extends Controller
     public function show_histori_stok($id) {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $obat = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $obat = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                 ->where('id_obat', $id)
                 ->first();
 
@@ -724,7 +723,7 @@ class StokOpnamController extends Controller
         $year = date('Y');
         
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->select([
+        $data = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial.'')->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 
                     'tb_histori_stok_'.$inisial.'.*', 
                     'users.nama as oleh',

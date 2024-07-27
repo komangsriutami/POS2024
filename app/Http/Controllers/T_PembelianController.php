@@ -360,7 +360,7 @@ class T_PembelianController extends Controller
                     if($jum_details > 0) {
                         foreach ($details as $key => $obj) {
                             $obj->harga_beli_ppn = $obj->harga_beli+($pembelian->ppn/100*$obj->harga_beli);
-                            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
                             if($stok_before->harga_beli != $obj->harga_beli) {
                                 $data_histori_ = array('id_obat' => $obj->id_obat, 'harga_beli_awal' => $stok_before->harga_beli, 'harga_beli_akhir' => $obj->harga_beli, 'harga_jual_awal' => $stok_before->harga_jual, 'harga_jual_akhir' => $stok_before->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
@@ -368,7 +368,7 @@ class T_PembelianController extends Controller
                                 DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                             }
 
-                            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
+                            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
                             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                             $stok_harga->harga_beli = $obj->harga_beli;
                             $stok_harga->harga_beli_ppn = $obj->harga_beli_ppn;
@@ -379,7 +379,7 @@ class T_PembelianController extends Controller
                                 echo json_encode(array('status' => 0));
                             }
 
-                            $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                            $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                             $histori_stok->hb_ppn = $obj->harga_beli_ppn;
                             if($histori_stok->save()) {
                             } else {
@@ -471,7 +471,7 @@ class T_PembelianController extends Controller
                     if($jum_details > 0) {
                         foreach ($details as $key => $obj) {
                             $obj->harga_beli_ppn = $obj->harga_beli+($pembelian->ppn/100*$obj->harga_beli);
-                            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
                             if($stok_before->harga_beli != $obj->harga_beli) {
                                 $data_histori_ = array('id_obat' => $obj->id_obat, 'harga_beli_awal' => $stok_before->harga_beli, 'harga_beli_akhir' => $obj->harga_beli, 'harga_jual_awal' => $stok_before->harga_jual, 'harga_jual_akhir' => $stok_before->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
@@ -479,7 +479,7 @@ class T_PembelianController extends Controller
                                 DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                             }
 
-                            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
+                            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
                             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                             $stok_harga->harga_beli = $obj->harga_beli;
                             $stok_harga->harga_beli_ppn = $obj->harga_beli_ppn;
@@ -490,7 +490,7 @@ class T_PembelianController extends Controller
                                 echo json_encode(array('status' => 0));
                             }
 
-                            $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                            $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                             $histori_stok->hb_ppn = $obj->harga_beli_ppn;
                             if($histori_stok->save()) {
                             } else {
@@ -539,7 +539,7 @@ class T_PembelianController extends Controller
                 $detail_pembelian->deleted_by = Auth::user()->id;
                 $detail_pembelian->save();
 
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                 if($detail_pembelian->id_jenis_revisi == 1) {
                     $jumlah = $detail_pembelian->selisih;
                 } else {
@@ -549,10 +549,10 @@ class T_PembelianController extends Controller
                 $stok_now = $stok_before->stok_akhir-$jumlah;
 
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $detail_pembelian->id_obat,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before->stok_akhir,
@@ -886,11 +886,11 @@ class T_PembelianController extends Controller
                 # crete histori stok barang
                 $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail->id_obat)->first(); 
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir-$detail->jumlah;
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -902,7 +902,6 @@ class T_PembelianController extends Controller
                 }
                 
                 $histori_stok = new HistoriStok;
-                $histori_stok->setDynamicConnection();
                 $histori_stok->id_obat = $detail->id_obat;
                 $histori_stok->jumlah = $detail->jumlah;
                 $histori_stok->stok_awal = $stok_before->stok_akhir;
@@ -922,7 +921,7 @@ class T_PembelianController extends Controller
                 }
 
                 # update stok aktif 
-                $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail->id)->first();
+                $cekHistori = HistoriStok::on($this->getConnectionDefault())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail->id)->first();
 
                 if($cekHistori->sisa_stok < $detail->jumlah) {
                     $kurangStok = $this->kurangStok($detail->id, $detail->id_obat, $detail->jumlah);
@@ -1283,7 +1282,7 @@ class T_PembelianController extends Controller
         }
         $apotek = MasterApotek::on($this->getConnectionName())->find($id);
         $inisial = strtolower($apotek->nama_singkat);
-        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->get();
+        $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->get();
         foreach ($data as $key => $val) {
             $cari_last = TransaksiPembelianDetail::on($this->getConnectionName())->where('id_obat', $val->id_obat)->orderBy('id_old', 'DESC')->first();
             if(!empty($cari_last)) {
@@ -1293,17 +1292,17 @@ class T_PembelianController extends Controller
                     DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
 
                     // update harga beli dan harga beli ppn
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id', $val->id)
                         ->update(['harga_beli' => $cari_last->harga_beli, 'harga_beli_ppn' => $cari_last->harga_beli_ppn, 'updated_by' => Auth::user()->id, 'updated_at' => date('Y-m-d H:i:s')]);
                 } else {
                     // update harga beli ppn
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id', $val->id)
                         ->update(['harga_beli_ppn' => $cari_last->harga_beli_ppn, 'updated_by' => Auth::user()->id, 'updated_at' => date('Y-m-d H:i:s')]);
                 }
             } else {
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id', $val->id)
                         ->update(['harga_beli_ppn' => $val->harga_beli, 'updated_by' => Auth::user()->id, 'updated_at' => date('Y-m-d H:i:s')]);
             }
@@ -1732,11 +1731,11 @@ class T_PembelianController extends Controller
 
 
                      // sesuaikan stok 
-                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir-$retur_pembelian_obat->jumlah;
                 
                     # update ke table stok harga
-                    $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_harga->stok_awal = $stok_before->stok_akhir;
                     $stok_harga->stok_akhir = $stok_now;
                     $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -1749,10 +1748,9 @@ class T_PembelianController extends Controller
                     }
             
                     # create histori
-                    $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
+                    $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
                     if(empty($histori_stok)) {
                         $histori_stok = new HistoriStok;
-                        $histori_stok->setDynamicConnection();
                     }
                     $histori_stok->id_obat = $detail_pembelian->id_obat;
                     $histori_stok->jumlah = $retur_pembelian_obat->jumlah;
@@ -1775,7 +1773,7 @@ class T_PembelianController extends Controller
                     }
 
                     # update stok aktif 
-                    $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
+                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
                     if(!is_null($cekHistori)) {
                         if($cekHistori->sisa_stok < $detail_pembelian->jumlah OR is_null($cekHistori)) {
                             $kurangStok = $this->kurangStokRetur($detail_pembelian->id, $retur_pembelian_obat->id, $detail_pembelian->id_obat, $retur_pembelian_obat->jumlah);
@@ -1834,11 +1832,11 @@ class T_PembelianController extends Controller
                    
 
                         // sesuaikan stok 
-                        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                        $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                         $stok_now = $stok_before->stok_akhir+$retur_pembelian_obat->jumlah;
                     
                         # update ke table stok harga
-                        $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
+                        $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->first();
                         $stok_harga->stok_awal = $stok_before->stok_akhir;
                         $stok_harga->stok_akhir = $stok_now;
                         $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -1851,10 +1849,9 @@ class T_PembelianController extends Controller
                         }
                 
                         # create histori
-                        $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
+                        $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->where('id_jenis_transaksi', 26)->where('id_transaksi', $detail_pembelian->id)->first();
                         if(empty($histori_stok)) {
                             $histori_stok = new HistoriStok;
-                            $histori_stok->setDynamicConnection();
                         }
                         $histori_stok->id_obat = $detail_pembelian->id_obat;
                         $histori_stok->jumlah = $retur_pembelian_obat->jumlah;
@@ -2013,7 +2010,7 @@ class T_PembelianController extends Controller
             $konfirmasi_ed->setDynamicConnection();
         }
 
-        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+        $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
 
         $retur_pembelian_obat = ReturPembelian::on($this->getConnectionName())->where('is_deleted', 0)
                                             ->where('id_detail_nota', $detail_pembelian->id)
@@ -2065,14 +2062,14 @@ class T_PembelianController extends Controller
                     $retur_pembelian_obat->save();
 
                     // update stok 
-                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir-$retur_pembelian_obat->jumlah;
 
                     # update ke table stok harga
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
-                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                    DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                         'id_obat' => $detail_pembelian->id_obat,
                         'jumlah' => $retur_pembelian_obat->jumlah,
                         'stok_awal' => $stok_before->stok_akhir,
@@ -2109,14 +2106,14 @@ class T_PembelianController extends Controller
                     $retur_pembelian_obat->save();
 
                     // update stok 
-                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir+$retur_pembelian_obat->jumlah;
 
                     # update ke table stok harga
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
-                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                    DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                         'id_obat' => $detail_pembelian->id_obat,
                         'jumlah' => $retur_pembelian_obat->jumlah,
                         'stok_awal' => $stok_before->stok_akhir,
@@ -2259,12 +2256,12 @@ class T_PembelianController extends Controller
         $detail_pembelians = TransaksiPembelianDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $pembelian->id)->get();    
         $i = 0;
         foreach($detail_pembelians as $key => $obj) {
-            $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+            $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
             $harga_before = DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
             $harga_ppn_now = ($pembelian->ppn/100 * $obj->harga_beli) + $obj->harga_beli;
             if($harga_ppn_now != $cek->harga_beli_ppn) {
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['harga_beli_ppn'=> $harga_ppn_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['harga_beli_ppn'=> $harga_ppn_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
                 $i++;
             }
         }
@@ -2287,7 +2284,7 @@ class T_PembelianController extends Controller
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first();
             $jumlah = $detail_pembelian->jumlah;
             $stok_now = $stok_before->stok_akhir-$jumlah;
 
@@ -2298,10 +2295,10 @@ class T_PembelianController extends Controller
 
 
             # update ke table stok harga
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+            DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_pembelian->id_obat,
                 'jumlah' => $jumlah,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -2370,15 +2367,15 @@ class T_PembelianController extends Controller
 
             if($request->id_obat_awal != $request->id_obat_akhir) {
                 // create histori stok dengan id_obat_awal
-                $stok_before_awal = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->first();
+                $stok_before_awal = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->first();
                 $jumlah = $detail_pembelian->jumlah;
                 $stok_now_awal = $stok_before_awal->stok_akhir-$jumlah;
 
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_awal)->update(['stok_awal'=> $stok_before_awal->stok_akhir, 'stok_akhir'=> $stok_now_awal, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $request->id_obat_awal,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before_awal->stok_akhir,
@@ -2392,14 +2389,14 @@ class T_PembelianController extends Controller
                 ]);  
 
                 // create histori stok dengan id_obat_akhir
-                $stok_before_akhir = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->first();
+                $stok_before_akhir = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->first();
                 $stok_now_akhir = $stok_before_akhir->stok_akhir+$jumlah;
 
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat_akhir)->update(['stok_awal'=> $stok_before_akhir->stok_akhir, 'stok_akhir'=> $stok_now_akhir, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $request->id_obat_akhir,
                     'jumlah' => $jumlah,
                     'stok_awal' => $stok_before_akhir->stok_akhir,
@@ -2874,7 +2871,7 @@ class T_PembelianController extends Controller
             # crete histori stok barang
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
             $stok_now = $stok_before->stok_akhir-$detail_pembelian->jumlah;
 
             /*$arrayupdate = array(
@@ -2885,7 +2882,7 @@ class T_PembelianController extends Controller
             );*/
 
             # update ke table stok harga
-            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
+            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->first();
             $stok_harga->stok_awal = $stok_before->stok_akhir;
             $stok_harga->stok_akhir = $stok_now;
             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -2912,10 +2909,9 @@ class T_PembelianController extends Controller
             );*/
 
             # create histori
-            /*$histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
+            /*$histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
             if(empty($histori_stok)) {*/
                 $histori_stok = new HistoriStok;
-                $histori_stok->setDynamicConnection();
             //}
             $histori_stok->id_obat = $detail_pembelian->id_obat;
             $histori_stok->jumlah = $detail_pembelian->jumlah;
@@ -2936,7 +2932,7 @@ class T_PembelianController extends Controller
             }
 
             # update stok aktif 
-            $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
+            $cekHistori = HistoriStok::on($this->getConnectionDefault())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
             if($cekHistori->sisa_stok < $detail_pembelian->jumlah) {
                 $kurangStok = $this->kurangStok($detail_pembelian->id, $detail_pembelian->id_obat, $detail_pembelian->jumlah);
                 if($kurangStok['status'] == 0) {
@@ -3015,7 +3011,7 @@ class T_PembelianController extends Controller
                 # crete histori stok barang
                 $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_pembelian->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir-$detail_pembelian->jumlah;
 
                 /*$arrayupdate = array(
@@ -3026,7 +3022,7 @@ class T_PembelianController extends Controller
                 );*/
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -3053,10 +3049,9 @@ class T_PembelianController extends Controller
                 );*/
 
                 # create histori
-                /*$histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
+                /*$histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_pembelian->id_obat)->where('jumlah', $detail_pembelian->jumlah)->where('id_jenis_transaksi', 14)->where('id_transaksi', $detail_pembelian->id)->first();
                 if(empty($histori_stok)) {*/
                     $histori_stok = new HistoriStok;
-                    $histori_stok->setDynamicConnection();
                 //}
                 $histori_stok->id_obat = $detail_pembelian->id_obat;
                 $histori_stok->jumlah = $detail_pembelian->jumlah;
@@ -3077,7 +3072,7 @@ class T_PembelianController extends Controller
                 }
 
                 # update stok aktif 
-                $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
+                $cekHistori = HistoriStok::on($this->getConnectionDefault())->where('id_jenis_transaksi', 2)->where('id_transaksi', $detail_pembelian->id)->first();
                 if($cekHistori->sisa_stok < $detail_pembelian->jumlah) {
                     $kurangStok = $this->kurangStok($detail_pembelian->id, $detail_pembelian->id_obat, $detail_pembelian->jumlah);
                     if($kurangStok['status'] == 0) {
@@ -3127,7 +3122,7 @@ class T_PembelianController extends Controller
 
     public function kurangStok($id_detail, $id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3143,7 +3138,7 @@ class T_PembelianController extends Controller
                 # kosongkan sisa stok histori sebelumnya 
                 $sisa_stok = $cekHistori->sisa_stok - $jumlah;
                 $keterangan = $cekHistori->keterangan.', Hapus Pembelian pada IDdet.'.$id_detail.' sejumlah '.$jumlah;
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
                 $array_id_histori_stok[] = $cekHistori->id;
                 $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistori->id, 'jumlah' => $jumlah);
                 $hb_ppn = $cekHistori->hb_ppn;
@@ -3156,7 +3151,7 @@ class T_PembelianController extends Controller
                 $total  = 0;
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3167,7 +3162,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok melebihi jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Hapus Pembelian pada IDdet.'.$id_detail.' sejumlah '.$i;
                         $sisa = $cekHistoriLanj->sisa_stok - $i;
-                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $i);
                         $total = $total + $cekHistoriLanj->hb_ppn * $i;
                          $i = 0;
@@ -3175,7 +3170,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok kurang dari jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Hapus Pembelian pada IDdet.'.$id_detail.' sejumlah '.$cekHistoriLanj->sisa_stok;
                         $sisa = $i - $cekHistoriLanj->sisa_stok;
-                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
                         $i = $sisa;
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $cekHistoriLanj->sisa_stok);
                         $total = $total + $cekHistoriLanj->hb_ppn * $cekHistoriLanj->sisa_stok;
@@ -3197,7 +3192,7 @@ class T_PembelianController extends Controller
 
     public function kurangStokRetur($id_detail, $id_retur, $id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3213,7 +3208,7 @@ class T_PembelianController extends Controller
                 # kosongkan sisa stok histori sebelumnya 
                 $sisa_stok = $cekHistori->sisa_stok - $jumlah;
                 $keterangan = $cekHistori->keterangan.', Retur Pembelian pada IDRetur.'.$id_retur.' IDdet.'.$id_detail.' sejumlah '.$jumlah;
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
                 $array_id_histori_stok[] = $cekHistori->id;
                 $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistori->id, 'jumlah' => $jumlah);
                 $hb_ppn = $cekHistori->hb_ppn;
@@ -3226,7 +3221,7 @@ class T_PembelianController extends Controller
                 $total  = 0;
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -3237,7 +3232,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok melebihi jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Retur Pembelian pada IDRetur.'.$id_retur.' IDdet.'.$id_detail.' sejumlah '.$i;
                         $sisa = $cekHistoriLanj->sisa_stok - $i;
-                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $i);
                         $total = $total + $cekHistoriLanj->hb_ppn * $i;
                          $i = 0;
@@ -3245,7 +3240,7 @@ class T_PembelianController extends Controller
                         # update selisih jika stok kurang dari jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', Retur Pembelian pada IDRetur.'.$id_retur.' IDdet.'.$id_detail.' sejumlah '.$cekHistoriLanj->sisa_stok;
                         $sisa = $i - $cekHistoriLanj->sisa_stok;
-                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
                         $i = $sisa;
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $cekHistoriLanj->sisa_stok);
                         $total = $total + $cekHistoriLanj->hb_ppn * $cekHistoriLanj->sisa_stok;
@@ -3328,7 +3323,7 @@ class T_PembelianController extends Controller
                         } else {
                             $obj->harga_beli_ppn = $obj->harga_beli;
                         }
-                        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                        $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
                         if($stok_before->harga_beli != $obj->harga_beli) {
                             $data_histori_ = array('id_obat' => $obj->id_obat, 'harga_beli_awal' => $stok_before->harga_beli, 'harga_beli_akhir' => $obj->harga_beli, 'harga_jual_awal' => $stok_before->harga_jual, 'harga_jual_akhir' => $stok_before->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
@@ -3336,7 +3331,7 @@ class T_PembelianController extends Controller
                             DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                         }
 
-                        $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
+                        $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
                         $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                         $stok_harga->harga_beli = $obj->harga_beli;
                         $stok_harga->harga_beli_ppn = $obj->harga_beli_ppn;
@@ -3347,7 +3342,7 @@ class T_PembelianController extends Controller
                             echo json_encode(array('status' => 0, 'message' => 'stok harga'));
                         }
 
-                        $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                        $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                         $histori_stok->hb_ppn = $obj->harga_beli_ppn;
                         if($histori_stok->save()) {
                         } else {

@@ -26,7 +26,7 @@ class PenyesuaianStokController extends Controller
         $penyesuaian_stok->setDynamicConnection();
     	$apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
+        $stok_harga = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($id);
 
         return view('penyesuaian_stok.create')->with(compact('penyesuaian_stok', 'obat', 'stok_harga'));
@@ -41,7 +41,7 @@ class PenyesuaianStokController extends Controller
 
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_harga = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
+            $stok_harga = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $request->id_obat)->first();
             $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
 
             $id_jenis_transaksi = 0;
@@ -71,14 +71,14 @@ class PenyesuaianStokController extends Controller
                 $penyesuaian_stok->save();
 
                 # kosongkan juga jika sudah ada stok opnam sebelumnya
-                $array_id_histori_stok_awal =DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id_obat', $obat->id)
+                $array_id_histori_stok_awal =DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id_obat', $obat->id)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
                             ->orderBy('id', 'ASC')
                             ->get();
 
                 if(count($array_id_histori_stok_awal) < 1) {
-                    $array_id_histori_stok_awal =DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id_obat', $obat->id)
+                    $array_id_histori_stok_awal =DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id_obat', $obat->id)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->orderBy('id', 'ASC')
                             ->limit(1)
@@ -87,7 +87,7 @@ class PenyesuaianStokController extends Controller
                // dd($array_id_histori_stok_awal);
 
                 foreach ($array_id_histori_stok_awal as $y => $hist) {
-                    $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id);
+                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id);
                     # kosongkan semua stok
                     $keterangan = $cekHistori->keterangan.', Penyesuaian Stok ID.'.$penyesuaian_stok->id.' sejumlah '.$hist->jumlah;
                     $cekHistori->sisa_stok = 0;
@@ -104,10 +104,10 @@ class PenyesuaianStokController extends Controller
     	        $jumlah = $penyesuaian_stok->stok_akhir-$penyesuaian_stok->stok_awal;
 
     	        # update ke table stok harga
-    	        DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['stok_awal'=> $stok_harga->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+    	        DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->update(['stok_awal'=> $stok_harga->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
     	        # create histori
-    	        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+    	        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
     	            'id_obat' => $obat->id,
     	            'jumlah' => $jumlah,
     	            'stok_awal' => $stok_harga->stok_akhir,

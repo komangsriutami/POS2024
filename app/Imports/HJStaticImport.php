@@ -33,8 +33,8 @@ class HJStaticImport implements  ToCollection,WithHeadingRow
                // dd($value);exit();
                 // cek kalau ada update kalau tidak insert //
                // if($value['sh'] == 1) {
-                    $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $value['id'])->first();
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+                    $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $value['id'])->first();
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                         ->where('id_obat', $value['id'])
                         ->update(['is_status_harga' => 0, 'harga_jual' =>$value['hjupdate'], 'status_harga_by' => Auth::id(), 'status_harga_at' => date('Y-m-d H:i:s')]);
 

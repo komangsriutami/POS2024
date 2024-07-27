@@ -406,9 +406,9 @@ class M_ApotekController extends Controller
     
         if(count($obats) > 0) {
             $inisial = strtolower($apotek->nama_singkat);
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->insert($obats);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->insert($obats);
 
-            $data_terupdate = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('COUNT(*) as jum_terupdate'), DB::raw('MAX(id_obat) as sync_last_id')])->first();
+            $data_terupdate = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('COUNT(*) as jum_terupdate'), DB::raw('MAX(id_obat) as sync_last_id')])->first();
 
             if(!empty($data_terupdate) && $data_terupdate->jum_terupdate > 0) {
                 $apotek->is_sync = 1;

@@ -238,16 +238,16 @@ class T_POController extends Controller
                 $detail_obat_operasional->deleted_by = Auth::user()->id;
                 $detail_obat_operasional->save();
 
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
                 $selisih = $detail_obat_operasional->jumlah;
 
                 $id_jenis_transaksi = 21;
                 $stok_now = $stok_before->stok_akhir+$selisih;
                 # update ke table stok harga
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $detail_obat_operasional->id_obat,
                     'jumlah' => $selisih,
                     'stok_awal' => $stok_before->stok_akhir,
@@ -299,17 +299,17 @@ class T_POController extends Controller
 
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
             $selisih = $detail_obat_operasional->jumlah;
 
             $id_jenis_transaksi = 21;
             $stok_now = $stok_before->stok_akhir+$selisih;
            
             # update ke table stok harga
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+            DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_obat_operasional->id_obat,
                 'jumlah' => $selisih,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -965,11 +965,11 @@ class T_POController extends Controller
             # crete histori stok barang
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
             $stok_now = $stok_before->stok_akhir+$detail_po->jumlah;
 
             # update ke table stok harga
-            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_po->id_obat)->first();
+            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->first();
             $stok_harga->stok_awal = $stok_before->stok_akhir;
             $stok_harga->stok_akhir = $stok_now;
             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -981,10 +981,9 @@ class T_POController extends Controller
             }
 
             # create histori
-            $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
+            $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
             if(empty($histori_stok)) {
                 $histori_stok = new HistoriStok;
-                $histori_stok->setDynamicConnection();
             }
             $histori_stok->id_obat = $detail_po->id_obat;
             $histori_stok->jumlah = $detail_po->jumlah;
@@ -1011,7 +1010,7 @@ class T_POController extends Controller
                 echo json_encode(array('status' => 0));
             } else {
                 foreach ($histori_stok_details as $y => $hist) {
-                    $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                     $keterangan = $cekHistori->keterangan.', Hapus PO pada IDdet.'.$detail_po->id.' sejumlah '.$hist->jumlah;
                     $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                     $cekHistori->keterangan = $keterangan;
@@ -1075,11 +1074,11 @@ class T_POController extends Controller
                 # crete histori stok barang
                 $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir+$detail_po->jumlah;
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_po->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -1091,10 +1090,9 @@ class T_POController extends Controller
                 }
 
                 # create histori
-                $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
+                $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
                 if(empty($histori_stok)) {
                     $histori_stok = new HistoriStok;
-                    $histori_stok->setDynamicConnection();
                 }
                 $histori_stok->id_obat = $detail_po->id_obat;
                 $histori_stok->jumlah = $detail_po->jumlah;
@@ -1121,7 +1119,7 @@ class T_POController extends Controller
                     echo json_encode(array('status' => 0));
                 } else {
                     foreach ($histori_stok_details as $y => $hist) {
-                        $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                        $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                         $keterangan = $cekHistori->keterangan.', Hapus PO pada IDdet.'.$detail_po->id.' sejumlah '.$hist->jumlah;
                         $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                         $cekHistori->keterangan = $keterangan;
@@ -1169,7 +1167,7 @@ class T_POController extends Controller
 
     public function kurangStok($id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -1196,7 +1194,7 @@ class T_POController extends Controller
                 $array_id_histori_stok_tota = array();
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)

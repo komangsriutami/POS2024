@@ -84,7 +84,7 @@ class DefectaCronLV extends Command
             DB::connection($this->getConnectionName())->table('tb_bantu_transaksi_update_lv')
                 ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after, 'id_apotek' => $id_apotek, 'created_at' => date('Y-m-d H:i:s')]);
             
-            $obats = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
+            $obats = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
             $x=0;
             $data_ = array();
             $now = date('Y-m-d');
@@ -142,7 +142,7 @@ class DefectaCronLV extends Command
                 $y = $a + $b * 4; // a + bx;
                 $abc = ceil($y);
 
-                DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
+                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
                 $x++;
             }
 

@@ -582,15 +582,15 @@ class T_PenjualanController extends Controller
                     $detail_penjualan->deleted_by = Auth::user()->id;
                     $detail_penjualan->save();
 
-                    $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
+                    $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
                     $jumlah = $detail_penjualan->jumlah;
                     $stok_now = $stok_before->stok_akhir+$jumlah;
 
                     # update ke table stok harga
-                    DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
-                    DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+                    DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                         'id_obat' => $detail_penjualan->id_obat,
                         'jumlah' => $jumlah,
                         'stok_awal' => $stok_before->stok_akhir,
@@ -625,7 +625,7 @@ class T_PenjualanController extends Controller
         $batas_max_hpp = 0;
         if(!empty($obat)) {
             $cek_ = 1;
-            $harga_stok = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$request->inisial)->where('id_obat', $obat->id)->first();
+            $harga_stok = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$request->inisial)->where('id_obat', $obat->id)->first();
             $batas_max_hpp = $harga_stok->harga_beli_ppn + (10/100*$harga_stok->harga_beli_ppn);
         } else {
             $harga_stok = array();
@@ -646,7 +646,7 @@ class T_PenjualanController extends Controller
         $batas_max_hpp = 0;
         if(!empty($obat)) {
             $cek_ = 1;
-            $harga_stok = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+            $harga_stok = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
             $batas_max_hpp = $harga_stok->harga_beli_ppn + (10/100*$harga_stok->harga_beli_ppn);
         } else {
             $harga_stok = array();
@@ -716,7 +716,7 @@ class T_PenjualanController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
         ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'a.*',
@@ -2245,7 +2245,7 @@ try {
             //PenjualanRetur::dispatch($detail_penjualan);
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
             $stok_now = $stok_before->stok_akhir+$detail_penjualan->jumlah_cn;
 
             # update ke table stok harga
@@ -2257,7 +2257,7 @@ try {
             );*/
 
             if($act == 1) {
-                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_penjualan->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s');
@@ -2273,10 +2273,9 @@ try {
                 // );
 
                 # create histori
-                $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah_cn)->where('id_jenis_transaksi', 5)->where('id_transaksi', $detail_penjualan->id)->first();
+                $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah_cn)->where('id_jenis_transaksi', 5)->where('id_transaksi', $detail_penjualan->id)->first();
                 if(empty($histori_stok)) {
                     $histori_stok = new HistoriStok;
-                    $histori_stok->setDynamicConnection(); 
                 }
                 $histori_stok->id_obat = $detail_penjualan->id_obat;
                 $histori_stok->jumlah = $detail_penjualan->jumlah_cn;
@@ -2301,7 +2300,7 @@ try {
                 if(!is_null($detail_penjualan->id_histori_stok_detail)) {
                     $histori_stok_details = json_decode($detail_penjualan->id_histori_stok_detail);
                     foreach ($histori_stok_details as $y => $hist) {
-                        $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                        $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                         if($i>0) {
                             if($hist->jumlah >= $detail_penjualan->jumlah_cn) {
                                 $keterangan = $cekHistori->keterangan.', Retur Penjualan pada IDdet.'.$detail_penjualan->id.' sejumlah '.$detail_penjualan->jumlah_cn;
@@ -2327,7 +2326,7 @@ try {
                         }
                     }
                 } else {
-                    $cekHistori = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_penjualan->id_obat)
+                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)
                                     ->whereIn('id_jenis_transaksi', [2,3,11,9])
                                     ->orderBy('id', 'DESC')
                                     ->first();
@@ -6534,15 +6533,15 @@ try {
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
             $jumlah = $detail_penjualan->jumlah;
             $stok_now = $stok_before->stok_akhir+$jumlah;
 
             # update ke table stok harga
-            DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->insert([
+            DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_penjualan->id_obat,
                 'jumlah' => $jumlah,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -8408,7 +8407,7 @@ printer_close($printer);
             # crete histori stok barang
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
+            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
             $stok_now = $stok_before->stok_akhir+$detail_penjualan->jumlah;
 
             /*$arrayupdate = array(
@@ -8419,7 +8418,7 @@ printer_close($printer);
             );*/
 
             # update ke table stok harga
-            $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_penjualan->id_obat)->first();
+            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->first();
             $stok_harga->stok_awal = $stok_before->stok_akhir;
             $stok_harga->stok_akhir = $stok_now;
             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -8446,10 +8445,9 @@ printer_close($printer);
             );*/
 
             # create histori
-            /*$histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
+            /*$histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
             if(empty($histori_stok)) {*/
                 $histori_stok = new HistoriStok;
-                $histori_stok->setDynamicConnection();
             //}
             $histori_stok->id_obat = $detail_penjualan->id_obat;
             $histori_stok->jumlah = $detail_penjualan->jumlah;
@@ -8476,7 +8474,7 @@ printer_close($printer);
                 echo json_encode(array('status' => 0));
             } else {
                 foreach ($histori_stok_details as $y => $hist) {
-                    $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                     $keterangan = $cekHistori->keterangan.', Hapus Penjualan pada IDdet.'.$detail_penjualan->id.' sejumlah '.$hist->jumlah;
                     $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                     $cekHistori->keterangan = $keterangan;
@@ -8540,7 +8538,7 @@ printer_close($printer);
                 # crete histori stok barang
                 $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
+                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir+$detail_penjualan->jumlah;
 
                 /*$arrayupdate = array(
@@ -8551,7 +8549,7 @@ printer_close($printer);
                 );*/
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $detail_penjualan->id_obat)->first();
+                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -8578,10 +8576,9 @@ printer_close($printer);
                 );*/
 
                 # create histori
-                /*$histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
+                /*$histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
                 if(empty($histori_stok)) {*/
                     $histori_stok = new HistoriStok;
-                    $histori_stok->setDynamicConnection();
                 //}
                 $histori_stok->id_obat = $detail_penjualan->id_obat;
                 $histori_stok->jumlah = $detail_penjualan->jumlah;
@@ -8608,7 +8605,7 @@ printer_close($printer);
                     echo json_encode(array('status' => 0));
                 } else {
                     foreach ($histori_stok_details as $y => $hist) {
-                        $cekHistori = HistoriStok::on($this->getConnectionName())->find($hist->id_histori_stok);
+                        $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
                         $keterangan = $cekHistori->keterangan.', Hapus Penjualan pada IDdet.'.$detail_penjualan->id.' sejumlah '.$hist->jumlah;
                         $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                         $cekHistori->keterangan = $keterangan;
@@ -8785,7 +8782,7 @@ printer_close($printer);
 
     public function kurangStok($id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -8812,7 +8809,7 @@ printer_close($printer);
                 $array_id_histori_stok_tota = array();
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)

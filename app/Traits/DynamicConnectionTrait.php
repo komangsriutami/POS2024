@@ -55,4 +55,8 @@ trait DynamicConnectionTrait
         }
         return $access;
     }
+
+    public function getConnectionDefault() {
+        $conn = 'mysql';
+    }
 }

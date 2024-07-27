@@ -84,7 +84,7 @@ class MonitoringController extends Controller
        
         //->where('b.stok_awal', '!=', 'tb_histori_stok_'.$inisial.'.stok_akhir')
 
-       /*  $q1 = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+       /*  $q1 = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                 ->select([  DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'tb_histori_stok_'.$inisial.'.id',
                     'tb_histori_stok_'.$inisial.'.id_obat',
@@ -110,7 +110,7 @@ class MonitoringController extends Controller
                 ->get();
 */
 
-    /*  $q1 = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+    /*  $q1 = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                 ->select([  DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'tb_histori_stok_'.$inisial.'.id',
                     'tb_histori_stok_'.$inisial.'.id_obat',
@@ -184,7 +184,7 @@ class MonitoringController extends Controller
 
         $data = collect();
         foreach ($rekaps as $key => $obj) {
-            $last = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)
+            $last = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)
                             ->where('id_jenis_transaksi', [2])
                             ->where('id_transaksi', '=', $obj->id)
                             ->orderBy('id', 'DESC')

@@ -107,11 +107,11 @@ class TransaksiPO extends Model
                     if($is_history == 1) {
                         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                         $inisial = strtolower($apotek->nama_singkat);
-                        $stok_before = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first(); 
+                        $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first(); 
                         $stok_now = $stok_before->stok_akhir-$obj->jumlah;
 
                         # update ke table stok harga
-                        $stok_harga = MasterStokHarga::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->first();
+                        $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
                         $stok_harga->stok_awal = $stok_before->stok_akhir;
                         $stok_harga->stok_akhir = $stok_now;
                         $stok_harga->updated_at = date('Y-m-d H:i:s');
@@ -124,10 +124,9 @@ class TransaksiPO extends Model
                         }
 
                         # create histori
-                        $histori_stok = HistoriStok::on($this->getConnectionName())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 1)->where('id_transaksi', $obj->id)->first();
+                        $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 1)->where('id_transaksi', $obj->id)->first();
                         if(empty($histori_stok)) {
                             $histori_stok = new HistoriStok;
-                            $histori_stok->setDynamicConnection();
                         }
                         $histori_stok->id_obat = $obj->id_obat;
                         $histori_stok->jumlah = $obj->jumlah;
@@ -182,7 +181,7 @@ class TransaksiPO extends Model
 
     public function kurangStok($id_detail, $id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -198,7 +197,7 @@ class TransaksiPO extends Model
                 # kosongkan sisa stok histori sebelumnya 
                 $sisa_stok = $cekHistori->sisa_stok - $jumlah;
                 $keterangan = $cekHistori->keterangan.', PO pada IDdet.'.$id_detail.' sejumlah '.$jumlah;
-                DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
+                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistori->id)->update(['sisa_stok' => $sisa_stok, 'keterangan' => $keterangan]);
                 $array_id_histori_stok[] = $cekHistori->id;
                 $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistori->id, 'jumlah' => $jumlah);
                 $hb_ppn = $cekHistori->hb_ppn;
@@ -211,7 +210,7 @@ class TransaksiPO extends Model
                 $total  = 0;
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -222,7 +221,7 @@ class TransaksiPO extends Model
                         # update selisih jika stok melebihi jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', PO pada IDdet.'.$id_detail.' sejumlah '.$i;
                         $sisa = $cekHistoriLanj->sisa_stok - $i;
-                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => $sisa, 'keterangan' => $keterangan]);
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $i);
                         $total = $total + $cekHistoriLanj->hb_ppn * $i;
                          $i = 0;
@@ -230,7 +229,7 @@ class TransaksiPO extends Model
                         # update selisih jika stok kurang dari jumlah
                         $keterangan = $cekHistoriLanj->keterangan.', PO pada IDdet.'.$id_detail.' sejumlah '.$cekHistoriLanj->sisa_stok;
                         $sisa = $i - $cekHistoriLanj->sisa_stok;
-                        DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
+                        DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->where('id', $cekHistoriLanj->id)->update(['sisa_stok' => 0, 'keterangan' => $keterangan]);
                         $i = $sisa;
                         $array_id_histori_stok_detail[] = array('id_histori_stok' => $cekHistoriLanj->id, 'jumlah' => $cekHistoriLanj->sisa_stok);
                         $total = $total + $cekHistoriLanj->hb_ppn * $cekHistoriLanj->sisa_stok;

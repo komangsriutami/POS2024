@@ -126,7 +126,7 @@ class T_OrderController extends Controller
             }
         })
         ->editcolumn('total_stok', function($data) use($request){
-            $dt = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.session('nama_apotek_singkat_active'))->where('id_obat', $data->id_obat)->first();
+            $dt = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.session('nama_apotek_singkat_active'))->where('id_obat', $data->id_obat)->first();
             return $dt->stok_akhir;
         })
         ->editcolumn('total_buffer', function($data) use($request){
@@ -510,7 +510,7 @@ class T_OrderController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
         ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'a.*',

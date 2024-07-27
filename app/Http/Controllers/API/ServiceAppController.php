@@ -66,7 +66,7 @@ class ServiceAppController extends BaseController
     public function ef4c2ce3032d8f024c320308d9880a06() {
         $inisial = 'lv';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -96,7 +96,7 @@ class ServiceAppController extends BaseController
     public function f31d5936f25442ecf43a2e4a9aa911d1() {
         $inisial = 'bkl';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -127,7 +127,7 @@ class ServiceAppController extends BaseController
     public function f36c008db00e367c7dae1c4a856e55ca() {
         $inisial = 'pjm';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -158,7 +158,7 @@ class ServiceAppController extends BaseController
     public function ed70a85853284244f63de7fbd08ccea5(){
         $inisial = 'pg';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -189,7 +189,7 @@ class ServiceAppController extends BaseController
     public function f60ba84e9e162c05eaf305d15372e4f4(){
         $inisial = 'tl';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -221,7 +221,7 @@ class ServiceAppController extends BaseController
     public function f5dae429688af1c521ad87ac394192c6d(){
         $inisial = 'sg';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -361,7 +361,7 @@ class ServiceAppController extends BaseController
     }
 
     public function hitung_stok_apotek($var, $apotek) {
-        $list = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$apotek.' as a')
+        $list = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$apotek.' as a')
         			->select([DB::raw(''.$var.' as STORE_NUMBER'),
         					'b.id as NO_SKU',
                             'a.stok_akhir as STOCK_AVAILABILITY',
@@ -381,7 +381,7 @@ class ServiceAppController extends BaseController
     public function template_lv() {
         $inisial = 'lv';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -437,7 +437,7 @@ class ServiceAppController extends BaseController
     public function template_bkl() {
         $inisial = 'bkl';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -494,7 +494,7 @@ class ServiceAppController extends BaseController
     public function template_pjm() {
         $inisial = 'pjm';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -551,7 +551,7 @@ class ServiceAppController extends BaseController
     public function template_pg(){
         $inisial = 'pg';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -608,7 +608,7 @@ class ServiceAppController extends BaseController
     public function template_tl(){
         $inisial = 'tl';
 
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 

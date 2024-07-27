@@ -35,7 +35,7 @@ class DataObatExport implements FromCollection, WithColumnWidths, WithStyles, Wi
     public function collection()
     {
         $inisial = $this->inisial;
-        $rekaps = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
                         ->select([
                             DB::raw('@rownum  := @rownum  + 1 AS no'),
                             'tb_m_stok_harga_'.$inisial.'.id_obat',

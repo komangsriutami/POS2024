@@ -81,7 +81,7 @@ class ReloadHistoriOld extends Command
             DB::connection($this->getConnectionName())->table('tb_bantu_update_old')
                 ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after, 'id_apotek' => $id_apotek]);
             
-            $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
+            $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->whereBetween('id_obat', [$last_id_obat_ex, $last_id_obat_after])->get();
             $i=0;
             $data_ = array();
             $now = date('Y-m-d');
@@ -130,7 +130,7 @@ class ReloadHistoriOld extends Command
                         $created_at = $nota->deleted_at;
                     }
 
-                    $cek = DB::connection($this->getConnectionName())->table('tb_histori_stok_'.$inisial.'')->where('id_obat', $val->id_obat)
+                    $cek = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial.'')->where('id_obat', $val->id_obat)
                                 ->where('id_jenis_transaksi', $val->id_jenis_transaksi)
                                 ->where('id_transaksi', $val->id_transaksi)
                                 ->first();
