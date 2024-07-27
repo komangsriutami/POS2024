@@ -185,6 +185,9 @@ class T_OrderController extends Controller
     }
 
     public function store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $order = new TransaksiOrder;
         $order->setDynamicConnection();
         $order->fill($request->except('_token'));
@@ -270,6 +273,9 @@ class T_OrderController extends Controller
     }
 
     public function update(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $order = TransaksiOrder::on($this->getConnectionName())->find($id);
         $order->fill($request->except('_token'));
         if(is_null($order->kode) || $order->kode == "") {
@@ -293,6 +299,9 @@ class T_OrderController extends Controller
 
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $order = TransaksiOrder::on($this->getConnectionName())->find($id);
         $order->is_deleted = 1;
         $order->deleted_at = date('Y-m-d H:i:s');
@@ -558,6 +567,9 @@ class T_OrderController extends Controller
     }
 
     public function update_defecta(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $defecta = DefectaOutlet::on($this->getConnectionName())->find($id);
         $defecta->jumlah_order = $request->jumlah_order;
         $defecta->komentar = $request->komentar;
@@ -723,6 +735,9 @@ class T_OrderController extends Controller
     }
 
     public function update_order_detail(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $detail = TransaksiOrderDetail::on($this->getConnectionName())->find($id);
         $detail->jumlah = $request->jumlah;
         $detail->keterangan = $request->keterangan;

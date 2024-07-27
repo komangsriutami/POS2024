@@ -123,6 +123,9 @@ class SettingPromoController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_promo = new SettingPromo;
         $setting_promo->setDynamicConnection();
         $setting_promo->fill($request->except('_token'));
@@ -281,6 +284,9 @@ class SettingPromoController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_promo = SettingPromo::on($this->getConnectionName())->find($id);
         $setting_promo->fill($request->except('_token'));
 
@@ -390,6 +396,9 @@ class SettingPromoController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_promo = SettingPromo::on($this->getConnectionName())->find($id);
         $setting_promo->is_deleted = 1;
         $setting_promo->deleted_at = date('Y-m-d H:i:s');;

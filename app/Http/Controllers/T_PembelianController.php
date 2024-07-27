@@ -321,6 +321,10 @@ class T_PembelianController extends Controller
     }
 
     public function store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $pembelian = new TransaksiPembelian;
@@ -426,6 +430,9 @@ class T_PembelianController extends Controller
     }
 
     public function update(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
@@ -515,6 +522,9 @@ class T_PembelianController extends Controller
     }
 
     public function destroy_($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
@@ -696,6 +706,9 @@ class T_PembelianController extends Controller
     }
 
     public function konfirmasi_barang_store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $pembelian = new TransaksiPembelian;
         $pembelian->setDynamicConnection();
         $pembelian->fill($request->except('_token'));
@@ -744,6 +757,9 @@ class T_PembelianController extends Controller
     }
 
     public function set_konfirm_barang_tidak_diterima(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $arr_id_order = $request->arr_id_order;
@@ -1243,6 +1259,9 @@ class T_PembelianController extends Controller
     } 
 
     public function reload_harga_beli_ppn() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $pembelian = TransaksiPembelian::all();
         $i = 0;
         foreach ($pembelian as $key => $val) {
@@ -1259,6 +1278,9 @@ class T_PembelianController extends Controller
 
 
     public function reload_harga_ppn_form_outlet($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find($id);
         $inisial = strtolower($apotek->nama_singkat);
         $data = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')->get();
@@ -2228,6 +2250,9 @@ class T_PembelianController extends Controller
 
     public function reload_hb_ppn($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
@@ -2248,6 +2273,9 @@ class T_PembelianController extends Controller
     }
 
     public function hapus_detail($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
@@ -2330,6 +2358,9 @@ class T_PembelianController extends Controller
 
 
     public function update_obat(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $detail_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->find($id);
@@ -2696,6 +2727,9 @@ class T_PembelianController extends Controller
     }
 
     public function AddItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $pembelian = new TransaksiPembelian;
@@ -2759,6 +2793,9 @@ class T_PembelianController extends Controller
     }
 
     public function UpdateItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $id = $request->id;
@@ -2823,6 +2860,9 @@ class T_PembelianController extends Controller
     }
 
     public function DeleteItem(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
@@ -2952,6 +2992,9 @@ class T_PembelianController extends Controller
     }
 
     public function destroy($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));

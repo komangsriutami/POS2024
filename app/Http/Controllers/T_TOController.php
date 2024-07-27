@@ -258,6 +258,9 @@ class T_TOController extends Controller
     }
 
     public function store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $transfer_outlet = new TransaksiTO;
@@ -319,6 +322,9 @@ class T_TOController extends Controller
     }
 
     public function update(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $transfer_outlet = TransaksiTO::on($this->getConnectionName())->find($id);
@@ -358,6 +364,9 @@ class T_TOController extends Controller
     }
 
     public function destroy_back($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
@@ -446,6 +455,9 @@ class T_TOController extends Controller
     }
 
     public function hapus_detail($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $detail_transfer_outlet = TransaksiTODetail::on($this->getConnectionName())->find($id);
@@ -1032,6 +1044,9 @@ class T_TOController extends Controller
 
 
     public function update_apotek(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $transfer_outlet = TransaksiTO::on($this->getConnectionName())->find($id);
@@ -1129,6 +1144,9 @@ class T_TOController extends Controller
 
 
     public function update_obat(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $detail_transfer_outlet = TransaksiTODetail::on($this->getConnectionName())->find($id);
@@ -1322,6 +1340,9 @@ class T_TOController extends Controller
     }
 
     public function konfirmasi_transfer_store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $transfer_outlet = new TransaksiTO;
         $transfer_outlet->setDynamicConnection();
         $transfer_outlet->fill($request->except('_token'));
@@ -1666,6 +1687,9 @@ class T_TOController extends Controller
     }
 
     public function konfirm_update(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         //echo $id; exit();
         ini_set('memory_limit', '-1'); 
         DB::connection($this->getConnectionName())->beginTransaction();  
@@ -2132,6 +2156,9 @@ class T_TOController extends Controller
     }
 
     public function pindah_transfer() {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $all_stok = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_ho')->where('stok_akhir', '!=', 0)->where('is_transfer', 0)->limit(20)->get();
         
         $transfer_outlet = new TransaksiTO;
@@ -2297,6 +2324,9 @@ class T_TOController extends Controller
 
 
     public function AddItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $transfer_outlet = new TransaksiTO;
@@ -2340,6 +2370,9 @@ class T_TOController extends Controller
     }
 
     public function UpdateItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $id = $request->id;
@@ -2382,6 +2415,9 @@ class T_TOController extends Controller
     }
 
     public function DeleteItem(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
@@ -2503,6 +2539,9 @@ class T_TOController extends Controller
     }
 
     public function destroy($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
@@ -2658,6 +2697,9 @@ class T_TOController extends Controller
 
 
     public function konfirm_ulang($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         //echo $id; exit();
         //ini_set('memory_limit', '-1'); 
         DB::connection($this->getConnectionName())->beginTransaction();  

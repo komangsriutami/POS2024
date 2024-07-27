@@ -76,6 +76,9 @@ class T_TransferController extends Controller
     }
 
     public function store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $transfer = new TransaksiTransfer;
         $transfer->setDynamicConnection();
         $transfer->fill($request->except('_token'));
@@ -130,6 +133,9 @@ class T_TransferController extends Controller
     }
 
     public function destroy($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $tf = TransaksiTransfer::on($this->getConnectionName())->find($id);
         $tf->is_deleted = 1;
         $tf->deleted_at = date('Y-m-d H:i:s');
@@ -390,6 +396,9 @@ class T_TransferController extends Controller
     }
 
     public function update_defecta(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $defecta = DefectaOutlet::on($this->getConnectionName())->find($id);
         $defecta->jumlah_order = $request->jumlah_order;
         $defecta->komentar = $request->komentar;
@@ -617,6 +626,9 @@ class T_TransferController extends Controller
     }
 
     public function update_transfer_detail(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $detail = TransaksiTransferDetail::on($this->getConnectionName())->find($id);
         $detail->jumlah = $request->jumlah;
         $detail->keterangan = $request->keterangan;

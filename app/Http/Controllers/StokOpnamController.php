@@ -84,11 +84,17 @@ class StokOpnamController extends Controller
 
     public function store(StokSODataTableEditor $editor)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         return $editor->process(request());
     }
 
     public function export(Request $request) 
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         ini_set('memory_limit', '-1');
         
         $id_apotek = session('id_apotek_active');
@@ -255,6 +261,9 @@ class StokOpnamController extends Controller
 
     public function export_awal(Request $request) 
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $id_apotek = session('id_apotek_active');
         $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
@@ -345,6 +354,9 @@ class StokOpnamController extends Controller
 
     public function reload_stok_awal(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')
@@ -438,6 +450,9 @@ class StokOpnamController extends Controller
 
     public function update_stok(Request $request) {
        // dd("asda");
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));

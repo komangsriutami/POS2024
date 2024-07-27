@@ -99,6 +99,9 @@ class SettingPaketSistemController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_paket_sistem = new SettingPaketSistem;
         $setting_paket_sistem->setDynamicConnection();
         $setting_paket_sistem->fill($request->except('_token'));
@@ -156,6 +159,9 @@ class SettingPaketSistemController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_paket_sistem = SettingPaketSistem::on($this->getConnectionName())->find($id);
         $setting_paket_sistem->fill($request->except('_token'));
 
@@ -179,6 +185,9 @@ class SettingPaketSistemController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $setting_paket_sistem = SettingPaketSistem::on($this->getConnectionName())->find($id);
         $setting_paket_sistem->is_deleted = 1;
         if($setting_paket_sistem->save()){

@@ -58,6 +58,9 @@ class S_HWController extends Controller
 
     public function store(StokHWDataTableEditor $editor)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         return $editor->process(request());
     }
 
@@ -254,6 +257,9 @@ class S_HWController extends Controller
 
     public function reload_stok_awal(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $cek = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial.'')

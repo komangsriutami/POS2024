@@ -301,6 +301,9 @@ class T_PenjualanController extends Controller
     */
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $penjualan = new TransaksiPenjualan;
@@ -469,6 +472,9 @@ class T_PenjualanController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
@@ -552,6 +558,9 @@ class T_PenjualanController extends Controller
     */
     public function destroy_back($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
@@ -832,6 +841,9 @@ class T_PenjualanController extends Controller
     }
 
     public function update_penjualan_detail(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $detail = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
         $detail->harga_jual = $request->harga_jual;
         $detail->diskon = $request->diskon;
@@ -5021,6 +5033,9 @@ try {
     }
 
     public function hapus_closing($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $close = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
@@ -6505,6 +6520,9 @@ try {
 
 
     public function hapus_detail($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
@@ -8249,6 +8267,9 @@ printer_close($printer);
     }
 
     public function AddItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $penjualan = new TransaksiPenjualan;
@@ -8307,6 +8328,9 @@ printer_close($printer);
     }
 
     public function UpdateItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $id = $request->id;
@@ -8370,6 +8394,9 @@ printer_close($printer);
     }
 
     public function DeleteItem(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
@@ -8492,6 +8519,9 @@ printer_close($printer);
     }
 
     public function destroy($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));

@@ -76,6 +76,9 @@ class TipsController extends Controller
     # untuk menyimpan data dari form store
     public function store(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = new Tips;
         $data_->setDynamicConnection();
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
@@ -142,6 +145,9 @@ class TipsController extends Controller
     # untuk menyimpan data edit
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = Tips::on($this->getConnectionName())->find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
@@ -195,6 +201,9 @@ class TipsController extends Controller
     # untuk menghapus data
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $data_ = Tips::on($this->getConnectionName())->find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');

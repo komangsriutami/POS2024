@@ -158,6 +158,9 @@ class T_DefectaController extends Controller
 
     public function send_defecta(Request $request)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $i = 0;
         foreach ($request->input('id_defecta') as $key => $value) {
             DB::connection($this->getConnectionName())->table('tb_defecta_outlet')->where('id', $value)->update(['is_kirim'=> $request->input('act')]);
@@ -185,6 +188,9 @@ class T_DefectaController extends Controller
     }
 
     public function store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
@@ -257,6 +263,10 @@ class T_DefectaController extends Controller
     */
     public function update(Request $request, $id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
+
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $data_ = DB::connection($this->getConnectionName())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
@@ -310,6 +320,9 @@ class T_DefectaController extends Controller
     */
     public function destroy($id)
     {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $defecta = DefectaOutlet::on($this->getConnectionName())->find($id);
         if($defecta->delete()){
             echo 1;
@@ -886,6 +899,9 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_order(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $defectas = $request->defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {
@@ -910,6 +926,9 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_transfer(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $defectas = $request->defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {
@@ -934,6 +953,9 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_tolak(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $defectas = $request->defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {
@@ -958,6 +980,9 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_draft(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         $defectas = $request->id_defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {

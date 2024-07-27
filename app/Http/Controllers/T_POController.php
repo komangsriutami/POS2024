@@ -138,6 +138,9 @@ class T_POController extends Controller
     }
 
     public function store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $obat_operasional = new TransaksiPO;
@@ -184,6 +187,9 @@ class T_POController extends Controller
     }
 
     public function update(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
     	DB::connection($this->getConnectionName())->beginTransaction();  
         try{
 	        $obat_operasional = TransaksiPO::on($this->getConnectionName())->find($id);
@@ -211,6 +217,9 @@ class T_POController extends Controller
     }
 
     public function destroy_($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
@@ -277,6 +286,9 @@ class T_POController extends Controller
     }
 
     public function hapus_detail($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $detail_obat_operasional = TransaksiPODetail::on($this->getConnectionName())->find($id);
@@ -855,6 +867,9 @@ class T_POController extends Controller
     }
 
     public function AddItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $po = new TransaksiPO;
@@ -892,6 +907,9 @@ class T_POController extends Controller
     }
 
     public function UpdateItem(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $id = $request->id;
@@ -933,6 +951,9 @@ class T_POController extends Controller
     }
 
     public function DeleteItem(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
@@ -1033,6 +1054,9 @@ class T_POController extends Controller
     }
 
     public function destroy($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));

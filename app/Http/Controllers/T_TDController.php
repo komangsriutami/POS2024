@@ -131,6 +131,9 @@ class T_TDController extends Controller
     }
 
     public function store(Request $request) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $transfer_dokter = new TransaksiTD;
@@ -180,6 +183,9 @@ class T_TDController extends Controller
     }
 
     public function update(Request $request, $id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
     	DB::connection($this->getConnectionName())->beginTransaction();  
         try{
 	        $transfer_dokter = TransaksiTD::on($this->getConnectionName())->find($id);
@@ -256,6 +262,9 @@ class T_TDController extends Controller
     }
 
     public function destroy($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
@@ -322,6 +331,9 @@ class T_TDController extends Controller
     }
 
     public function hapus_detail($id) {
+        if($this->getAccess() == 0) {
+            return view('page_not_authorized');
+        }
         DB::connection($this->getConnectionName())->beginTransaction();  
         try{
             $detail_transfer_dokter = TransaksiTDDetail::on($this->getConnectionName())->find($id);
