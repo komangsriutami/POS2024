@@ -984,6 +984,8 @@ Route::group(['middleware' => 'cekakses', 'auth:web'], function () {
 	Route::get('penjualan/delete_item/{id}', ['as' => 'penjualan.delete_item', 'uses' => 'T_PenjualanController@DeleteItem']);
 
 	Route::get('penjualan/add_member', ['as' => 'penjualan.add_member', 'uses' => 'T_PenjualanController@addMember']);
+	
+	Route::get('penjualan/view_closing', ['as' => 'penjualan.view_closing', 'uses' => 'T_PenjualanController@viewClosing']);
 
 	Route::resource('penjualan', 'T_PenjualanController');
 
