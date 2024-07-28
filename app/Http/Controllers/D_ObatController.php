@@ -530,7 +530,7 @@ class D_ObatController extends Controller
                     }
 
                 })
-                //->whereYear('tb_histori_stok_'.$inisial.'.created_at', 2024)
+                ->whereYear('tb_histori_stok_'.$inisial.'.created_at', session('id_tahun_active'))
                 ->orderBy('tb_histori_stok_'.$inisial.'.id');
         
         $datatables = Datatables::of($data);
