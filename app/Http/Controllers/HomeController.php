@@ -137,6 +137,7 @@ class HomeController extends Controller
     public function index()
 
     {
+        return view('home2');
         $id_apotek = session('id_apotek_active');
 
         $id_role_active = session('id_role_active');
