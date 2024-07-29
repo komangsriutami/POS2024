@@ -667,8 +667,8 @@ class D_ObatController extends Controller
             {
                 $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
                 //$ed = '('.$data->batch.')<br>';
-                if($check->tgl_batch == '' OR $check->tgl_batch == null OR $check->tgl_batch == '0') {
-                    $ed = '-';
+                if(!is_null($check->tgl_batch)) {
+                    $ed = $data->ed;
                 } else {
                     $ed = $check->tgl_batch;
                 }
