@@ -180,7 +180,7 @@ class D_ObatController extends Controller
         }) 
         ->editcolumn('hb_ppn_avg', function($data) use($hak_akses){
             $info = '';
-            $histori_stok = HistoriStok::select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
+            $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
                             ->where('id_obat', $data->id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -484,7 +484,7 @@ class D_ObatController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
         $stok_harga = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($id);
-        $jenis_transasksis      = MasterJenisTransaksi::pluck('nama', 'id');
+        $jenis_transasksis      = MasterJenisTransaksi::on($this->getConnectionName())->pluck('nama', 'id');
         $jenis_transasksis->prepend('-- Pilih Jenis Transaksi --','');
         return view('data_obat.stok_obat')->with(compact('obat', 'stok_harga', 'jenis_transasksis'));
     }
@@ -977,7 +977,7 @@ class D_ObatController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = PenyesuaianStok::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
+        $data = PenyesuaianStok::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
         ->join('users', 'users.id', '=', 'tb_penyesuaian_stok_obat.created_by')
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_penyesuaian_stok_obat.is_deleted','=','0');
@@ -1420,7 +1420,7 @@ class D_ObatController extends Controller
 
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $obat = MasterObat::select(DB::raw('MAX(id) as id_obat_last'))->where('is_deleted', 0)->first();
+        $obat = MasterObat::on($this->getConnectionName())->select(DB::raw('MAX(id) as id_obat_last'))->where('is_deleted', 0)->first();
         $max_id_obat = $obat->id_obat_last;
 
         $expiresAt = now()->addDay(1);
@@ -2123,7 +2123,7 @@ class D_ObatController extends Controller
         if($this->getAccess() == 0) {
             return view('page_not_authorized');
         }
-        $obat = MasterObat::select(['id'])->orderBy('id', 'DESC')->first();
+        $obat = MasterObat::on($this->getConnectionName())->select(['id'])->orderBy('id', 'DESC')->first();
         $last_id_obat = $obat->id;
         $last_id_obat_ex = 0;
         $id_apotek = $id;
@@ -2516,7 +2516,7 @@ class D_ObatController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
         $stok_harga = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')->where('id_obat', $id)->first();
         $obat = MasterObat::on($this->getConnectionName())->find($id);
-        $jenis_transasksis      = MasterJenisTransaksi::pluck('nama', 'id');
+        $jenis_transasksis      = MasterJenisTransaksi::on($this->getConnectionName())->pluck('nama', 'id');
         $jenis_transasksis->prepend('-- Pilih Jenis Transaksi --','');
 
         return view('data_obat.histori_all')->with(compact('obat', 'stok_harga', 'jenis_transasksis'));
@@ -3379,7 +3379,7 @@ class D_ObatController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $histori_stok = HistoriStok::select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
+        $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
                             ->where('id_obat', $request->id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -4486,7 +4486,7 @@ class D_ObatController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = PenyesuaianStok::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
+        $data = PenyesuaianStok::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
         ->join('users', 'users.id', '=', 'tb_penyesuaian_stok_obat.created_by')
         ->where(function($query) use($request, $super_admin, $tgl_awal_baru, $tgl_akhir_baru){
             $query->where('tb_penyesuaian_stok_obat.is_deleted','=','0');
@@ -4540,7 +4540,7 @@ class D_ObatController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $rekaps = PenyesuaianStok::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
+        $rekaps = PenyesuaianStok::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_penyesuaian_stok_obat.*', 'users.nama as oleh'])
         ->join('users', 'users.id', '=', 'tb_penyesuaian_stok_obat.created_by')
         ->where(function($query) use($request, $super_admin, $tgl_awal_baru, $tgl_akhir_baru){
             $query->where('tb_penyesuaian_stok_obat.is_deleted','=','0');
