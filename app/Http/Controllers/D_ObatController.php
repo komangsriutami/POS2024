@@ -665,9 +665,15 @@ class D_ObatController extends Controller
             $data_ = array(2, 12, 13, 14, 26, 27, 30, 31);
             if (in_array($data->id_jenis_transaksi, $data_))
             {
-                $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
+                if($data->id_jenis_transaksi == 26) {
+                    $retur = ReturPembelian::on($this->getConnectionName())->find($data->id_transaksi);
+                    $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($retur->id_detail_nota);
+                } else {
+                    $check = TransaksiPembelianDetail::on($this->getConnectionName())->find($data->id_transaksi);
+                }
+                
                 //$ed = '('.$data->batch.')<br>';
-                if(!is_null($check->tgl_batch)) {
+                if($check->tgl_batch == '' OR $check->tgl_batch == null OR $check->tgl_batch == '0') {
                     $ed = $data->ed;
                 } else {
                     $ed = $check->tgl_batch;
