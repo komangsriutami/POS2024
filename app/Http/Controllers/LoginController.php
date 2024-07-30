@@ -151,7 +151,7 @@ class LoginController extends Controller
                         if(session('id_role_active') == 1) {
                             $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
                         } else {
-                            $cek_apotek_akses = RbacUserApotek::select('id_apotek')->where('id_user', $user->id)->get();
+                            $cek_apotek_akses = RbacUserApotek::on($this->getConnectionName())->select('id_apotek')->where('id_user', $user->id)->get();
                             $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->whereIn('id', $cek_apotek_akses)->get();
                         }
                         $tahuns = MasterTahun::orderby('id', 'DESC')->get();
@@ -633,7 +633,7 @@ class LoginController extends Controller
             if (Auth::guard("pasien")->attempt(['email' => $request->email, 'password' => $request->password])) {
                 $role_list = array();
                 $actions = array();
-                $user_roles = RbacRole::whereIn('id',[10])->get();
+                $user_roles = RbacRole::on($this->getConnectionName())->whereIn('id',[10])->get();
                 session(['super_admin' => 0]);
                 foreach ($user_roles as $user_role) {
                     array_push($role_list, $user_role->nama);
@@ -711,7 +711,7 @@ class LoginController extends Controller
                 session(['is_status_login' => '1']);
                 session(['id' => $user['id']]);
 
-                $kewarganegaraan = MasterKewarganegaraan::select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
+                $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
                 if (!is_null($kewarganegaraan)) {
                     session(['kewarganegaraan' => $kewarganegaraan["kewarganegaraan"]]);
                 }
@@ -757,7 +757,7 @@ class LoginController extends Controller
             if (Auth::guard("dokter")->attempt(['email' => $request->email, 'password' => $request->password])) {
                 $role_list = array();
                 $actions = array();
-                $user_roles = RbacRole::whereIn('id', [7])->get();
+                $user_roles = RbacRole::on($this->getConnectionName())->whereIn('id', [7])->get();
 
                 session(['super_admin' => 0]);
                 foreach ($user_roles as $user_role) {
@@ -868,7 +868,7 @@ class LoginController extends Controller
             if (Auth::guard("apoteker")->attempt(['email' => $request->email, 'password' => $request->password])) {
                 $role_list = array();
                 $actions = array();
-                $user_roles = RbacRole::whereIn('id', [9])->get();
+                $user_roles = RbacRole::on($this->getConnectionName())->whereIn('id', [9])->get();
 
                 session(['super_admin' => 0]);
                 foreach ($user_roles as $user_role) {

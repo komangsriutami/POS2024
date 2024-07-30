@@ -73,7 +73,7 @@ class LossSellController extends Controller
 
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = LossSell::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
+        $data = LossSell::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
         ->where(function($query) use($request, $hak_akses){
             $query->where('tb_loss_sell.is_deleted','=','0');
             if($hak_akses == 1) {
@@ -323,7 +323,7 @@ class LossSellController extends Controller
             $inisial = strtolower($apotek->nama_singkat);
         }
         $tanggal = $request->tanggal;
-        $rekaps = LossSell::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
+        $rekaps = LossSell::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
                             ->where(function($query) use($request){
                                 $query->where('tb_loss_sell.is_deleted','=','0');
                                 if($request->id_apotek != '') {

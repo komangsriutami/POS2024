@@ -64,7 +64,7 @@ class AbsensiPerMonthSheet implements FromCollection, WithTitle, WithColumnWidth
             $date = date ("Y-m-d", strtotime($i));
             $data = array($date);
 
-            $cek_absen = Absensi::select(['*'])
+            $cek_absen = Absensi::on($this->getConnectionName())->select(['*'])
                                 ->where(function($query) use($date){
                                     $query->where('is_deleted', 0);
                                     $query->where('tgl', $date);

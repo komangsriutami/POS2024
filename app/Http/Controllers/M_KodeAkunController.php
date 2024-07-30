@@ -43,7 +43,7 @@ class M_KodeAkunController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKodeAkun::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kode_akun.*'])
+        $data = MasterKodeAkun::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kode_akun.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_kode_akun.is_deleted','=','0');
         });

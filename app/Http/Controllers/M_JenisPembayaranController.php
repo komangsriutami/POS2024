@@ -43,7 +43,7 @@ class M_JenisPembayaranController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterJenisPembayaran::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_pembayaran.*'])
+        $data = MasterJenisPembayaran::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_pembayaran.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_pembayaran.is_deleted','=','0');
         });

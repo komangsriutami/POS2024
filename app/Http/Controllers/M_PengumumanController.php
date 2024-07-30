@@ -62,7 +62,7 @@ class M_PengumumanController extends Controller
 
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPengumuman::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_pengumuman.*'])
+        $data = MasterPengumuman::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_pengumuman.*'])
         ->leftJoin('rbac_roles as a', 'a.id', '=', 'tb_pengumuman.id_role_penerima')
         ->where(function($query) use($request){
             $query->where('tb_pengumuman.is_deleted','=','0');

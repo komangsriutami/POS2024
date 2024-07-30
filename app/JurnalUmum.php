@@ -110,7 +110,7 @@ class JurnalUmum extends Model
                 // dd($value);
 
                 # check detail #
-                $cekdetail = JurnalUmumDetail::whereRaw("id_jurnal = '".$jurnal->id."'")
+                $cekdetail = JurnalUmumDetail::on($this->getConnectionName())->whereRaw("id_jurnal = '".$jurnal->id."'")
                             ->whereRaw("id_jenis_transaksi = '".$value['id_jenis_transaksi']."'") 
                             ->whereRaw("id_kode_akun = '".$value['id_kode_akun']."'") 
                             ->whereRaw("is_reloaded = 1")

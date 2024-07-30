@@ -50,7 +50,7 @@ class M_ApotekController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterApotek::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_apotek.*'])
+        $data = MasterApotek::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_apotek.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_apotek.is_deleted','=','0');
             if($super_admin == 0) {
@@ -129,7 +129,7 @@ class M_ApotekController extends Controller
 
                 $sheet->appendRow(1, $headings);
 
-                $rekaps = MasterApotek::select([DB::raw('@rownum  := @rownum  + 1 AS no'),
+                $rekaps = MasterApotek::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),
                             'tb_m_apotek.id',
                             'tb_m_apotek.nama_singkat', 
                             'tb_m_apotek.nama_panjang', 
@@ -256,12 +256,12 @@ class M_ApotekController extends Controller
     {
         $apotek 		= MasterApotek::on($this->getConnectionName())->find($id);
 
-        /*$group_apotek =  MasterGroupApotek::addSelect(['id_apotek' => MasterApotek::select('nama_singkat')
+        /*$group_apotek =  MasterGroupApotek::addSelect(['id_apotek' => MasterApotek::on($this->getConnectionName())->select('nama_singkat')
     ->whereColumn('id_group_apotek', 'tb_m_group_apotek.id')
     ->orderBy('id', 'desc')
 ])->get();
 
-        $apotek = MasterApotek::select('tb_m_apotek.*')->addSelect(['id_group_apotek' => MasterGroupApotek::select('nama_singkat')
+        $apotek = MasterApotek::on($this->getConnectionName())->select('tb_m_apotek.*')->addSelect(['id_group_apotek' => MasterGroupApotek::on($this->getConnectionName())->select('nama_singkat')
     ->whereColumn('id', 'tb_m_apotek.id_group_apotek')
     ->orderBy('id', 'desc')
 ])->get();
@@ -350,7 +350,7 @@ class M_ApotekController extends Controller
         =======================================================================================
     */
     public function list_apoteker(Request $request){
-        $apotekers = User::select('nama', 'id')
+        $apotekers = User::on($this->getConnectionName())->select('nama', 'id')
                                     ->where('id', 'LIKE', '%'.$request->q.'%')
                                     ->orWhere('nama', 'LIKE', '%'.$request->q.'%')
                                     ->limit(30)
@@ -384,7 +384,7 @@ class M_ApotekController extends Controller
         $created_at = date('Y-m-d H:i:s');
 
         $apotek = MasterApotek::on($this->getConnectionName())->find($request->id);
-        $obats = MasterObat::select([
+        $obats = MasterObat::on($this->getConnectionName())->select([
                                 'id as id_obat', 
                                 'nama as nama', 
                                 'barcode as barcode', 

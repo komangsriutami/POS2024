@@ -43,7 +43,7 @@ class M_JenisPaketSistemController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterJenisPaketSistem::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_paket_sistem.*'])
+        $data = MasterJenisPaketSistem::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_paket_sistem.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_paket_sistem.is_deleted','=','0');
         });

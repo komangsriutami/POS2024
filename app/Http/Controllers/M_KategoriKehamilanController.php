@@ -42,7 +42,7 @@ class M_KategoriKehamilanController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKategoriKehamilan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kategori_kehamilan.*'])
+        $data = MasterKategoriKehamilan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kategori_kehamilan.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_kategori_kehamilan.is_deleted','=','0');
         });

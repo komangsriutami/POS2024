@@ -41,7 +41,7 @@ class RekapPembelianOutletExport implements FromCollection, WithColumnWidths, Wi
         $tgl_akhir = $this->tgl_akhir;
         $id_apotek = $this->id_apotek;
         $inisial = $this->inisial;
-        $data =  TransaksiPembelianDetail::select(
+        $data =  TransaksiPembelianDetail::on($this->getConnectionName())->select(
                                 'tb_detail_nota_pembelian.id_obat',
                                 'c.nama',
                                 DB::raw('SUM(tb_detail_nota_pembelian.jumlah) as jumlah_pemakaian')

@@ -41,7 +41,7 @@ class M_JenisKartuController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterJenisKartu::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_kartu.*'])
+        $data = MasterJenisKartu::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_kartu.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_jenis_kartu.is_deleted','=','0');
         });

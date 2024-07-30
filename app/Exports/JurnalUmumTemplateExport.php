@@ -73,7 +73,7 @@ class JurnalUmumTemplateExport implements WithHeadings, WithColumnWidths, WithTi
 
         if($this->jenis == 1){
             
-            $data = MasterKodeAkun::whereNull('deleted_by')->get();
+            $data = MasterKodeAkun::on($this->getConnectionName())->whereNull('deleted_by')->get();
             if($data->count()){
                 foreach ($data as $key => $value) {
                     $collection[] = array(($key+1),$value->kode,$value->nama);

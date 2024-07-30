@@ -42,7 +42,7 @@ class PermissionController extends Controller
     */
     public function list_permission(Request $request)
     {
-        $data = RbacPermission::select([
+        $data = RbacPermission::on($this->getConnectionName())->select([
                 'rbac_permissions.id',
                 'rbac_permissions.id_menu', 
                 'rbac_permissions.nama', 

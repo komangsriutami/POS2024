@@ -206,7 +206,7 @@ class RegisterController extends Controller
     //         ]);
     //         session(['id' => $user['id']]);
 
-    //         $kewarganegaraan = MasterKewarganegaraan::select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
+    //         $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
     //         session(['kewarganegaraan' => $kewarganegaraan["kewarganegaraan"]]);
     //         session(['id_kewarganegaraan' => $user["id_kewarganegaraan"]]);
     //         session(['id_jenis_kelamin' => $user['id_jenis_kelamin']]);

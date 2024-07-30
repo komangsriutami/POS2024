@@ -42,7 +42,7 @@ class UpdatePenjualanLV extends Command
     public function handle()
     {
 
-        $penjualan = TransaksiPenjualanDetail::select(['id'])->orderBy('id', 'DESC')->first();
+        $penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['id'])->orderBy('id', 'DESC')->first();
         $last_id_obat = $penjualan->id;
         $last_id_obat_ex = 0;
         $id_apotek = 1;
@@ -77,7 +77,7 @@ class UpdatePenjualanLV extends Command
             DB::connection($this->getConnectionName())->table('tb_bantu_transaksi_update_lv')
                 ->insert(['last_id_obat_before' => $last_id_obat_ex, 'last_id_obat_after' => $last_id_obat_after, 'id_apotek' => $id_apotek, 'created_at' => date('Y-m-d H:i:s')]);
             
-            $data = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.*', 'a.created_at as tgl_nota_buat'])
+            $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.*', 'a.created_at as tgl_nota_buat'])
                                             ->join('tb_nota_penjualan as a', 'a.id', '=', 'tb_detail_nota_penjualan.id_nota')
                                             ->where('a.id_apotek_nota', 1)
                                             ->whereBetween('id', [$last_id_obat_ex, $last_id_obat_after])

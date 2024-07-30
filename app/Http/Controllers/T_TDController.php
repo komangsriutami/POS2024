@@ -65,7 +65,7 @@ class T_TDController extends Controller
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTD::select([
+        $data = TransaksiTD::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 	            'tb_nota_transfer_dokter.*', 
         ])
@@ -367,7 +367,7 @@ class T_TDController extends Controller
                 'created_by' => Auth::user()->id
             ]);
 
-            $total = TransaksiTDDetail::select([
+            $total = TransaksiTDDetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM(total) as total_all')
                                 ])
                                 ->where('id', '!=', $detail_transfer_dokter->id)
@@ -406,7 +406,7 @@ class T_TDController extends Controller
     public function cetak_nota(Request $request)
     {   
         $transfer_dokter = TransaksiTD::on($this->getConnectionName())->where('id', $request->id)->first();
-        $detail_transfer_dokters = TransaksiTDDetail::select(['tb_detail_nota_transfer_dokter.*'])
+        $detail_transfer_dokters = TransaksiTDDetail::on($this->getConnectionName())->select(['tb_detail_nota_transfer_dokter.*'])
                                                ->where('tb_detail_nota_transfer_dokter.id_nota', $transfer_dokter->id)
                                                ->get();
 
@@ -479,7 +479,7 @@ class T_TDController extends Controller
 
     public function list_pencarian_obat(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTDDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_transfer_dokter.*', 'a.nama'])
+        $data = TransaksiTDDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_transfer_dokter.*', 'a.nama'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_transfer_dokter.id_obat')
         ->join('tb_nota_transfer_dokter as b', 'b.id', 'tb_detail_nota_transfer_dokter.id_nota')
         ->where(function($query) use($request){
@@ -522,7 +522,7 @@ class T_TDController extends Controller
 
     public function export(Request $request) 
     {
-        $rekaps = TransaksiTD::select([
+        $rekaps = TransaksiTD::on($this->getConnectionName())->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_nota_transfer_dokter.*'
                                 ])

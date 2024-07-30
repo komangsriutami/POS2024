@@ -37,7 +37,7 @@ class M_PaketWDController extends Controller
     public function list_data_paket_wd(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPaketWD::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_paket_wd.*'])
+        $data = MasterPaketWD::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_paket_wd.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_paket_wd.is_deleted','=','0');
         });

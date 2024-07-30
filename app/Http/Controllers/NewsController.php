@@ -25,7 +25,7 @@ class NewsController extends Controller
     public function list_news(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = News::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_news.*'])
+        $data = News::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_news.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_news.is_deleted', '=', '0');
             });

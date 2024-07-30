@@ -59,7 +59,7 @@ class AbsensiController extends Controller
         $tanggal = date('Y-m-d');
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = Absensi::select([
+        $data = Absensi::on($this->getConnectionName())->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'id_user', 
                     DB::raw('SUM(jumlah_jam_kerja) as total')
@@ -426,7 +426,7 @@ class AbsensiController extends Controller
                 $split                      = explode("-", $request->tgl);
                 $tgl_awal       = date('Y-m-d',strtotime($split[0]));
                 $tgl_akhir      = date('Y-m-d',strtotime($split[1]));
-                $cek_user_absen = Absensi::select(['id_user'])->where('is_deleted', 0)->where('id_apotek', $request->id_apotek)->whereBetween('tgl', [$tgl_awal, $tgl_akhir])->get();
+                $cek_user_absen = Absensi::on($this->getConnectionName())->select(['id_user'])->where('is_deleted', 0)->where('id_apotek', $request->id_apotek)->whereBetween('tgl', [$tgl_awal, $tgl_akhir])->get();
                 $data_users = User::on($this->getConnectionName())->where('is_deleted', 0)->where('is_absensi', 1)->whereIn('id', $cek_user_absen)->get();
 
 
@@ -456,7 +456,7 @@ class AbsensiController extends Controller
                 ));
 
                 $no = 0;
-                $cek_tgl_absen = Absensi::select(['tgl'])
+                $cek_tgl_absen = Absensi::on($this->getConnectionName())->select(['tgl'])
                                 ->where(function($query) use($request, $tanggal){
                                     $query->where('is_deleted','=','0');
                                     $query->where('id_apotek','LIKE','%'.$request->id_apotek.'%');
@@ -531,7 +531,7 @@ class AbsensiController extends Controller
     public function detail_data($id_user, $bulan, $id_apotek, $id_searching_by) {
         $user = User::on($this->getConnectionName())->find($id_user);
         $tahun = session('id_tahun_active');
-        $jumlah_jam = Absensi::select([DB::raw('SUM(jumlah_jam_kerja) as jumlah_jam')])
+        $jumlah_jam = Absensi::on($this->getConnectionName())->select([DB::raw('SUM(jumlah_jam_kerja) as jumlah_jam')])
                                 ->where(function($query) use($id_user, $bulan, $tahun, $id_apotek, $id_searching_by){
                                     $query->where('is_deleted', 0);
                                     $query->where('id_user', $id_user);
@@ -565,7 +565,7 @@ class AbsensiController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = Absensi::select([
+        $data = Absensi::on($this->getConnectionName())->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_absensi.*'
                 ])
                 ->where(function($query) use($request){

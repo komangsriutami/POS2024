@@ -27,7 +27,7 @@ class ServiceController extends Controller
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterApotek::select('id as STORE_NUMBER', 'nama_panjang as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4])->get()->toArray();
+        $list = MasterApotek::on($this->getConnectionName())->select('id as STORE_NUMBER', 'nama_panjang as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4])->get()->toArray();
 
         # add headers for each column in the CSV download
         array_unshift($list, array_keys($list[0]));
@@ -55,7 +55,7 @@ class ServiceController extends Controller
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterObat::select('tb_m_obat.id as NO_SKU', 
+        $list = MasterObat::on($this->getConnectionName())->select('tb_m_obat.id as NO_SKU', 
                             'tb_m_obat.nama as PRODUCT_NAME', 
                             DB::raw('a.satuan as UNIT'), 
                             'tb_m_obat.barcode as BAR_CODE', 

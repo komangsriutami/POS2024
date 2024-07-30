@@ -75,7 +75,7 @@ class JurnalUmumController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKodeAkun::select([
+        $data = MasterKodeAkun::on($this->getConnectionName())->select([
             DB::raw('@rownum  := @rownum  + 1 AS no'),
             DB::raw('tb_m_kode_akun.id AS id_akun'),
             DB::raw('tb_m_kode_akun.kode AS kode_akun'),
@@ -104,7 +104,7 @@ class JurnalUmumController extends Controller
             return ''; 
         })  
         ->addcolumn('saldo', function($data){
-            $getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+            $getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->whereRaw("id_kode_akun = '".$data->id_akun."'")
                     ->whereNull("tb_jurnal_umum_detail.deleted_by")
@@ -114,7 +114,7 @@ class JurnalUmumController extends Controller
             // dd($getdebit);
             if(empty($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-            $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+            $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->where("id_kode_akun",$data->id_akun)
                     ->whereNull("tb_jurnal_umum_detail.deleted_by")
@@ -166,7 +166,7 @@ class JurnalUmumController extends Controller
     public function addDetail(Request $request)
     {
         // dd($request->input());
-        $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
+        $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $kode_akun->prepend('-- Pilih Akun --','');
 
         $detailjurnal = new JurnalUmumDetail;
@@ -401,7 +401,7 @@ class JurnalUmumController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $datadetail = JurnalUmumDetail::select(
+        $datadetail = JurnalUmumDetail::on($this->getConnectionName())->select(
                     "tb_jurnal_umum_detail.id",
                     "id_jurnal",
                     "id_kode_akun",
@@ -483,7 +483,7 @@ class JurnalUmumController extends Controller
             // dd($data->tgl_transaksi);
             $saldo = 0;
 
-            /*$getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+            /*$getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->whereRaw("j.tgl_transaksi <= '".$data->tgl_transaksi."'")
                     ->whereRaw("id_kode_akun = '".$data->id_kode_akun."'")
@@ -497,7 +497,7 @@ class JurnalUmumController extends Controller
             // dd($getdebit);
             if(is_null($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-            $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+            $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->where("j.tgl_transaksi","<=",$data->tgl_transaksi)
                     ->where("id_kode_akun",$data->id_kode_akun)
@@ -566,7 +566,7 @@ class JurnalUmumController extends Controller
         $idjurnal = Crypt::decrypt($id);
         $jurnal_umum = JurnalUmum::on($this->getConnectionName())->find($idjurnal);
         if(!empty($jurnal_umum)){
-            $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
+            $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
             $kode_akun->prepend('-- Pilih Akun --','');
 
             return view('jurnal_umum.edit')->with(compact("jurnal_umum","kode_akun"));
@@ -1593,7 +1593,7 @@ class JurnalUmumController extends Controller
         $id_jenis_transaksi = 1;
 
         # --- select akun piutang per outlet --- #
-        $getakunoutlet = MasterKodeAkun::whereRaw('nama LIKE \'%piutang antar%\'')
+        $getakunoutlet = MasterKodeAkun::on($this->getConnectionName())->whereRaw('nama LIKE \'%piutang antar%\'')
                         ->whereRaw('id_relasi_apotek != '.$id_apotek)->get();
         // dd($getakunoutlet);
 
@@ -2088,7 +2088,7 @@ class JurnalUmumController extends Controller
         $id_jenis_transaksi = 1;
 
         # --- select akun piutang per outlet --- #
-        $getakunoutlet = MasterKodeAkun::whereRaw('nama LIKE \'%hutang antar%\'')
+        $getakunoutlet = MasterKodeAkun::on($this->getConnectionName())->whereRaw('nama LIKE \'%hutang antar%\'')
                         ->whereRaw('id_relasi_apotek != '.$id_apotek)->get();
         // dd($getakunoutlet);
 
@@ -2227,7 +2227,7 @@ class JurnalUmumController extends Controller
             // cash => tb_nota_penjualan.id_kartu_debet_credit = 0
             // kartu => tb_nota_penjualan.id_kartu_debet_credit != 0
 
-            $penjualan_debet = TransaksiPenjualan::select([
+            $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -2258,7 +2258,7 @@ class JurnalUmumController extends Controller
 
 
 
-        $penjualan = TransaksiPenjualan::select([
+        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->select([
                             'tb_nota_penjualan.tgl_nota',
                             'tb_nota_penjualan.id_kartu_debet_credit',
                             #DB::raw('SUM(cash) AS total_cash'), 
@@ -2504,7 +2504,7 @@ class JurnalUmumController extends Controller
         // dd($getData);
 
 
-        $getData = ReturPenjualan::select(
+        $getData = ReturPenjualan::on($this->getConnectionName())->select(
                     DB::RAW("SUM(tb_return_penjualan_obat.jumlah_cn*d.harga_jual) as total"),
                     'a.nama as nama_kartu',
                     DB::RAW('IF(nota.id_kartu_debet_credit = 0,2,a.id_kode_akun) as id_kode_akun')

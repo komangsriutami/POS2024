@@ -65,7 +65,7 @@ class MonitoringController extends Controller
         #(SELECT b.stok_akhir FROM tb_histori_stok_".$inisial." AS b WHERE b.id_obat = a.id_obat and  a.id > b.id order by b.id desc LIMIT 1) AS stok_akhir_before,
         #(select c.stok_akhir from tb_histori_stok_".$inisial." as c where c.id_obat = a.id_obat and a.id < c.id limit 1) as stok_akhir_after
 
-        $data = DB::select("SELECT t1.* FROM (SELECT
+        $data = DB::on($this->getConnectionName())->select("SELECT t1.* FROM (SELECT
                                 a.id,
                                   a.id_obat,
                                   a.stok_awal,
@@ -168,7 +168,7 @@ class MonitoringController extends Controller
         $tgl_awal_baru = $request->tgl_awal.' 00:00:01';
         $tgl_akhir_baru = $request->tgl_akhir.' 23:59:59';
 
-        $rekaps = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama','b.no_faktur', 'b.tgl_faktur'])
+        $rekaps = TransaksiPembelianDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama','b.no_faktur', 'b.tgl_faktur'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
         ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
         ->where(function($query) use($request, $tgl_awal_baru, $tgl_akhir_baru){
@@ -192,7 +192,7 @@ class MonitoringController extends Controller
 
 
 
-            $histori_stok = HistoriStok::select(['hb_ppn', 'id_transaksi', 'id_jenis_transaksi'])
+            $histori_stok = HistoriStok::on($this->getConnectionDefault())->select(['hb_ppn', 'id_transaksi', 'id_jenis_transaksi'])
                             ->where('id_obat', $obj->id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->whereNotIn('id', [$obj->id])

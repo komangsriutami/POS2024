@@ -42,7 +42,7 @@ class M_JenisKelaminController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterJenisKelamin::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_kelamin.*'])
+        $data = MasterJenisKelamin::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_kelamin.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_kelamin.is_deleted','=','0');
         });

@@ -63,7 +63,7 @@ class M_SettingSuplierController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
+        $data = MasterObat::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_obat.is_deleted','=','0');
             $query->where('id_penandaan_obat','LIKE',($request->id_penandaan_obat > 0 ? $request->id_penandaan_obat : '%'.$request->id_penandaan_obat.'%'));
@@ -165,7 +165,7 @@ class M_SettingSuplierController extends Controller
         $data_ = new MasterSettingSuplier;
         $data_->setDynamicConnection();
 
-        $supliers = MasterSuplier::pluck('nama', 'id');
+        $supliers = MasterSuplier::on($this->getConnectionName())->pluck('nama', 'id');
         $supliers->prepend('-- Pilih Suplier --','');
 
         return view('setting_suplier.create')->with(compact('data_'));
@@ -352,7 +352,7 @@ class M_SettingSuplierController extends Controller
         $i = 0;
         $id_obat = 0;
         foreach($obats as $obj) {
-            $sub = TransaksiPembelianDetail::select(['tb_detail_nota_pembelian.id_obat', DB::raw('MAX(a.tgl_nota) as tgl'), 'a.id_suplier'])
+            $sub = TransaksiPembelianDetail::on($this->getConnectionName())->select(['tb_detail_nota_pembelian.id_obat', DB::raw('MAX(a.tgl_nota) as tgl'), 'a.id_suplier'])
                             ->join('tb_nota_pembelian as a', 'a.id', 'tb_detail_nota_pembelian.id_nota')
                             ->where('a.is_deleted', 0)
                             ->where('tb_detail_nota_pembelian.is_deleted', 0)

@@ -43,7 +43,7 @@ class M_AgamaController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterAgama::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_agama.*'])
+        $data = MasterAgama::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_agama.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_agama.is_deleted','=','0');
         });

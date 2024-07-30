@@ -43,7 +43,7 @@ class M_KlinikController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKlinik::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_klinik.*'])
+        $data = MasterKlinik::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_klinik.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_klinik.is_deleted','=','0');
             if($super_admin == 0) {

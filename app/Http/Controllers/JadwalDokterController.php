@@ -31,7 +31,7 @@ class JadwalDokterController extends Controller
     public function list_data(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterDokter::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_dokter.*'])
+        $data = MasterDokter::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_dokter.*'])
             ->where(function ($query) use ($request) {
                 //$query->where('dokter.is_deleted','=','0');
             });
@@ -78,7 +78,7 @@ class JadwalDokterController extends Controller
     public function list_jadwal_dokter(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = JadwalDokter::select([DB::raw('@rownum  := @rownum  + 1 AS no'),
+        $data = JadwalDokter::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),
         		'tb_jadwal_dokter.*'])
         ->where(function($query) use($request){
             $query->where('tb_jadwal_dokter.is_deleted','=','0');
@@ -149,7 +149,7 @@ class JadwalDokterController extends Controller
         $end      = date('Y-m-d',strtotime($split[1]));
         $range_date = $this->getDatesFromRange($start, $end);
 
-        $dataCheck = JadwalDokter::whereDate('tgl', '>=' ,$start)
+        $dataCheck = JadwalDokter::on($this->getConnectionName())->whereDate('tgl', '>=' ,$start)
         ->whereDate('tgl', '<=' ,$end)
         ->whereTime('start', '>=',$request->start)
         ->whereTime('end', '<=',$request->end)
@@ -288,7 +288,7 @@ class JadwalDokterController extends Controller
     }
 
     public function load_list_jadwal_dokter(Request $request){
-        $jadwal_dokters = JadwalDokter::select('tb_jadwal_dokter.*')
+        $jadwal_dokters = JadwalDokter::on($this->getConnectionName())->select('tb_jadwal_dokter.*')
                             ->where(function($query) use($request){
                                     $query->where('tb_jadwal_dokter.is_deleted','=','0');
                                     $query->where('tb_jadwal_dokter.id_dokter','LIKE','%'.$request->id_dokter.'%');

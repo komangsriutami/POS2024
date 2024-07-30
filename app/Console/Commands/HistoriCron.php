@@ -40,7 +40,7 @@ class HistoriCron extends Command
      */
     public function handle()
     {
-        /*$obat = MasterObat::select(['id'])->orderBy('id', 'DESC')->first();
+        /*$obat = MasterObat::on($this->getConnectionName())->select(['id'])->orderBy('id', 'DESC')->first();
         $last_id_obat = $obat->id;
         $last_id_obat_ex = 0;
         $id_apotek = 1;

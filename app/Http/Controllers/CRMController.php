@@ -48,7 +48,7 @@ class CRMController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterMember::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_member.*'])
+        $data = MasterMember::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_member.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_member.is_deleted','=','0');
 
@@ -87,7 +87,7 @@ class CRMController extends Controller
             return $jum_kunjungan. ' kunjungan';
         }) 
         ->editcolumn('poin', function($data) use($request){
-            $total_belanja = TransaksiPenjualanDetail::select([DB::raw('SUM(harga_jual*jumlah) as total')])
+            $total_belanja = TransaksiPenjualanDetail::on($this->getConnectionName())->select([DB::raw('SUM(harga_jual*jumlah) as total')])
                                 ->join('tb_nota_penjualan as a', 'a.id', '=', 'tb_detail_nota_penjualan.id_nota')
                                 ->where('a.is_deleted', 0)->where('a.id_pasien', $data->id)->first();
             $poin = $total_belanja->total/5000;

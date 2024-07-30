@@ -64,7 +64,7 @@ class BiayaController extends Controller
      */
     public function index()
     {
-        $getbulanini = Biaya::select(DB::RAW("(SUM(subtotal-IFNULL(ppn_potong,0))) as total"))
+        $getbulanini = Biaya::on($this->getConnectionName())->select(DB::RAW("(SUM(subtotal-IFNULL(ppn_potong,0))) as total"))
                     ->whereNull("tb_biaya.deleted_by")
                     ->whereRaw('MONTH(tgl_transaksi) = \''.Date('m').'\'')
                     ->whereRaw('YEAR(tgl_transaksi) = \''.Date('Y').'\'')
@@ -74,14 +74,14 @@ class BiayaController extends Controller
 
         $tgl30harisebelumnya = Date("Y-m-d", strtotime('-30 day'));
         // dd($tgl30harisebelumnya);
-        $get30hari = Biaya::select(DB::RAW("(SUM(subtotal-IFNULL(ppn_potong,0))) as total"))
+        $get30hari = Biaya::on($this->getConnectionName())->select(DB::RAW("(SUM(subtotal-IFNULL(ppn_potong,0))) as total"))
                     ->whereNull("tb_biaya.deleted_by")
                     ->whereRaw('tgl_transaksi >= \''.$tgl30harisebelumnya.'\'')
                     ->whereRaw('tgl_transaksi <= \''.Date('Y-m-d').'\'')
                     ->first();
         // dd($get30hari);
 
-        $belumlunas = Biaya::select(DB::RAW("(SUM(subtotal-IFNULL(ppn_potong,0))) as total"))
+        $belumlunas = Biaya::on($this->getConnectionName())->select(DB::RAW("(SUM(subtotal-IFNULL(ppn_potong,0))) as total"))
                     ->whereNull("tb_biaya.deleted_by")
                     ->whereRaw("id_status != 2")
                     ->first();
@@ -108,7 +108,7 @@ class BiayaController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = Biaya::select([
+        $data = Biaya::on($this->getConnectionName())->select([
             DB::raw('@rownum  := @rownum  + 1 AS no'),
             "tb_biaya.*"
         ])
@@ -181,7 +181,7 @@ class BiayaController extends Controller
 
     public function hitungtotalbiaya($biaya)
     {
-        $listpajak = MasterPajak::whereNull('deleted_by')->get();
+        $listpajak = MasterPajak::on($this->getConnectionName())->whereNull('deleted_by')->get();
         $detail = $biaya->detailbiaya;
         // dd($detail);
         
@@ -229,7 +229,7 @@ class BiayaController extends Controller
         $biaya = new Biaya;
         $biaya->setDynamicConnection();
 
-        $akundompet = MasterKodeAkun::select("id",DB::RAW("CONCAT(kode,' - ',nama) as nama_akun"))
+        $akundompet = MasterKodeAkun::on($this->getConnectionName())->select("id",DB::RAW("CONCAT(kode,' - ',nama) as nama_akun"))
                     ->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $akundompet->prepend('-- Pilih Akun --','');
 
@@ -240,7 +240,7 @@ class BiayaController extends Controller
 
         $carabayar = $this->carabayar;
 
-        $syarat_pembayaran = MasterSyaratPembayaran::whereNull("deleted_by")->get();
+        $syarat_pembayaran = MasterSyaratPembayaran::on($this->getConnectionName())->whereNull("deleted_by")->get();
 
         return view('biaya.create')->with(compact('biaya','akundompet','supplier','carabayar','syarat_pembayaran'));
     }
@@ -291,11 +291,11 @@ class BiayaController extends Controller
     */
     public function addDetail(Request $request)
     {
-        $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))
+        $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))
                     ->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $kode_akun->prepend('-- Pilih Akun --','');
 
-        $listpajak = MasterPajak::whereNull('deleted_by')->pluck('nama', 'id');
+        $listpajak = MasterPajak::on($this->getConnectionName())->whereNull('deleted_by')->pluck('nama', 'id');
         //$listpajak->prepend('-- Pilih Pajak --','');
         // dd($listpajak);
 
@@ -363,7 +363,7 @@ class BiayaController extends Controller
                     // dd($request->akun_pajak);
 
                     if(isset($request->akun_pajak[$key])){
-                        $get_akun_pajak = MasterPajak::whereIn('id',$request->akun_pajak[$key])->get();
+                        $get_akun_pajak = MasterPajak::on($this->getConnectionName())->whereIn('id',$request->akun_pajak[$key])->get();
                         if(!is_null($get_akun_pajak)){
                             foreach ($get_akun_pajak as $key_akun => $value_akun) {
 
@@ -486,7 +486,7 @@ class BiayaController extends Controller
 
                 // generate nomor //
                 # no urut 4 digit (0001)
-                $getLastNo = Biaya::select('no_biaya')
+                $getLastNo = Biaya::on($this->getConnectionName())->select('no_biaya')
                             ->whereRaw('MONTH(tgl_transaksi) = \''.Date("m",strtotime($request->tgl_transaksi)).'\'')
                             ->orderBy("id","desc")->first();
                 // dd($getLastNo);
@@ -738,7 +738,7 @@ class BiayaController extends Controller
         $id = Crypt::decrypt($id);
         $biaya = Biaya::on($this->getConnectionName())->find($id);        
         if(!empty($biaya)){            
-            $pajak = MasterPajak::whereNull("deleted_by")->get();
+            $pajak = MasterPajak::on($this->getConnectionName())->whereNull("deleted_by")->get();
             return view('biaya.showDetail')->with(compact("biaya","pajak"));
         } else {
             echo "Data Biaya tidak ditemukan";
@@ -762,7 +762,7 @@ class BiayaController extends Controller
 
         $biaya = Biaya::on($this->getConnectionName())->find($id);
 
-        $akundompet = MasterKodeAkun::select("id",DB::RAW("CONCAT(kode,' - ',nama) as nama_akun"))
+        $akundompet = MasterKodeAkun::on($this->getConnectionName())->select("id",DB::RAW("CONCAT(kode,' - ',nama) as nama_akun"))
                     ->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $akundompet->prepend('-- Pilih Akun --','');
 
@@ -773,11 +773,11 @@ class BiayaController extends Controller
         $carabayar = $this->carabayar;
 
         /* --- untuk load detail --- */
-        $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))
+        $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))
                     ->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $kode_akun->prepend('-- Pilih Akun --','');
 
-        $listpajak = MasterPajak::whereNull('deleted_by')->pluck('nama', 'id');
+        $listpajak = MasterPajak::on($this->getConnectionName())->whereNull('deleted_by')->pluck('nama', 'id');
        // $listpajak->prepend('-- Pilih Pajak --','');
 
 

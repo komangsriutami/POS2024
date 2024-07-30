@@ -53,7 +53,7 @@ class LaporanController extends Controller
 	public function neraca() {
 		$date_now = date('Y-m-d');
 
-		$aktivas = MasterKategoriAkun::whereIn('kode', [1,2,3,4,5,6,7])
+		$aktivas = MasterKategoriAkun::on($this->getConnectionName())->whereIn('kode', [1,2,3,4,5,6,7])
 									->where('is_deleted', 0)
 									->get();
 
@@ -67,7 +67,7 @@ class LaporanController extends Controller
             $arr_akuns = array();
             $total_akun = 0;
             foreach ($akuns as $x => $obj) {
-    			$getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+    			$getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->whereRaw("id_kode_akun = '".$obj->id."'")
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -77,7 +77,7 @@ class LaporanController extends Controller
 
                 if(empty($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-                $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+                $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->where("id_kode_akun",$obj->id)
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -102,7 +102,7 @@ class LaporanController extends Controller
             }
 		}
 
-        $pasivas = MasterKategoriAkun::whereIn('kode', [8,9,10,11,12])
+        $pasivas = MasterKategoriAkun::on($this->getConnectionName())->whereIn('kode', [8,9,10,11,12])
                                     ->where('is_deleted', 0)
                                     ->get();
 
@@ -116,7 +116,7 @@ class LaporanController extends Controller
             $arr_akuns = array();
             $total_akun = 0;
             foreach ($akuns as $x => $obj) {
-                $getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+                $getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->whereRaw("id_kode_akun = '".$obj->id."'")
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -126,7 +126,7 @@ class LaporanController extends Controller
 
                 if(empty($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-                $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+                $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->where("id_kode_akun",$obj->id)
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -172,7 +172,7 @@ class LaporanController extends Controller
         $akuns = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->get();
         $data = array();
 		foreach ($akuns as $key => $val) {
-			$getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+			$getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->whereRaw("tgl_transaksi >= '".$tgl_awal."'")
                 	->whereRaw("tgl_transaksi <= '".$tgl_akhir."'")
@@ -183,7 +183,7 @@ class LaporanController extends Controller
                     ->first();
             if(empty($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-            $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+            $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->where("id_kode_akun",$val->id)
                     ->whereRaw("tgl_transaksi >= '".$tgl_awal."'")
@@ -233,7 +233,7 @@ class LaporanController extends Controller
 		                </tr>';
 
 		    $date_before = date($tgl_awal, strtotime(' -1 day'));
-		    $getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+		    $getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->whereRaw("tgl_transaksi < '".$date_before."'")
                     ->whereRaw("id_kode_akun = '".$val['id']."'")
@@ -244,7 +244,7 @@ class LaporanController extends Controller
 
             if(empty($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-            $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+            $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                     ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                     ->where("id_kode_akun",$val['id'])
                     ->whereRaw("tgl_transaksi < '".$date_before."'")
@@ -269,7 +269,7 @@ class LaporanController extends Controller
 	                        <td class="text-right" width="15%!important;"><span style="font-size:10pt;">'.$saldo_awal_format.'</span></td>
 		                </tr>';
 
-		    $transaksis = JurnalUmumDetail::select(
+		    $transaksis = JurnalUmumDetail::on($this->getConnectionName())->select(
                     "tb_jurnal_umum_detail.id",
                     "id_jurnal",
                     "id_kode_akun",
@@ -332,7 +332,7 @@ class LaporanController extends Controller
         $tgl_akhir = $request->tgl_akhir;
 
         $data = array();
-		$transaksis = JurnalUmum::select(['*'])
+		$transaksis = JurnalUmum::on($this->getConnectionName())->select(['*'])
                 ->whereRaw("tgl_transaksi >= '".$tgl_awal."'")
                 ->whereRaw("tgl_transaksi <= '".$tgl_akhir."'")
                 ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -403,7 +403,7 @@ class LaporanController extends Controller
 	public function laba_rugi() {
 		$date_now = date('Y-m-d');
 
-        $pendapatans = MasterKategoriAkun::whereIn('kode', [13,17])
+        $pendapatans = MasterKategoriAkun::on($this->getConnectionName())->whereIn('kode', [13,17])
                                     ->where('is_deleted', 0)
                                     ->get();
 
@@ -417,7 +417,7 @@ class LaporanController extends Controller
             $arr_akuns = array();
             $total_akun = 0;
             foreach ($akuns as $x => $obj) {
-                $getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+                $getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->whereRaw("id_kode_akun = '".$obj->id."'")
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -427,7 +427,7 @@ class LaporanController extends Controller
 
                 if(empty($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-                $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+                $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->where("id_kode_akun",$obj->id)
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -452,7 +452,7 @@ class LaporanController extends Controller
             }
         }
 
-        $biayas = MasterKategoriAkun::whereIn('kode', [14,15,16,18])
+        $biayas = MasterKategoriAkun::on($this->getConnectionName())->whereIn('kode', [14,15,16,18])
                                     ->where('is_deleted', 0)
                                     ->get();
 
@@ -466,7 +466,7 @@ class LaporanController extends Controller
             $arr_akuns = array();
             $total_akun = 0;
             foreach ($akuns as $x => $obj) {
-                $getdebit = JurnalUmumDetail::select(DB::RAW("SUM(debit) as total_debit"))
+                $getdebit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(debit) as total_debit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->whereRaw("id_kode_akun = '".$obj->id."'")
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")
@@ -476,7 +476,7 @@ class LaporanController extends Controller
 
                 if(empty($getdebit)){ $total_debit = 0; } else { $total_debit = $getdebit->total_debit ; }
 
-                $getkredit = JurnalUmumDetail::select(DB::RAW("SUM(kredit) as total_kredit"))
+                $getkredit = JurnalUmumDetail::on($this->getConnectionName())->select(DB::RAW("SUM(kredit) as total_kredit"))
                         ->join("tb_jurnal_umum as j","j.id","id_jurnal")
                         ->where("id_kode_akun",$obj->id)
                         ->whereRaw("id_apotek = '".session('id_apotek_active')."'")

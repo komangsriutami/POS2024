@@ -80,7 +80,7 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
                 $cached_data = Cache::get('resume_pembelian_'.$this->id_pencarian.'_'.Auth::user()->id.'_list_data_'.$this->id_apotek);
             }
             if($cached_data == null) {
-                $pembelian = TransaksiPembelianDetail::select(
+                $pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->select(
                     'tb_detail_nota_pembelian.id_obat',
                     DB::raw('SUM(tb_detail_nota_pembelian.jumlah) as jumlah'),
                 )
@@ -136,7 +136,7 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
                 $cached_data = Cache::get('resume_transfer_masuk_'.$this->id_pencarian.'_'.Auth::user()->id.'_list_data_'.$this->id_apotek);
             }
             if($cached_data == null) {
-                $transfer_masuk = TransaksiTODetail::select(
+                $transfer_masuk = TransaksiTODetail::on($this->getConnectionName())->select(
                     'tb_detail_nota_transfer_outlet.id_obat',
                     'c.nama',
                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah) as jumlah'),
@@ -194,7 +194,7 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
                 $cached_data = Cache::get('resume_transfer_keluar_'.$this->id_pencarian.'_'.Auth::user()->id.'_list_data_'.$this->id_apotek);
             }
             if($cached_data == null) {
-                $transfer_keluar = TransaksiTODetail::select(
+                $transfer_keluar = TransaksiTODetail::on($this->getConnectionName())->select(
                     'tb_detail_nota_transfer_outlet.id_obat',
                     'c.nama',
                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah) as jumlah'),
@@ -306,7 +306,7 @@ class PembelianExportSheets implements FromCollection, WithTitle, WithColumnWidt
             foreach ($data as $key => $obj) {
                 $i++;
 
-                $histori_stok = HistoriStok::select([
+                $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([
                     DB::raw('SUM(sisa_stok) as jum_sisa_stok'),
                     DB::raw('SUM(sisa_stok*hb_ppn) as total')
                 ])

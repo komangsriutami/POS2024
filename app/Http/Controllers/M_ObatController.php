@@ -74,7 +74,7 @@ class M_ObatController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
+        $data = MasterObat::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_obat.is_deleted','=','0');
             $query->where('id_penandaan_obat','LIKE',($request->id_penandaan_obat > 0 ? $request->id_penandaan_obat : '%'.$request->id_penandaan_obat.'%'));
@@ -356,7 +356,7 @@ class M_ObatController extends Controller
             $persen = 0;
         }
 
-        $data1 = TransaksiPembelianDetail::select([
+        $data1 = TransaksiPembelianDetail::on($this->getConnectionName())->select([
                     'tb_detail_nota_pembelian.*', 
                     'b.nama', 
                     'b.barcode', 
@@ -453,7 +453,7 @@ class M_ObatController extends Controller
                     ->where('tb_m_obat.id_golongan_obat','LIKE',($request->id_golongan_obat > 0 ? $request->id_golongan_obat : '%'.$request->id_golongan_obat.'%'))
                     ->get();
 
-        /*MasterObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
+        /*MasterObat::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
                 ->where(function($query) use($request){
                     $query->where('is_deleted','=','0');
                     $query->where('id_penandaan_obat','LIKE',($request->id_penandaan_obat > 0 ? $request->id_penandaan_obat : '%'.$request->id_penandaan_obat.'%'));

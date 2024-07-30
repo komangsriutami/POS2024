@@ -24,7 +24,7 @@ class MessageController extends Controller
     public function get_data(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MessageFooter::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_message.*'])
+        $data = MessageFooter::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_message.*'])
             ->where(function ($query) use ($request) {
                 //$query->where('message.is_deleted','=','0');
             });

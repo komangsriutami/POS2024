@@ -23,7 +23,7 @@ class M_DiagnosaController extends Controller
     public function get_data(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterDiagnosa::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_diagnosa.*'])
+        $data = MasterDiagnosa::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_diagnosa.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_m_diagnosa.is_deleted', '=', '0');
             });

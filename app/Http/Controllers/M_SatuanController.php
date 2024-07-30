@@ -41,7 +41,7 @@ class M_SatuanController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterSatuan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_satuan.*'])
+        $data = MasterSatuan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_satuan.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_satuan.is_deleted','=','0');
         });

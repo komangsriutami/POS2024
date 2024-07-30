@@ -42,7 +42,7 @@ class M_KewarganegaraanController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKewarganegaraan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kewarganegaraan.*'])
+        $data = MasterKewarganegaraan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kewarganegaraan.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_kewarganegaraan.is_deleted','=','0');
         });

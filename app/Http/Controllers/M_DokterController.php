@@ -56,7 +56,7 @@ class M_DokterController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterDokter::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_dokter.*'])
+        $data = MasterDokter::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_dokter.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_dokter.is_deleted','=','0');
             if($super_admin == 0) {

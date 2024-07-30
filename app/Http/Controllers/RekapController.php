@@ -26,7 +26,7 @@ class RekapController extends Controller
         $end = date('Y-m-t', strtotime($date_now));
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        $data = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
         ->where(function($query) use($request, $first, $end){
             $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {

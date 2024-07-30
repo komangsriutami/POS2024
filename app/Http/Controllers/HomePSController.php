@@ -29,7 +29,7 @@ class HomePSController extends Controller
      */
     public function index()
     {
-        $dataAnggota = MasterPasien::select('tb_m_pasien.id')->orderBy("tb_m_pasien.id")->where('id_reference',session('id'))->pluck('id');
+        $dataAnggota = MasterPasien::on($this->getConnectionName())->select('tb_m_pasien.id')->orderBy("tb_m_pasien.id")->where('id_reference',session('id'))->pluck('id');
         $anggotaKeluargas = MasterPasien::orderBy("id")->where('id_reference',session('id_reference'))->get();
         $appointmentPasiens = AppointmentPasien::orderBy("tb_appointment_pasien.id")->whereIn('id_reg_pasien',
             $dataAnggota

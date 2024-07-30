@@ -43,7 +43,7 @@ class SettingPaketSistemController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = SettingPaketSistem::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_setting_paket_sistem.*'])
+        $data = SettingPaketSistem::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_setting_paket_sistem.*'])
         ->where(function($query) use($request){
             $query->with('jenis_paket_sistem')->where('tb_setting_paket_sistem.is_deleted','=','0');
         });

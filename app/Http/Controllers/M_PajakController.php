@@ -41,7 +41,7 @@ class M_PajakController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPajak::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_pajak.*'])
+        $data = MasterPajak::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_pajak.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_pajak.is_deleted','=','0');
         });

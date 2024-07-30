@@ -42,7 +42,7 @@ class M_ProvinsiController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterProvinsi::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_provinsi.*'])
+        $data = MasterProvinsi::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_provinsi.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_provinsi.is_deleted','=','0');
         });

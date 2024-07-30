@@ -43,7 +43,7 @@ class M_MemberTipeController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterMemberTipe::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_tipe_member.*'])
+        $data = MasterMemberTipe::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_tipe_member.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_tipe_member.is_deleted','=','0');
         });

@@ -65,7 +65,7 @@ class T_POController extends Controller
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPO::select([
+        $data = TransaksiPO::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 	            'tb_nota_po.*', 
         ])
@@ -322,7 +322,7 @@ class T_POController extends Controller
                 'created_by' => Auth::user()->id
             ]);
 
-            $total = TransaksiPODetail::select([
+            $total = TransaksiPODetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM(total) as total_all')
                                 ])
                                 ->where('id', '!=', $detail_obat_operasional->id)
@@ -361,7 +361,7 @@ class T_POController extends Controller
     public function cetak_nota(Request $request)
     {   
         $obat_operasional = TransaksiPO::on($this->getConnectionName())->where('id', $request->id)->first();
-        $detail_obat_operasionals = TransaksiPODetail::select(['tb_detail_nota_po.*'])
+        $detail_obat_operasionals = TransaksiPODetail::on($this->getConnectionName())->select(['tb_detail_nota_po.*'])
                                                ->where('tb_detail_nota_po.id_nota', $obat_operasional->id)
                                                ->get();
         $apotek = MasterApotek::on($this->getConnectionName())->find($obat_operasional->id_apotek_nota);
@@ -648,7 +648,7 @@ class T_POController extends Controller
 
     public function list_pencarian_obat(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPODetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_po.*', 'a.nama'])
+        $data = TransaksiPODetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_po.*', 'a.nama'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_po.id_obat')
         ->join('tb_nota_po as b', 'b.id', 'tb_detail_nota_po.id_nota')
         ->where(function($query) use($request){
@@ -693,7 +693,7 @@ class T_POController extends Controller
 
     public function export(Request $request) 
     {
-        $rekaps = TransaksiPO::select([
+        $rekaps = TransaksiPO::on($this->getConnectionName())->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_nota_po.*'
                                 ])
@@ -800,7 +800,7 @@ class T_POController extends Controller
         }
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPODetail::select([
+        $data = TransaksiPODetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_po.*', 
         ])

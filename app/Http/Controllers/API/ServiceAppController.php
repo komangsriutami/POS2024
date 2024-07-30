@@ -259,7 +259,7 @@ class ServiceAppController extends BaseController
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterApotek::select('id as STORE_NUMBER', 'nama_singkat as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4, 6, 7, 10, 11])->get()->toArray();
+        $list = MasterApotek::on($this->getConnectionName())->select('id as STORE_NUMBER', 'nama_singkat as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4, 6, 7, 10, 11])->get()->toArray();
 
         # add headers for each column in the CSV download
         array_unshift($list, array_keys($list[0]));
@@ -287,7 +287,7 @@ class ServiceAppController extends BaseController
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterObat::select('tb_m_obat.id as NO_SKU', 
+        $list = MasterObat::on($this->getConnectionName())->select('tb_m_obat.id as NO_SKU', 
                             'tb_m_obat.nama as PRODUCT_NAME', 
                             DB::raw('a.satuan as UNIT'), 
                             'tb_m_obat.barcode as BAR_CODE', 
@@ -666,7 +666,7 @@ class ServiceAppController extends BaseController
         header('Access-Control-Allow-Methods: *');
         header('Access-Control-Allow-Headers: *');*/
 
-        $user_apoteks = RbacUserApotek::select(['rbac_user_apotek.id_user'])->get(); //->where('id_apotek', $id_apotek)
+        $user_apoteks = RbacUserApotek::on($this->getConnectionName())->select(['rbac_user_apotek.id_user'])->get(); //->where('id_apotek', $id_apotek)
         $apoteker = User::on($this->getConnectionName())->where('is_deleted', 0)->get(); //whereIn('id', $user_apoteks)->
         $apoteker = $apoteker->toArray();
        /* $plus_1 = User::on($this->getConnectionName())->find(1);
@@ -783,7 +783,7 @@ class ServiceAppController extends BaseController
     public function list_data_rekap_absensi_per_bulan($id_user, $tahun) {
         $array_all = array();
 
-        $absensi = Absensi::select([
+        $absensi = Absensi::on($this->getConnectionName())->select([
                                 DB::raw('YEAR(tgl) as tahun'),
                                 DB::raw('MONTH(tgl) as bulan_ke'),
                                 DB::raw('COUNT(id) as jumlah_kehadiran')
@@ -807,7 +807,7 @@ class ServiceAppController extends BaseController
         $array_all = array();
         $jum_hari = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
 
-        $absensi = Absensi::select([
+        $absensi = Absensi::on($this->getConnectionName())->select([
                                 'tb_absensi.id',
                                 'tb_absensi.tgl',
                                 'tb_absensi.id_apotek',

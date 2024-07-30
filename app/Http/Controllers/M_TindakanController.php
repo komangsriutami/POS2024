@@ -22,7 +22,7 @@ class M_TindakanController extends Controller
     public function get_data(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterTindakan::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_tindakan.*'])
+        $data = MasterTindakan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_tindakan.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_m_tindakan.is_deleted','=','0');
             });

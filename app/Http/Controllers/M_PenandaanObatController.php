@@ -41,7 +41,7 @@ class M_PenandaanObatController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPenandaanObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_penandaan_obat.*'])
+        $data = MasterPenandaanObat::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_penandaan_obat.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_penandaan_obat.is_deleted','=','0');
         });

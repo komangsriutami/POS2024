@@ -45,7 +45,7 @@ class M_StatusKaryawanController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterStatusKaryawan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_status_karyawan.*'])
+        $data = MasterStatusKaryawan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_status_karyawan.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_status_karyawan.is_deleted','=','0');
         });

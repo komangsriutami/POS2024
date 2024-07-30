@@ -67,7 +67,7 @@ class BiayaImport implements ToCollection
             $idjurnal_umum = '';
             $lasttrx = '';
 
-            $kodeakun = MasterKodeAkun::whereNull("deleted_by")->get();
+            $kodeakun = MasterKodeAkun::on($this->getConnectionName())->whereNull("deleted_by")->get();
 
             
 

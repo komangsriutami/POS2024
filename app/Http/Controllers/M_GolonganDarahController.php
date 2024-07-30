@@ -43,7 +43,7 @@ class M_GolonganDarahController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterGolonganDarah::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_golongan_darah.*'])
+        $data = MasterGolonganDarah::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_golongan_darah.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_golongan_darah.is_deleted','=','0');
         });

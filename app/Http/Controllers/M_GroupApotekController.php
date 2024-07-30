@@ -41,7 +41,7 @@ class M_GroupApotekController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterGroupApotek::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_group_apotek.*'])
+        $data = MasterGroupApotek::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_group_apotek.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_group_apotek.is_deleted','=','0');
         });

@@ -53,7 +53,7 @@ class M_ApotekerController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterApoteker::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_apoteker.*'])
+        $data = MasterApoteker::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_apoteker.*'])
             ->where(function ($query) use ($request, $super_admin) {
                 $query->where('tb_m_apoteker.is_deleted', '=', '0');
                 if ($super_admin == 0) {

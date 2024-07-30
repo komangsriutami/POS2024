@@ -25,7 +25,7 @@ class TipsController extends Controller
     public function list_tips(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = Tips::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_tips.*'])
+        $data = Tips::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_tips.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_tips.is_deleted', '=', '0');
             });

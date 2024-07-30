@@ -45,7 +45,7 @@ class M_PosisiController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPosisi::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_posisi.*'])
+        $data = MasterPosisi::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_posisi.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_posisi.is_deleted','=','0');
         });

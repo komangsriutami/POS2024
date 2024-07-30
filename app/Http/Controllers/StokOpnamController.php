@@ -44,7 +44,7 @@ class StokOpnamController extends Controller
         	$cek = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', $id_apotek)->where('tgl_so', $now)->first();
             $total_barang = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->count();
             $total_so = MasterStokHarga::on($this->getConnectionDefault())->where('is_deleted', 0)->where('is_so', 1)->count();
-            $total = MasterStokHarga::select([
+            $total = MasterStokHarga::on($this->getConnectionDefault())->select([
                             DB::raw('SUM(stok_tersedia) as total_tersedia'),
                             DB::raw('SUM(stok_found) as total_found'),
                             DB::raw('SUM(stok_missing) as total_missing'),

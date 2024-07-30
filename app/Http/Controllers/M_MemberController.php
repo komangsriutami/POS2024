@@ -62,7 +62,7 @@ class M_MemberController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterMember::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_member.*'])
+        $data = MasterMember::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_member.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_member.is_deleted','=','0');
             if($super_admin == 0) {
@@ -84,7 +84,7 @@ class M_MemberController extends Controller
             return $data->group_apotek->nama_singkat; 
         }) 
         ->editcolumn('total_transaksi', function($data){
-            $getTotal = TransaksiPenjualan::select([
+            $getTotal = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('SUM(total_belanja) as total_belanja_fix')
                         ])
                         ->where('id_pasien', $data->id)
@@ -299,7 +299,7 @@ class M_MemberController extends Controller
 
         $id_pasien = Crypt::decryptString($request->id_user);
         $user = MasterMember::on($this->getConnectionName())->find($id_pasien);
-        $getTotal = TransaksiPenjualan::select([
+        $getTotal = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('SUM(total_belanja) as total_belanja_fix')
                         ])
                         ->where('id_pasien', $user->id)
@@ -308,7 +308,7 @@ class M_MemberController extends Controller
         $total = $getTotal->total_belanja_fix;
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request, $user){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->where('tb_nota_penjualan.id_pasien', $user->id);
@@ -358,7 +358,7 @@ class M_MemberController extends Controller
 
     public function GetExportDetail($tgl_awal, $tgl_akhir) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $trxs = TransaksiPenjualanDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.tgl_nota', 'a.id_pasien'])
+        $trxs = TransaksiPenjualanDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.tgl_nota', 'a.id_pasien'])
                 ->join('tb_nota_penjualan as a', 'a.id', '=', 'tb_detail_nota_penjualan.id_nota')
                 ->where(function($query) use($tgl_awal, $tgl_akhir){
                     $query->whereDate('a.tgl_nota','>=', $tgl_awal);

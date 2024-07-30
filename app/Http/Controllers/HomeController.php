@@ -218,7 +218,7 @@ class HomeController extends Controller
 
             if($hak_akses == 1) {
 
-                /*$jumlah_kasir = TransaksiPenjualan::whereDate('tb_nota_penjualan.tgl_nota','>=', $tgl_awal_baru)
+                /*$jumlah_kasir = TransaksiPenjualan::on($this->getConnectionName())->whereDate('tb_nota_penjualan.tgl_nota','>=', $tgl_awal_baru)
 
                                 ->whereDate('tb_nota_penjualan.tgl_nota','<=', $tgl_akhir_baru)
 
@@ -232,7 +232,7 @@ class HomeController extends Controller
 
 
 
-                $kasir = TransaksiPenjualan::select(['a.username', 'tb_nota_penjualan.created_by'])
+                $kasir = TransaksiPenjualan::on($this->getConnectionName())->select(['a.username', 'tb_nota_penjualan.created_by'])
 
                                 ->join('users as a', 'a.id', '=', 'tb_nota_penjualan.created_by')
 
@@ -250,7 +250,7 @@ class HomeController extends Controller
 
 
 
-                $closing_kasir = TransaksiPenjualanClosing::whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
+                $closing_kasir = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
 
                                 ->whereDate('tb_closing_nota_penjualan.tanggal','<=', $tgl_akhir_baru)
 
@@ -270,7 +270,7 @@ class HomeController extends Controller
 
                     $i++;
 
-                    $cek = TransaksiPenjualanClosing::whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
+                    $cek = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
 
                                 ->whereDate('tb_closing_nota_penjualan.tanggal','<=', $tgl_akhir_baru)
 
@@ -776,7 +776,7 @@ class HomeController extends Controller
 
 
 
-            $staffs = User::select(['users.*'])
+            $staffs = User::on($this->getConnectionName())->select(['users.*'])
 
                             ->join('rbac_user_apotek as a', 'a.id_user', 'users.id')
 
@@ -790,7 +790,7 @@ class HomeController extends Controller
 
 
 
-            $insvestors = InvestasiModal::select(['a.id', 'a.nama', DB::raw('SUM(tb_investasi_modal.persentase_kepemilikan) as saham_persen')])
+            $insvestors = InvestasiModal::on($this->getConnectionName())->select(['a.id', 'a.nama', DB::raw('SUM(tb_investasi_modal.persentase_kepemilikan) as saham_persen')])
 
                             ->join('tb_m_investor as a', 'a.id', 'tb_investasi_modal.id_investor')
 
@@ -960,7 +960,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan_closing = TransaksiPenjualanClosing::select([
+        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
 
 
 
@@ -2352,7 +2352,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan_closing = TransaksiPenjualanClosing::select([
+        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
 
 
 
@@ -3870,7 +3870,7 @@ class HomeController extends Controller
 
 
 
-            $rekaps = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+            $rekaps = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
 
                                 ->where(function($query) use($request, $tahun, $i){
 
@@ -3888,7 +3888,7 @@ class HomeController extends Controller
 
 
 
-            $rekap_alls = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+            $rekap_alls = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
 
                                 ->where(function($query) use($request, $tahun, $i){
 
@@ -3904,7 +3904,7 @@ class HomeController extends Controller
 
 
 
-            $rekap_pembelian = TransaksiPembelianDetail::select([
+            $rekap_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->select([
 
                                         DB::raw('@rownum  := @rownum  + 1 AS no'), 
 
@@ -3932,7 +3932,7 @@ class HomeController extends Controller
 
 
 
-            $to_masuk = TransaksiTODetail::select([
+            $to_masuk = TransaksiTODetail::on($this->getConnectionName())->select([
 
                                         DB::raw('@rownum  := @rownum  + 1 AS no'), 
 
@@ -3960,7 +3960,7 @@ class HomeController extends Controller
 
 
 
-            $to_keluar = TransaksiTODetail::select([
+            $to_keluar = TransaksiTODetail::on($this->getConnectionName())->select([
 
                                         DB::raw('@rownum  := @rownum  + 1 AS no'), 
 
@@ -4273,7 +4273,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan = TransaksiPenjualanDetail::select(
+        $penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->select(
 
                                 'tb_detail_nota_penjualan.id_obat',
 
@@ -4315,7 +4315,7 @@ class HomeController extends Controller
 
 
 
-        $pembelian = TransaksiPembelianDetail::select(
+        $pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->select(
 
                                 'tb_detail_nota_pembelian.id_obat',
 
@@ -4351,7 +4351,7 @@ class HomeController extends Controller
 
 
 
-        $transfer_masuk = TransaksiTODetail::select(
+        $transfer_masuk = TransaksiTODetail::on($this->getConnectionName())->select(
 
                                 'tb_detail_nota_transfer_outlet.id_obat',
 
@@ -4385,7 +4385,7 @@ class HomeController extends Controller
 
 
 
-        $transfer_keluar = TransaksiTODetail::select(
+        $transfer_keluar = TransaksiTODetail::on($this->getConnectionName())->select(
 
                                 'tb_detail_nota_transfer_outlet.id_obat',
 
@@ -5083,7 +5083,7 @@ class HomeController extends Controller
             ->where('a.is_deleted', '=', 0)
             ->groupBy('a.id_obat');
             
-            $subquery = TransaksiPenjualanDetail::select(
+            $subquery = TransaksiPenjualanDetail::on($this->getConnectionName())->select(
                 DB::raw('(@rownum := @rownum + 1) AS no'),
                 'tb_detail_nota_penjualan.id_obat',
                 'c.nama',
@@ -5116,7 +5116,7 @@ class HomeController extends Controller
             ->groupBy('tb_detail_nota_penjualan.id_obat');
     
             DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-            $data =  TransaksiPenjualanDetail::select(
+            $data =  TransaksiPenjualanDetail::on($this->getConnectionName())->select(
                 DB::raw('*')
             )
             ->from(
@@ -5426,7 +5426,7 @@ class HomeController extends Controller
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
 
-        $data =  TransaksiTODetail::select(
+        $data =  TransaksiTODetail::on($this->getConnectionName())->select(
 
                                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 
@@ -5552,7 +5552,7 @@ class HomeController extends Controller
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
 
-        $data =  TransaksiTODetail::select(
+        $data =  TransaksiTODetail::on($this->getConnectionName())->select(
 
                                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 
@@ -5724,7 +5724,7 @@ class HomeController extends Controller
         list($tgl_awal, $tgl_akhir) = HomeController::getDateFilter($request->id_pencarian, $request->tanggal);
         
         $now = date('YmdHis');
-        $apoteks = MasterApotek::select(
+        $apoteks = MasterApotek::on($this->getConnectionName())->select(
             'id',
             'nama_singkat'
         )
@@ -5808,7 +5808,7 @@ class HomeController extends Controller
 
         $now = date('YmdHis');
 
-        $apoteks = MasterApotek::select(
+        $apoteks = MasterApotek::on($this->getConnectionName())->select(
 
             'id',
 
@@ -6096,7 +6096,7 @@ class HomeController extends Controller
 
         ->editcolumn('harga_beli_ppn', function($data) {
 
-            $histori_stok = HistoriStok::select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
+            $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
 
                             ->where('id_obat', $data->id_obat)
 
@@ -6483,7 +6483,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians = TransaksiPembelian::select([
+            $pembelians = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6567,7 +6567,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_terbayar = TransaksiPembelian::select([
+            $pembelians_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6621,7 +6621,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_blm_terbayar = TransaksiPembelian::select([
+            $pembelians_blm_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6671,7 +6671,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_jatuh_tempo = TransaksiPembelian::select([
+            $pembelians_jatuh_tempo = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6723,7 +6723,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_closing = TransaksiPenjualanClosing::select([DB::raw('SUM(jumlah_tt) as total')])
+            $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('SUM(jumlah_tt) as total')])
 
                                         ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
 
@@ -6855,7 +6855,7 @@ class HomeController extends Controller
 
             foreach ($apoteks as $key => $val) {
 
-                $data = TransaksiTODetail::select([
+                $data = TransaksiTODetail::on($this->getConnectionName())->select([
 
                                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
 
@@ -6933,7 +6933,7 @@ class HomeController extends Controller
 
             foreach ($apoteks as $key => $val) {
 
-                $data = TransaksiTODetail::select([
+                $data = TransaksiTODetail::on($this->getConnectionName())->select([
 
                                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
 
@@ -6967,7 +6967,7 @@ class HomeController extends Controller
 
 
 
-                $data_konfirm = TransaksiTODetail::select([
+                $data_konfirm = TransaksiTODetail::on($this->getConnectionName())->select([
 
                                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
 
@@ -7369,7 +7369,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_closing = TransaksiPenjualanClosing::select([DB::raw('SUM(jumlah_tt) as total')])
+            $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('SUM(jumlah_tt) as total')])
 
                                         ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
 
@@ -7713,7 +7713,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians = TransaksiPembelian::select([
+            $pembelians = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -7763,7 +7763,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_terbayar = TransaksiPembelian::select([
+            $pembelians_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -7817,7 +7817,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_blm_terbayar = TransaksiPembelian::select([
+            $pembelians_blm_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -7867,7 +7867,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_jatuh_tempo = TransaksiPembelian::select([
+            $pembelians_jatuh_tempo = TransaksiPembelian::on($this->getConnectionName())->select([
 
                             'tb_nota_pembelian.*'])
 
@@ -8233,7 +8233,7 @@ class HomeController extends Controller
 
 
 
-        $get_noid = DB::select('SELECT t2.id_obat,t2.request_id, t2.id_jenis_transaksi, t2.`hb_ppn`, b.`harga_beli_ppn` FROM (
+        $get_noid = DB::on($this->getConnectionName())->select('SELECT t2.id_obat,t2.request_id, t2.id_jenis_transaksi, t2.`hb_ppn`, b.`harga_beli_ppn` FROM (
 
         SELECT t1.id_obat,t1.request_id, a.id_jenis_transaksi, a.`hb_ppn` FROM (SELECT id_obat, request_id
 

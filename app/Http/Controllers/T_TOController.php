@@ -85,7 +85,7 @@ class T_TOController extends Controller
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTO::select([
+        $data = TransaksiTO::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 	            'tb_nota_transfer_outlet.*', 
         ])
@@ -247,7 +247,7 @@ class T_TOController extends Controller
         }*/
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-    	$apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+    	$apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $transfer_outlet = new TransaksiTO;
         $transfer_outlet->setDynamicConnection();
@@ -270,7 +270,7 @@ class T_TOController extends Controller
 
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $tanggal = date('Y-m-d');
 
 
@@ -305,7 +305,7 @@ class T_TOController extends Controller
         $transfer_outlet = TransaksiTO::on($this->getConnectionName())->find($id);
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $detail_transfer_outlets = $transfer_outlet->detail_transfer_outlet;
 
@@ -333,7 +333,7 @@ class T_TOController extends Controller
 
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $tanggal = date('Y-m-d');
 
             $validator = $transfer_outlet->validate();
@@ -514,7 +514,7 @@ class T_TOController extends Controller
             ]);*/
 
 
-            $total = TransaksiTODetail::select([
+            $total = TransaksiTODetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM(total) as total_all')
                                 ])
                                 ->where('id', '!=', $detail_transfer_outlet->id)
@@ -564,7 +564,7 @@ class T_TOController extends Controller
     public function cetak_nota(Request $request)
     {   
         $transfer_outlet = TransaksiTO::on($this->getConnectionName())->where('id', $request->id)->first();
-        $detail_transfer_outlets = TransaksiTODetail::select(['tb_detail_nota_transfer_outlet.*',
+        $detail_transfer_outlets = TransaksiTODetail::on($this->getConnectionName())->select(['tb_detail_nota_transfer_outlet.*',
                                                  DB::raw('(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) as total')])
                                                ->where('tb_detail_nota_transfer_outlet.id_nota', $transfer_outlet->id)
                                                ->where('tb_detail_nota_transfer_outlet.is_deleted', 0)
@@ -576,7 +576,7 @@ class T_TOController extends Controller
     public function cetak_nota_thermal($id)
     {   
         $transfer_outlet = TransaksiTO::on($this->getConnectionName())->where('id', $id)->first();
-        $detail_transfer_outlets = TransaksiTODetail::select(['tb_detail_nota_transfer_outlet.*',
+        $detail_transfer_outlets = TransaksiTODetail::on($this->getConnectionName())->select(['tb_detail_nota_transfer_outlet.*',
                                                  DB::raw('(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) as total')])
                                                ->where('tb_detail_nota_transfer_outlet.id_nota', $transfer_outlet->id)
                                                ->where('tb_detail_nota_transfer_outlet.is_deleted', 0)
@@ -899,7 +899,7 @@ class T_TOController extends Controller
 
     public function list_pencarian_obat(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTODetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_transfer_outlet.*', 'a.nama'])
+        $data = TransaksiTODetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_transfer_outlet.*', 'a.nama'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_transfer_outlet.id_obat')
         ->join('tb_nota_transfer_outlet as b', 'b.id', 'tb_detail_nota_transfer_outlet.id_nota')
         ->where(function($query) use($request){
@@ -947,7 +947,7 @@ class T_TOController extends Controller
     {
         $start = date_create("2021-01-01");
         $end = date_create("2021-01-10");
-        $rekaps = TransaksiTO::select([
+        $rekaps = TransaksiTO::on($this->getConnectionName())->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_nota_transfer_outlet.*'
                                 ])
@@ -1266,7 +1266,7 @@ class T_TOController extends Controller
 
     public function konfirmasi_transfer($id) {
         $id = decrypt($id);
-        $transfer = TransaksiTransfer::select('tb_nota_transfer.*')
+        $transfer = TransaksiTransfer::on($this->getConnectionName())->select('tb_nota_transfer.*')
                                 ->where('tb_nota_transfer.is_deleted', 0)
                                 ->where('tb_nota_transfer.is_status', 0)
                                 ->where('tb_nota_transfer.id_apotek_transfer', session('id_apotek_active'))
@@ -1274,19 +1274,19 @@ class T_TOController extends Controller
                                 ->first();
 
         $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat','id');
-        $idTORelasi = TransaksiTransferDetail::select('tb_detail_nota_transfer.id_nota_transfer_outlet')
+        $idTORelasi = TransaksiTransferDetail::on($this->getConnectionName())->select('tb_detail_nota_transfer.id_nota_transfer_outlet')
                                 ->where('tb_detail_nota_transfer.is_deleted', 0)
                                 ->where('id_nota', $id)
                                 ->get();
 
-        $transfer_outlets = TransaksiTO::whereIn('id', $idTORelasi)->where('is_deleted', 0)->get();
+        $transfer_outlets = TransaksiTO::on($this->getConnectionName())->whereIn('id', $idTORelasi)->where('is_deleted', 0)->get();
 
         return view('konfirmasi_transfer.create')->with(compact('transfer_outlets', 'apoteks', 'transfer'));
     }
 
     public function list_data_transfer(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTransferDetail::select([
+        $data = TransaksiTransferDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_transfer.*'
         ])
@@ -1356,7 +1356,7 @@ class T_TOController extends Controller
         $id_apotek_transfer = '';
         foreach ($details as $key => $val) {
             $id_det_transfer[] = $val;
-            $transfer = TransaksiTransferDetail::select(['tb_detail_nota_transfer.*'])
+            $transfer = TransaksiTransferDetail::on($this->getConnectionName())->select(['tb_detail_nota_transfer.*'])
                         ->where('tb_detail_nota_transfer.id', $val)
                         ->first();
             $id_transfer = $transfer->id_nota;
@@ -1373,7 +1373,7 @@ class T_TOController extends Controller
 
 
         if($id_transfer_outlet == '' OR is_null($id_transfer_outlet)) {
-            $idTORelasi = TransaksiTransferDetail::select('tb_detail_nota_transfer.id_nota_transfer_outlet')
+            $idTORelasi = TransaksiTransferDetail::on($this->getConnectionName())->select('tb_detail_nota_transfer.id_nota_transfer_outlet')
                                 ->where('tb_detail_nota_transfer.is_deleted', 0)
                                 ->where('id_nota', $id_transfer)
                                 ->first();
@@ -1386,7 +1386,7 @@ class T_TOController extends Controller
 
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereIn('id', [$transfer->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$transfer->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
 
         $details = json_encode($id_det_transfer);
@@ -1401,7 +1401,7 @@ class T_TOController extends Controller
         try{
             $arr_id_transfer = $request->arr_id_transfer;
 
-            $orderDets = TransaksiTransferDetail::select([
+            $orderDets = TransaksiTransferDetail::on($this->getConnectionName())->select([
                             'tb_detail_nota_transfer.*'
                         ])
                         ->where('is_deleted', 0)
@@ -1471,7 +1471,7 @@ class T_TOController extends Controller
         $details = json_decode($request->id_det_transfer);
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
     
-        $data = TransaksiTransferDetail::select([
+        $data = TransaksiTransferDetail::on($this->getConnectionName())->select([
                         DB::raw('@rownum  := @rownum  + 1 AS no'),
                         'tb_detail_nota_transfer.*'
                     ])
@@ -1595,7 +1595,7 @@ class T_TOController extends Controller
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTO::select([
+        $data = TransaksiTO::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_transfer_outlet.*', 
         ])
@@ -1669,7 +1669,7 @@ class T_TOController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
         $apotek_asal = MasterApotek::on($this->getConnectionName())->find($transfer_outlet->id_apotek_asal);
         $inisial_asal = strtolower($apotek_asal->nama_singkat);
-        $apoteks = MasterApotek::whereNotIn('id', [$transfer_outlet->id_apotek_asal])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$transfer_outlet->id_apotek_asal])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
 
         $detail_transfer_outlets = $transfer_outlet->detail_transfer_outlet;
@@ -1979,7 +1979,7 @@ class T_TOController extends Controller
                                     </thead>
                                     <tbody>';
         foreach ($apoteks as $key => $val) {
-            $data = TransaksiTODetail::select([
+            $data = TransaksiTODetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
                             ])
                             ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
@@ -2020,7 +2020,7 @@ class T_TOController extends Controller
         
 
         foreach ($apoteks as $key => $val) {
-            $data = TransaksiTODetail::select([
+            $data = TransaksiTODetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
                             ])
                             ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
@@ -2038,7 +2038,7 @@ class T_TOController extends Controller
                             })
                             ->first();
 
-            $data_konfirm = TransaksiTODetail::select([
+            $data_konfirm = TransaksiTODetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
                             ])
                             ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
@@ -2084,7 +2084,7 @@ class T_TOController extends Controller
         }*/
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $transfer_outlet = new TransaksiTO;
         $transfer_outlet->setDynamicConnection();
@@ -2212,7 +2212,7 @@ class T_TOController extends Controller
     }
 
     public function permintaan_transfer() {
-       $transfers = TransaksiTransfer::select('tb_nota_transfer.*')
+       $transfers = TransaksiTransfer::on($this->getConnectionName())->select('tb_nota_transfer.*')
                                 ->where('tb_nota_transfer.is_deleted', 0)
                                 ->where('tb_nota_transfer.is_status', 0)
                                 ->where('tb_nota_transfer.id_apotek_transfer', session('id_apotek_active'))
@@ -2247,7 +2247,7 @@ class T_TOController extends Controller
         $last_so = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTODetail::select([
+        $data = TransaksiTODetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_transfer_outlet.*', 
         ])

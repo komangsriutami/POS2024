@@ -39,7 +39,7 @@ class T_AsetController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = InputAset::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_transaksi_aset.*'])
+        $data = InputAset::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_transaksi_aset.*'])
             ->where(function ($query) use ($request) {
                 $query->orwhere('tb_transaksi_aset.is_deleted', '=', '0');
                 $query->where('tb_transaksi_aset.no_transaksi','LIKE',($request->no_transaksi > 0 ? $request->no_transaksi : '%'.$request->no_transaksi.'%'));
@@ -84,7 +84,7 @@ class T_AsetController extends Controller
     {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 1;
         $aset = new InputAset();
@@ -197,7 +197,7 @@ class T_AsetController extends Controller
     {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 0;
         $aset = InputAset::on($this->getConnectionName())->find($id);
@@ -401,7 +401,7 @@ class T_AsetController extends Controller
     {
         $kode_aset = $request->kode_aset;
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterAset::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_aset.*'])
+        $data = MasterAset::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_aset.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_aset.is_deleted','=','0');
         });

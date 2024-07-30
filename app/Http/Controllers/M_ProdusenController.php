@@ -43,7 +43,7 @@ class M_ProdusenController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterProdusen::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_produsen.*'])
+        $data = MasterProdusen::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_produsen.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_produsen.is_deleted','=','0');
            // $query->where('tb_m_suplier.id','LIKE','%'.$request->id_suplier.'%');

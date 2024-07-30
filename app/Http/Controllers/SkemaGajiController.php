@@ -50,7 +50,7 @@ class SkemaGajiController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = SkemaGaji::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_skema_gaji.*'])
+        $data = SkemaGaji::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_skema_gaji.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_skema_gaji.is_deleted','=','0');
             if($super_admin == 0) {

@@ -36,7 +36,7 @@ class HomePageController extends Controller
 
 		$apoteks = MasterApotek::all();
 
-		$dokters = MasterDokter::select([
+		$dokters = MasterDokter::on($this->getConnectionName())->select([
 			'tb_m_dokter.*',
 			'tb_m_spesialis.spesialis'
 		])
@@ -53,7 +53,7 @@ class HomePageController extends Controller
 	{
 		$listTipss = Tips::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
 
-		$query_tips = Tips::select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
+		$query_tips = Tips::on($this->getConnectionName())->select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
 
 		if ($request->title) {
 			$query_title = str_replace('+', ' ', $request->title);
@@ -91,7 +91,7 @@ class HomePageController extends Controller
 	{
 		$listNewss = News::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
 
-		$query_news = News::select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
+		$query_news = News::on($this->getConnectionName())->select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
 
 		if ($request->title) {
 			$query_title = str_replace('+', ' ', $request->title);
@@ -144,7 +144,7 @@ class HomePageController extends Controller
 	{
 		$spesialiss = MasterSpesialis::orderBy("spesialis")->get();
 
-		$query_dokter = MasterDokter::select([
+		$query_dokter = MasterDokter::on($this->getConnectionName())->select([
 			'tb_m_dokter.*',
 			'tb_m_spesialis.spesialis'
 		])
@@ -168,7 +168,7 @@ class HomePageController extends Controller
 	public function konsultasiApoteker(Request $request)
 	{
 
-		$query_apoteker = MasterApoteker::select('*');
+		$query_apoteker = MasterApoteker::on($this->getConnectionName())->select('*');
 		if ($request->nama) {
 			$query_nama = str_replace('+', ' ', $request->nama);
 			$query_apoteker->where('tb_m_apoteker.nama', 'LIKE', "%$query_nama%");
@@ -181,7 +181,7 @@ class HomePageController extends Controller
 	public function konsultasiApotek(Request $request)
 	{
 
-		$query_apotek = MasterApotek::select('*');
+		$query_apotek = MasterApotek::on($this->getConnectionName())->select('*');
 		if ($request->nama) {
 			$query_nama = str_replace('+', ' ', $request->nama);
 			$query_apotek->where('tb_m_apoteker.nama', 'LIKE', "%$query_nama%");
@@ -195,7 +195,7 @@ class HomePageController extends Controller
 	{
 		$spesialiss = MasterSpesialis::orderBy("spesialis")->get();
 
-		$dokters = MasterDokter::select([
+		$dokters = MasterDokter::on($this->getConnectionName())->select([
 			'tb_m_dokter.*',
 			'tb_m_spesialis.spesialis',
 		])

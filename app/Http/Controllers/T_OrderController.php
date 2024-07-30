@@ -48,11 +48,11 @@ class T_OrderController extends Controller
         $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
-        $id_suplier = DefectaOutlet::select(['id_suplier_order'])->where('id_apotek', session('id_apotek_active'))->where('id_process', session('status_order_aktif'))->where('is_deleted', 0)->where('id_status', 1)->get(); // ->where('id_status', 1)
+        $id_suplier = DefectaOutlet::on($this->getConnectionName())->select(['id_suplier_order'])->where('id_apotek', session('id_apotek_active'))->where('id_process', session('status_order_aktif'))->where('is_deleted', 0)->where('id_status', 1)->get(); // ->where('id_status', 1)
         $id_suplier->push('155');
         //dd($status_order_aktif);
 
-        $supliers = MasterSuplier::whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
+        $supliers = MasterSuplier::on($this->getConnectionName())->whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
         $supliers->prepend('-- Pilih Suplier --','');
 
        
@@ -71,7 +71,7 @@ class T_OrderController extends Controller
         $id_process = session('status_order_aktif');
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DefectaOutlet::select([
+        $data = DefectaOutlet::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -168,15 +168,15 @@ class T_OrderController extends Controller
     public function create() {
         $order = new TransaksiOrder;
         $order->setDynamicConnection();
-        $supliers = MasterSuplier::whereIn('id', [$order->id_suplier, 155])->where('is_deleted', 0)->pluck('nama', 'id');
-        $apoteks = MasterApotek::whereIn('id', [$order->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $supliers = MasterSuplier::on($this->getConnectionName())->whereIn('id', [$order->id_suplier, 155])->where('is_deleted', 0)->pluck('nama', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$order->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 2;
 
-        $jenisSP = JenisSP::pluck('jenis', 'id');
+        $jenisSP = JenisSP::on($this->getConnectionName())->pluck('jenis', 'id');
         $jenisSP->prepend('-- Pilih Jenis SP --','');
 
-        $satuans = MasterSatuan::pluck('satuan', 'id');
+        $satuans = MasterSatuan::on($this->getConnectionName())->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
         $detail_orders = collect();
@@ -204,18 +204,18 @@ class T_OrderController extends Controller
             $id_suplier = explode(",", $request->input('id_suplier'));
             $id_defecta = explode(",", $request->input('id_defecta'));
 
-            $jenisSP = JenisSP::pluck('jenis', 'id');
+            $jenisSP = JenisSP::on($this->getConnectionName())->pluck('jenis', 'id');
             $jenisSP->prepend('-- Pilih Jenis SP --','');
 
             $id_suplier[] = 155;
-            $supliers = MasterSuplier::whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
+            $supliers = MasterSuplier::on($this->getConnectionName())->whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
             $jum_suplier = count($supliers);
             if($jum_suplier > 1) {
                 session()->flash('error', 'Data yang dipilih terdiri dari '.$jum_suplier.' suplier, pastikan data yang dipilih dari suplier yang sama!');
                 return redirect('order');
             }
 
-            $defectas = DefectaOutlet::select([
+            $defectas = DefectaOutlet::on($this->getConnectionName())->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'tb_defecta_outlet.*',
                     'b.nama',
@@ -233,7 +233,7 @@ class T_OrderController extends Controller
                 $query->whereIn('tb_defecta_outlet.id', $id_defecta);
             })->get();
 
-            $apoteks = MasterApotek::whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $order = new TransaksiOrder;
             $order->setDynamicConnection();
             $detail_orders = new TransaksiOrderDetail;
@@ -256,15 +256,15 @@ class T_OrderController extends Controller
 
     public function edit($id) {
         $order = TransaksiOrder::on($this->getConnectionName())->find($id);
-        $supliers = MasterSuplier::whereIn('id', [$order->id_suplier, 155])->where('is_deleted', 0)->pluck('nama', 'id');
-        $apoteks = MasterApotek::whereIn('id', [$order->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $supliers = MasterSuplier::on($this->getConnectionName())->whereIn('id', [$order->id_suplier, 155])->where('is_deleted', 0)->pluck('nama', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$order->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 2;
 
-        $jenisSP = JenisSP::pluck('jenis', 'id');
+        $jenisSP = JenisSP::on($this->getConnectionName())->pluck('jenis', 'id');
         $jenisSP->prepend('-- Pilih Jenis SP --','');
 
-        $satuans = MasterSatuan::pluck('satuan', 'id');
+        $satuans = MasterSatuan::on($this->getConnectionName())->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
         $detail_orders = TransaksiOrderDetail::on($this->getConnectionName())->where('id_nota', $order->id)->where('is_deleted', 0)->get();
@@ -349,7 +349,7 @@ class T_OrderController extends Controller
         $id_apotek = session('apotek_order_aktif');
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DefectaOutlet::select([
+        $data = DefectaOutlet::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -443,18 +443,18 @@ class T_OrderController extends Controller
         $id_suplier = explode(",", $request->input('id_suplier'));
         $id_defecta = explode(",", $request->input('id_defecta'));
 
-        $jenisSP = JenisSP::pluck('jenis', 'id');
+        $jenisSP = JenisSP::on($this->getConnectionName())->pluck('jenis', 'id');
         $jenisSP->prepend('-- Pilih Jenis SP --','');
 
         $id_suplier[] = 155;
-        $supliers = MasterSuplier::whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
+        $supliers = MasterSuplier::on($this->getConnectionName())->whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
         /*$jum_suplier = count($supliers);
         if($jum_suplier > 1) {
             session()->flash('error', 'Data yang dipilih terdiri dari '.$jum_suplier.' suplier, pastikan data yang dipilih dari suplier yang sama!');
             return redirect('order');
         }*/
 
-        $defectas = DefectaOutlet::select([
+        $defectas = DefectaOutlet::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -472,7 +472,7 @@ class T_OrderController extends Controller
             $query->whereIn('tb_defecta_outlet.id', $id_defecta);
         })->get();
 
-        $apoteks = MasterApotek::whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $order = new TransaksiOrder;
         $order->setDynamicConnection();
         $detail_orders = new TransaksiOrderDetail;
@@ -554,7 +554,7 @@ class T_OrderController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $defecta = DefectaOutlet::select(['tb_defecta_outlet.*', 'a.nama'])
+        $defecta = DefectaOutlet::on($this->getConnectionName())->select(['tb_defecta_outlet.*', 'a.nama'])
                         ->leftjoin('tb_m_obat as a', 'a.id', 'tb_defecta_outlet.id_obat')
                         ->where('tb_defecta_outlet.id', $id)
                         ->first();
@@ -593,12 +593,12 @@ class T_OrderController extends Controller
         $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
-        $id_suplier = DefectaOutlet::select(['id_suplier_order'])->where('id_apotek', session('id_apotek_active'))->where('is_deleted', 0)->get(); // ->where('id_status', 1)
+        $id_suplier = DefectaOutlet::on($this->getConnectionName())->select(['id_suplier_order'])->where('id_apotek', session('id_apotek_active'))->where('is_deleted', 0)->get(); // ->where('id_status', 1)
         $id_suplier->push('155');
-        $supliers = MasterSuplier::whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
+        $supliers = MasterSuplier::on($this->getConnectionName())->whereIn('id', $id_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
         $supliers->prepend('-- Pilih Suplier --','');
 
-        $jenisSPs = JenisSP::pluck('jenis', 'id');
+        $jenisSPs = JenisSP::on($this->getConnectionName())->pluck('jenis', 'id');
         $jenisSPs->prepend('-- Pilih Jenis SP --','');
 
         return view('order.data_order')->with(compact('apoteks', 'supliers', 'jenisSPs'));
@@ -606,7 +606,7 @@ class T_OrderController extends Controller
 
     public function list_data_order(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiOrder::select([
+        $data = TransaksiOrder::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_order.*',
                 'a.nama_panjang as apotek',
@@ -725,7 +725,7 @@ class T_OrderController extends Controller
     public function edit_order(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = TransaksiOrderDetail::select(['tb_detail_nota_order.*', 'a.nama'])
+        $detail = TransaksiOrderDetail::on($this->getConnectionName())->select(['tb_detail_nota_order.*', 'a.nama'])
                         ->leftjoin('tb_m_obat as a', 'a.id', 'tb_detail_nota_order.id_obat')
                         ->where('tb_detail_nota_order.id', $id)
                         ->first();
@@ -759,7 +759,7 @@ class T_OrderController extends Controller
     public function generateNomor()
     {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $last = TransaksiOrder::select(DB::raw('MAX(nomor) as max'))->whereYear('tgl_nota', date('Y'))->where('is_deleted', 0)->first();
+        $last = TransaksiOrder::on($this->getConnectionName())->select(DB::raw('MAX(nomor) as max'))->whereYear('tgl_nota', date('Y'))->where('is_deleted', 0)->first();
         $now = $last->max+1;
         if(empty($last)){
             $nourut = '0001';
@@ -1601,10 +1601,10 @@ class T_OrderController extends Controller
         $tanggal = date('Y-m-d');
         $var = 2;
 
-        $jenisSP = JenisSP::pluck('jenis', 'id');
+        $jenisSP = JenisSP::on($this->getConnectionName())->pluck('jenis', 'id');
         $jenisSP->prepend('-- Pilih Jenis SP --','');
 
-        $satuans = MasterSatuan::pluck('satuan', 'id');
+        $satuans = MasterSatuan::on($this->getConnectionName())->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
         $detail_orders = collect();

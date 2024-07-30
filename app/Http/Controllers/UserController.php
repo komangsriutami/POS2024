@@ -56,7 +56,7 @@ class UserController extends Controller
     public function list_user(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = User::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 
+        $data = User::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 
                 'users.*'])
         ->where(function($query) use($request){
             $query->where('users.is_deleted', 0);
@@ -113,7 +113,7 @@ class UserController extends Controller
     }
 
     public function list_calon_user(Request $request){
-        $users = User::select(DB::raw('CAST(id AS CHAR CHARACTER SET utf8) AS id'), 'nama') 
+        $users = User::on($this->getConnectionName())->select(DB::raw('CAST(id AS CHAR CHARACTER SET utf8) AS id'), 'nama') 
                                     ->where('id', 'LIKE', '%'.$request->q.'%')
                                     ->orWhere('nama', 'LIKE', '%'.$request->q.'%')
                                     ->limit(30)
@@ -168,7 +168,7 @@ class UserController extends Controller
         $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         return view('admin.create')->with(compact('user', 'jenis_kelamins', 'agamas', 'kewarganegaraans', 'golongan_darahs', 'group_apoteks', 'jabatans', 'posisis', 'status_karyawans'));
@@ -230,7 +230,7 @@ class UserController extends Controller
         $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         $validator = $user->validate();
@@ -279,7 +279,7 @@ class UserController extends Controller
         $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         return view('admin.edit')->with(compact('user', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'golongan_darahs', 'group_apoteks', 'jabatans', 'posisis', 'status_karyawans'));
@@ -337,7 +337,7 @@ class UserController extends Controller
         $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         $validator = $user->validate();
@@ -456,7 +456,7 @@ class UserController extends Controller
         $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         $ttd = DB::connection($this->getConnectionName())->table('tb_users_ttd')->where('id_user', $user->id)->first();
@@ -517,7 +517,7 @@ class UserController extends Controller
             $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
             $posisis->prepend('-- Pilih Posisi --','');
 
-            $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
+            $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
             $status_karyawans->prepend('-- Pilih Status --','');
 
             return view('profile')->with(compact('user', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'golongan_darahs', 'group_apoteks', 'jabatans', 'posisis', 'status_karyawans'))->withErrors($validator);

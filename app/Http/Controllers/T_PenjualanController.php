@@ -96,7 +96,7 @@ class T_PenjualanController extends Controller
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -683,7 +683,7 @@ class T_PenjualanController extends Controller
         $pasien = $request->pasien;
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterMember::select([
+        $data = MasterMember::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_m_member.*'
         ])
@@ -874,7 +874,7 @@ class T_PenjualanController extends Controller
             $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 'tb_detail_nota_penjualan.jumlah',
@@ -1069,7 +1069,7 @@ try {
             $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 DB::raw('(tb_detail_nota_penjualan.jumlah-tb_detail_nota_penjualan.jumlah_cn) as jumlah'),
@@ -1150,7 +1150,7 @@ try {
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -1318,7 +1318,7 @@ try {
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::select([
+        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
                 DB::raw('SUM(tb_detail_nota_penjualan.jumlah * tb_detail_nota_penjualan.harga_jual - tb_detail_nota_penjualan.diskon) AS total')
@@ -1490,7 +1490,7 @@ try {
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -1623,7 +1623,7 @@ try {
             $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 'tb_detail_nota_penjualan.jumlah',
@@ -1755,7 +1755,7 @@ try {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $detail_penjualans = TransaksiPenjualanDetail::whereIn('id', $details)->get();
+        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->whereIn('id', $details)->get();
         $id_nota = $detail_penjualans[0]->id_nota;
         $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id_nota);
         $penjualan->created_at = Carbon::parse($penjualan->created_at)->format('d-m-Y H:i:s');
@@ -1866,7 +1866,7 @@ try {
         }
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::select([
+        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
         ])
@@ -2012,7 +2012,7 @@ try {
         }
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::select([
+        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
                 //DB::Raw('IFNULL(a.is_approved, 0) as is_approved'),
@@ -2128,7 +2128,7 @@ try {
         }
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::select([
+        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
                 DB::Raw('IFNULL(a.is_approved, 0) as is_approved'),
@@ -2481,7 +2481,7 @@ try {
         # buatkan fungsi untuk mendapatkan jumlah penjualan yang sudah dipotong diskon (baik diskon item atau diskon persen atau diskon % dari vendor)
 
 
-       /* $result = DB::select("
+       /* $result = DB::on($this->getConnectionName())->select("
                         SELECT getTotalPenjualan(?, ?, ?, ?) AS total_penjualan_non_kredit
                         UNION ALL
                         SELECT getTotalPenjualan(?, ?, ?, ?) AS total_penjualan_kredit
@@ -3080,7 +3080,7 @@ try {
         $tgl_awal_baru = $tanggal.' 00:00:00';
         $tgl_akhir_baru = $tanggal.' 23:59:59';
 
-        $jasa_resep = TransaksiPenjualan::select([
+        $jasa_resep = TransaksiPenjualan::on($this->getConnectionName())->select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_resep'),
                                 DB::raw('SUM(biaya_resep) AS total_biaya_resep'), 
                                 'a.nama as nama_jasa_resep',
@@ -3102,7 +3102,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_jasa_resep')
                         ->get();
 
-        /*$penjualan_kredits = TransaksiPenjualan::select([
+        /*$penjualan_kredits = TransaksiPenjualan::on($this->getConnectionName())->select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(total_belanja) AS total'),
                                 'a.nama as nama_vendor'
@@ -3151,7 +3151,7 @@ try {
                         ->groupBy('b.id_vendor')
                         ->get();
 
-        $jasa_dokter = TransaksiPenjualan::select([
+        $jasa_dokter = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(biaya_jasa_dokter) AS total_biaya_jasa_dokter'), 
                                 'a.nama as nama_dokter', 
@@ -3173,7 +3173,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_dokter')
                         ->get();
 
-        $paket_wd = TransaksiPenjualan::select([
+        $paket_wd = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_paket'),
                             DB::raw('SUM(harga_wd) AS total_harga_wd'), 
                             'a.nama as nama_paket',
@@ -3195,7 +3195,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_paket_wd')
                         ->get();
 
-        $penjualan_debet = TransaksiPenjualan::select([
+        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -3222,7 +3222,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 /*
-        $penjualan_debet = TransaksiPenjualan::select([
+        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
                             'a.nama as nama_kartu',
@@ -3298,7 +3298,7 @@ try {
             $tanggal = $request->tanggal;
         }
         
-        $penjualan_closing = TransaksiPenjualanClosing::select([
+        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
 
                                     DB::raw('SUM(total_jasa_dokter) as total_jasa_dokter_a'),
                                     DB::raw('SUM(total_jasa_resep) as total_jasa_resep_a'),
@@ -3513,7 +3513,7 @@ try {
         $tgl_awal_baru = $data->tanggal.' 00:00:00';
         $tgl_akhir_baru = $data->tanggal.' 23:59:59';
 
-        $jasa_resep = TransaksiPenjualan::select([
+        $jasa_resep = TransaksiPenjualan::on($this->getConnectionName())->select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_resep'),
                                 DB::raw('SUM(biaya_resep) AS total_biaya_resep'), 
                                 'a.id as id_jasa_resep',
@@ -3536,7 +3536,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_jasa_resep')
                         ->get();
 
-        /*$penjualan_kredits = TransaksiPenjualan::select([
+        /*$penjualan_kredits = TransaksiPenjualan::on($this->getConnectionName())->select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(total_belanja) AS total'),
                                 'a.nama as nama_vendor'
@@ -3588,7 +3588,7 @@ try {
                         ->where('tb_detail_nota_penjualan.is_cn', 0)
                         ->get();
 
-        $jasa_dokter = TransaksiPenjualan::select([
+        $jasa_dokter = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(biaya_jasa_dokter) AS total_biaya_jasa_dokter'), 
                                 'a.id as id_dokter',
@@ -3611,7 +3611,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_dokter')
                         ->get();
 
-        $paket_wd = TransaksiPenjualan::select([
+        $paket_wd = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_paket'),
                             DB::raw('SUM(harga_wd) AS total_harga_wd'), 
                             'a.id as id_paket_wd',
@@ -3634,7 +3634,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_paket_wd')
                         ->get();
 
-        $penjualan_debet = TransaksiPenjualan::select([
+        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -3661,7 +3661,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 
-        $penjualan_debet2 = TransaksiPenjualan::select([
+        $penjualan_debet2 = TransaksiPenjualan::on($this->getConnectionName())->select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -3913,7 +3913,7 @@ try {
 
     public function list_pencarian_obat(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.nama'])
+        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.nama'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_penjualan.id_obat')
         ->join('tb_nota_penjualan as b', 'b.id', 'tb_detail_nota_penjualan.id_nota')
         ->where(function($query) use($request){
@@ -3980,7 +3980,7 @@ try {
 
     public function list_rekap_laboratorium(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.biaya_lab');
@@ -4023,7 +4023,7 @@ try {
 
     public function export_rekap_laboratorium(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.biaya_lab');
@@ -4109,7 +4109,7 @@ try {
 
     public function list_rekap_jasa_dokter(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.biaya_jasa_dokter');
@@ -4170,7 +4170,7 @@ try {
 
     public function export_rekap_jasa_dokter(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.biaya_jasa_dokter');
@@ -4267,7 +4267,7 @@ try {
 
     public function list_rekap_jasa_resep(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.id_jasa_resep');
@@ -4313,7 +4313,7 @@ try {
 
     public function export_rekap_jasa_resep(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.id_jasa_resep');
@@ -4397,7 +4397,7 @@ try {
 
     public function list_rekap_paket_wt(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.id_paket_wd');
@@ -4443,7 +4443,7 @@ try {
 
     public function export_rekap_paket_wt(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.id_paket_wd');
@@ -4526,7 +4526,7 @@ try {
 
     public function list_rekap_apd(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.biaya_apd');
@@ -4565,7 +4565,7 @@ try {
 
     public function export_rekap_apd(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.biaya_apd');
@@ -4655,7 +4655,7 @@ try {
         $end = date('Y-m-t', strtotime($query_date));
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $penjualans = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $penjualans = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request, $first, $end){
             $query->where('tb_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -4678,7 +4678,7 @@ try {
         $i = 0;
         foreach($penjualans as $obj) {
 
-            $omset = TransaksiPenjualanClosing::select(['tb_closing_nota_penjualan.*'])
+            $omset = TransaksiPenjualanClosing::on($this->getConnectionName())->select(['tb_closing_nota_penjualan.*'])
                     ->where(function($query) use($obj){
                         $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
                         $query->where('tb_closing_nota_penjualan.tanggal','>=', $obj->tgl_nota);
@@ -4824,7 +4824,7 @@ try {
        // print_r($data);exit();
 
 
-        /*$data = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        /*$data = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
         ->where(function($query) use($request, $first, $end){
             $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -4885,7 +4885,7 @@ try {
         $end = date('Y-m-t', strtotime($query_date));
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        $data = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
         ->where(function($query) use($request, $first, $end){
             $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -5076,7 +5076,7 @@ try {
         $first = date('Y-m-01', strtotime($query_date));
         $end = date('Y-m-t', strtotime($query_date));
 
-        $rekaps = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
                                 ->where(function($query) use($request, $first, $end){
                                     $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
                                     if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -5137,7 +5137,7 @@ try {
                     $id_user = $rekap->id_user;
                     $id_apotek = $rekap->id_apotek_nota;
 
-                    $penjualan_debet = TransaksiPenjualan::select([
+                    $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -5164,7 +5164,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 
-                    $penjualan_debet2 = TransaksiPenjualan::select([
+                    $penjualan_debet2 = TransaksiPenjualan::on($this->getConnectionName())->select([
                                         'tb_nota_penjualan.id',
                                         DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                         DB::raw('SUM(debet) AS total_debet'), 
@@ -5530,7 +5530,7 @@ try {
         $tgl_akhir_baru = $akhir.' 23:59:59';
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::select([
+        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'tb_detail_nota_penjualan.*', 
                     'b.diskon_persen', 
@@ -5710,7 +5710,7 @@ try {
            /* $num_tgl_ = sprintf("%02d", $i);
             $str_tgl_ = $request->tahun.'-'.$request->bulan.'-'.$num_tgl_;*/
             $tgl_ = date('Y-m-d', strtotime($date));
-            $rekaps = TransaksiPenjualanDetail::select([
+            $rekaps = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_detail_nota_penjualan.*', 
                                     'b.diskon_persen', 
@@ -5953,7 +5953,7 @@ try {
             $num_tgl_ = sprintf("%02d", $i);
             $str_tgl_ = $request->tahun.'-'.$request->bulan.'-'.$num_tgl_;
             $tgl_ = date('Y-m-d', strtotime($str_tgl_));
-            $rekaps = TransaksiPenjualanDetail::select([
+            $rekaps = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_detail_nota_penjualan.id_obat',
                                     DB::raw('(tb_detail_nota_penjualan.jumlah) as  total_jual'), 
@@ -6140,7 +6140,7 @@ try {
         $date1 = date('Y-m-d', strtotime($date1));
         $date2 = date('Y-m-d', strtotime($date2));
 
-        $rekaps = TransaksiPenjualan::select([
+        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_nota_penjualan.*'
                                 ])
@@ -6313,7 +6313,7 @@ try {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = $request->tanggal;
-        $rekaps = TransaksiPenjualan::select([
+        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('@rownum  := @rownum  + 1 AS no'),
                             'tb_nota_penjualan.*', 
                     ])
@@ -6554,7 +6554,7 @@ try {
                 'created_by' => Auth::user()->id
             ]);  
 
-            $total = TransaksiPenjualanDetail::select([
+            $total = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM((harga_jual*jumlah)-diskon) as total_all')
                                 ])
                                 ->where('id', '!=', $detail_penjualan->id)
@@ -6606,7 +6606,7 @@ try {
             $val = $data['detail_penjualan['.$i];
             $array[] = $val;
             // cari diskon per item
-            $cek = SettingPromoItemBeli::select(['tb_setting_promo_item_beli.*', 'a.id_member_tipe', 'a.id_apotek'])
+            $cek = SettingPromoItemBeli::on($this->getConnectionName())->select(['tb_setting_promo_item_beli.*', 'a.id_member_tipe', 'a.id_apotek'])
                     ->join('tb_setting_promo as a', 'a.id', '=', 'tb_setting_promo_item_beli.id_setting_promo')
                     ->where('tb_setting_promo_item_beli.id_obat', $val['id_obat'])
                     ->whereDate('a.tgl_awal','>=', $date_now)
@@ -6626,7 +6626,7 @@ try {
         }
 
         // cari diskon per kombinasi item
-        $diskon_sub = SettingPromo::select([
+        $diskon_sub = SettingPromo::on($this->getConnectionName())->select([
                             'tb_setting_promo.*'
                     ])
                     ->where(function($query) use($request, $date_now){
@@ -6652,7 +6652,7 @@ try {
         if($request->jumlah == "") {
             $data = array('is_data' => 0);
         } else {
-            $data_ = SettingPromoItemBeli::select(['tb_setting_promo_item_beli.*', 'tb_setting_promo.id_jenis_promo', 'tb_setting_promo.persen_diskon', 'tb_setting_promo.rp_diskon'])
+            $data_ = SettingPromoItemBeli::on($this->getConnectionName())->select(['tb_setting_promo_item_beli.*', 'tb_setting_promo.id_jenis_promo', 'tb_setting_promo.persen_diskon', 'tb_setting_promo.rp_diskon'])
                         ->join('tb_setting_promo', 'tb_setting_promo.id', '=', 'tb_setting_promo_item_beli.id_setting_promo')
                         ->where('tb_setting_promo_item_beli.id_obat', $request->id_obat)
                         ->where('tb_setting_promo_item_beli.jumlah', $request->jumlah)
@@ -6688,7 +6688,7 @@ try {
             $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 'tb_detail_nota_penjualan.jumlah',
@@ -6745,7 +6745,7 @@ printer_close($printer);
         $tgl_awal_baru = $data->tanggal.' 00:00:00';
         $tgl_akhir_baru = $data->tanggal.' 23:59:59';
 
-        $jasa_resep = TransaksiPenjualan::select([
+        $jasa_resep = TransaksiPenjualan::on($this->getConnectionName())->select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_resep'),
                                 DB::raw('SUM(biaya_resep) AS total_biaya_resep'), 
                                 'a.id as id_jasa_resep',
@@ -6768,7 +6768,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_jasa_resep')
                         ->get();
 
-        $jasa_dokter = TransaksiPenjualan::select([
+        $jasa_dokter = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(biaya_jasa_dokter) AS total_biaya_jasa_dokter'), 
                                 'a.id as id_dokter',
@@ -6791,7 +6791,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_dokter')
                         ->get();
 
-        /*$penjualan_kredits = TransaksiPenjualan::select([
+        /*$penjualan_kredits = TransaksiPenjualan::on($this->getConnectionName())->select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(total_belanja) AS total'),
                                 'a.nama as nama_vendor'
@@ -6842,7 +6842,7 @@ printer_close($printer);
                         ->groupBy('b.id_vendor')
                         ->get();
 
-        $paket_wd = TransaksiPenjualan::select([
+        $paket_wd = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_paket'),
                             DB::raw('SUM(harga_wd) AS total_harga_wd'), 
                             'a.id as id_paket_wd',
@@ -6865,7 +6865,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_paket_wd')
                         ->get();
 
-        $penjualan_debet = TransaksiPenjualan::select([
+        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
                             'a.id as id_kartu_debet_credit',
@@ -7651,7 +7651,7 @@ printer_close($printer);
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::select([
+        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -7778,7 +7778,7 @@ printer_close($printer);
                     ->where('tb_nota_penjualan.is_kredit', 0)
                     ->first();
 
-        $penjualan_closing = TransaksiPenjualanClosing::select([
+        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
 
                                     DB::raw('SUM(total_jasa_dokter) as total_jasa_dokter_a'),
                                     DB::raw('SUM(total_jasa_resep) as total_jasa_resep_a'),
@@ -8184,7 +8184,7 @@ printer_close($printer);
         }
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::select([
+        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
         ])

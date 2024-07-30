@@ -29,7 +29,7 @@ class AbsensiExport implements WithMultipleSheets
     public function sheets(): array
     {
         $sheets = [];
-        $cek_absensi = Absensi::select(['id_user'])
+        $cek_absensi = Absensi::on($this->getConnectionName())->select(['id_user'])
                                 ->where(function($query){
                                     $query->where('is_deleted', 0);
                                     $query->whereYear('tgl', $this->year);
@@ -40,7 +40,7 @@ class AbsensiExport implements WithMultipleSheets
                                 })
                                 ->get();
 
-        $cek_tgl_absen = Absensi::select(['tgl'])
+        $cek_tgl_absen = Absensi::on($this->getConnectionName())->select(['tgl'])
                                 ->where(function($query){
                                     $query->where('is_deleted', 0);
                                     $query->whereYear('tgl', $this->year);
@@ -53,7 +53,7 @@ class AbsensiExport implements WithMultipleSheets
                                 ->orderBy('tgl', 'ASC')
                                 ->get();
 
-        $users = User::whereIn('id', $cek_absensi)->get();
+        $users = User::on($this->getConnectionName())->whereIn('id', $cek_absensi)->get();
         foreach ($users as $key => $user) {
             $sheets[] = new AbsensiPerMonthSheet($this->year, $this->month, $this->id_searching_by, $this->id_apotek, $user->id, $user->nama, $cek_tgl_absen);
         }

@@ -28,7 +28,7 @@ class BarangImport implements  ToCollection,WithHeadingRow
             foreach ($rows as $key => $value) {
                // dd($value);exit();
                 // cek kalau ada update kalau tidak insert //
-                $cekdetail = MasterObat::whereRaw('id = \''.$value['id'].'\'')
+                $cekdetail = MasterObat::on($this->getConnectionName())->whereRaw('id = \''.$value['id'].'\'')
                             ->first();
 
     

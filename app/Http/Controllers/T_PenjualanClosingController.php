@@ -54,7 +54,7 @@ class T_PenjualanClosingController extends Controller
         /*$tgl_awal_baru = $tanggal.' 00:00:00';
         $tgl_akhir_baru = $tanggal.' 23:59:59';*/
 
-        /*$cari  = TransaksiPenjualanClosing::whereDate('created_at','>=', $tgl_awal_baru)
+        /*$cari  = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('created_at','>=', $tgl_awal_baru)
                         ->whereDate('created_at','<=', $tgl_akhir_baru)->get();
         if(!empty($cari)) {
             $date = date('Y-m-d', strtotime($tanggal)).' 15:00:00';
@@ -93,7 +93,7 @@ class T_PenjualanClosingController extends Controller
         /*$tgl_awal_baru = $tanggal.' 00:00:00';
         $tgl_akhir_baru = $tanggal.' 23:59:59';
 
-        $cari  = TransaksiPenjualanClosing::whereDate('created_at','>=', $tgl_awal_baru)
+        $cari  = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('created_at','>=', $tgl_awal_baru)
                         ->whereDate('created_at','<=', $tgl_akhir_baru)->get();
         if(!empty($cari)) {
             $date = date('Y-m-d', strtotime($tanggal)).' 15:00:00';

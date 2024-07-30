@@ -55,7 +55,7 @@ class M_UserController extends Controller
 
         $super_admin = session('super_admin');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = User::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'users.*'])
+        $data = User::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'users.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('users.is_deleted','=','0');
             if($super_admin == 0) {

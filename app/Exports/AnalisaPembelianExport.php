@@ -55,7 +55,7 @@ class AnalisaPembelianExport implements FromCollection, WithColumnWidths, WithSt
         $tgl_awal = $awal.' 00:00:01';
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $sub2 = TransaksiPenjualanDetail::select([
+        $sub2 = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
             'a.id',
             DB::raw('SUM(tb_detail_nota_penjualan.jumlah) as terjual'),
             DB::raw('(TRUNCATE

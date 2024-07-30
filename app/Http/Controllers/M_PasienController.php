@@ -33,7 +33,7 @@ class M_PasienController extends Controller
     public function get_data(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPasien::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_pasien.*'])
+        $data = MasterPasien::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_pasien.*'])
             ->where(function ($query) use ($request) {
                 //$query->where('pasien.is_deleted','=','0');
             });

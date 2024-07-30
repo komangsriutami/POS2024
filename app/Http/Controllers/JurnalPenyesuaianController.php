@@ -76,7 +76,7 @@ class JurnalPenyesuaianController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = JurnalUmum::whereRaw('is_penyesuaian = 1')->whereNull("deleted_by");
+        $data = JurnalUmum::on($this->getConnectionName())->whereRaw('is_penyesuaian = 1')->whereNull("deleted_by");
         
         $datatables = Datatables::of($data);
         return $datatables
@@ -139,7 +139,7 @@ class JurnalPenyesuaianController extends Controller
     public function addDetail(Request $request)
     {
         // dd($request->input());
-        $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
+        $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $kode_akun->prepend('-- Pilih Akun --','');
 
         $detailjurnal = new JurnalUmumDetail;
@@ -334,7 +334,7 @@ class JurnalPenyesuaianController extends Controller
         $idjurnal = Crypt::decrypt($id);
         $jurnal_penyesuaian = JurnalUmum::on($this->getConnectionName())->find($idjurnal);
         if(!empty($jurnal_penyesuaian)){
-            $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
+            $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
             $kode_akun->prepend('-- Pilih Akun --','');
 
             return view('jurnal_penyesuaian.edit')->with(compact("jurnal_penyesuaian","kode_akun"));

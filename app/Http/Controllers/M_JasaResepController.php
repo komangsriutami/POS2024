@@ -41,7 +41,7 @@ class M_JasaResepController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterJasaResep::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jasa_resep.*'])
+        $data = MasterJasaResep::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jasa_resep.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_jasa_resep.is_deleted','=','0');
         });

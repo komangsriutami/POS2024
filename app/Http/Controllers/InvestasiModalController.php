@@ -46,7 +46,7 @@ class InvestasiModalController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = InvestasiModal::select([
+        $data = InvestasiModal::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_investasi_modal.*',
                 'tb_m_apotek.nama_singkat AS nama_singkat_apotek',

@@ -91,7 +91,7 @@ class T_PembelianController extends Controller
 
         $tanggal = date('Y-m-d');
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelian::select([
+        $data = TransaksiPembelian::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*', 
         ])
@@ -308,7 +308,7 @@ class T_PembelianController extends Controller
     public function create() {
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
         $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
         $tanggal = date('Y-m-d');
@@ -342,7 +342,7 @@ class T_PembelianController extends Controller
 
             $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
             $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
             $tanggal = date('Y-m-d');
@@ -415,7 +415,7 @@ class T_PembelianController extends Controller
         $pembelian = TransaksiPembelian::on($this->getConnectionName())->find($id);
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
         $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
         $tanggal = date('Y-m-d');
@@ -455,7 +455,7 @@ class T_PembelianController extends Controller
             if($validator->fails()){
                 $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+                $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
                 $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
                 $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
                 $tanggal = date('Y-m-d');
@@ -589,7 +589,7 @@ class T_PembelianController extends Controller
         $suplier = $request->suplier;
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterSuplier::select([
+        $data = MasterSuplier::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_m_suplier.*'
         ])
@@ -640,7 +640,7 @@ class T_PembelianController extends Controller
         $order_dir = $order[0]['dir'];
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = RevisiPembelian::select([
+        $data = RevisiPembelian::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_revisi_pembelian_obat.*', 
         ])
@@ -683,22 +683,22 @@ class T_PembelianController extends Controller
 
     public function konfirmasi_barang_datang($id) {
         $id = decrypt($id);
-        $order = TransaksiOrder::select('tb_nota_order.*')
+        $order = TransaksiOrder::on($this->getConnectionName())->select('tb_nota_order.*')
                                 ->where('tb_nota_order.is_deleted', 0)
                                 ->where('tb_nota_order.is_status', 0)
                                 ->where('tb_nota_order.id_apotek', session('id_apotek_active'))
                                 ->where('id', $id)
                                 ->first();
 
-        $jenisSP = JenisSP::pluck('jenis', 'id');
+        $jenisSP = JenisSP::on($this->getConnectionName())->pluck('jenis', 'id');
         $jenisSP->prepend('-- Pilih Jenis SP --','');
                 
         //$supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama','id');
-        $idPembelianRelasi = TransaksiOrderDetail::select('tb_detail_nota_order.id_nota_pembelian')
+        $idPembelianRelasi = TransaksiOrderDetail::on($this->getConnectionName())->select('tb_detail_nota_order.id_nota_pembelian')
                                 ->where('tb_detail_nota_order.is_deleted', 0)
                                 ->where('id_nota', $id)
                                 ->get();
-        $pembelians = TransaksiPembelian::whereIn('id', $idPembelianRelasi)->where('is_deleted', 0)->get();
+        $pembelians = TransaksiPembelian::on($this->getConnectionName())->whereIn('id', $idPembelianRelasi)->where('is_deleted', 0)->get();
 
         //print_r($pembelians);exit();
 
@@ -722,7 +722,7 @@ class T_PembelianController extends Controller
         $id_suplier = '';
         foreach ($details as $key => $val) {
             $id_det_order[] = $val;
-            $order = TransaksiOrderDetail::select(['tb_detail_nota_order.*'])
+            $order = TransaksiOrderDetail::on($this->getConnectionName())->select(['tb_detail_nota_order.*'])
                         ->where('tb_detail_nota_order.id', $val)
                         ->first();
             $id_order = $order->id_nota;
@@ -744,7 +744,7 @@ class T_PembelianController extends Controller
 
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $jenis_pembelians = MasterJenisPembelian::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_pembelian', 'id');
         $jenis_pembelians->prepend('-- Pilih Jenis Pembelian --','');
         $tanggal = date('Y-m-d');
@@ -764,7 +764,7 @@ class T_PembelianController extends Controller
         try{
             $arr_id_order = $request->arr_id_order;
 
-            $orderDets = TransaksiOrderDetail::select([
+            $orderDets = TransaksiOrderDetail::on($this->getConnectionName())->select([
                             'tb_detail_nota_order.*'
                         ])
                         ->where('is_deleted', 0)
@@ -811,7 +811,7 @@ class T_PembelianController extends Controller
 
     public function list_data_order(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiOrderDetail::select([
+        $data = TransaksiOrderDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_order.*'
         ])
@@ -1015,7 +1015,7 @@ class T_PembelianController extends Controller
     public function list_pembayaran_faktur_belum_lunas(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelian::select([
+        $data = TransaksiPembelian::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
                 ->where(function($query) use($request){
@@ -1093,7 +1093,7 @@ class T_PembelianController extends Controller
     public function list_pembayaran_faktur_lunas(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelian::select([
+        $data = TransaksiPembelian::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
                 ->where(function($query) use($request){
@@ -1170,7 +1170,7 @@ class T_PembelianController extends Controller
     public function list_pembayaran_faktur(Request $request)
     {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelian::select([
+        $data = TransaksiPembelian::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
                 ->where(function($query) use($request){
@@ -1315,7 +1315,7 @@ class T_PembelianController extends Controller
 
     public function list_pencarian_obat(Request $request) {
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama','b.no_faktur'])
+        $data = TransaksiPembelianDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama','b.no_faktur'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
         ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
         ->where(function($query) use($request){
@@ -1367,7 +1367,7 @@ class T_PembelianController extends Controller
 
     public function export(Request $request) 
     {
-        $rekaps = TransaksiPembelian::select([
+        $rekaps = TransaksiPembelian::on($this->getConnectionName())->select([
                             DB::raw('@rownum  := @rownum  + 1 AS no'),
                             'tb_nota_pembelian.*'])
                             ->where(function($query) use($request){
@@ -1480,7 +1480,7 @@ class T_PembelianController extends Controller
 
     public function export_all(Request $request) 
     {
-        $rekaps = TransaksiPembelian::select([
+        $rekaps = TransaksiPembelian::on($this->getConnectionName())->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_nota_pembelian.*', 
                             ])
@@ -1943,7 +1943,7 @@ class T_PembelianController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama', 'b.no_faktur', 'c.stok_akhir'])
+        $data = TransaksiPembelianDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama', 'b.no_faktur', 'c.stok_akhir'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
         ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
         ->join('tb_m_stok_harga_'.$inisial.' as c', 'c.id_obat', 'tb_detail_nota_pembelian.id_obat')
@@ -2153,7 +2153,7 @@ class T_PembelianController extends Controller
         $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $rekaps = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama', 'b.tgl_faktur', 'b.no_faktur', 'c.stok_akhir'])
+        $rekaps = TransaksiPembelianDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama', 'b.tgl_faktur', 'b.no_faktur', 'c.stok_akhir'])
                     ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
                     ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
                     ->join('tb_m_stok_harga_'.$inisial.' as c', 'c.id_obat', 'tb_detail_nota_pembelian.id_obat')
@@ -2311,7 +2311,7 @@ class T_PembelianController extends Controller
                 'created_by' => Auth::user()->id
             ]);  
 
-            $total = TransaksiPembelianDetail::select([
+            $total = TransaksiPembelianDetail::on($this->getConnectionName())->select([
                                 DB::raw('SUM(total_harga) as total_all')
                                 ])
                                 ->where('id', '!=', $detail_pembelian->id)
@@ -2430,7 +2430,7 @@ class T_PembelianController extends Controller
     }
 
     public function cari_info(Request $request) {
-        $datas = TransaksiPembelian::select([
+        $datas = TransaksiPembelian::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
                 ->where(function($query) use($request){
@@ -2475,7 +2475,7 @@ class T_PembelianController extends Controller
     }
 
     public function cari_info2(Request $request) {
-        $datas = TransaksiPembelian::select([
+        $datas = TransaksiPembelian::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_pembelian.*'])
                 ->where(function($query) use($request){
@@ -2591,7 +2591,7 @@ class T_PembelianController extends Controller
         $last_so = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelianDetail::select([
+        $data = TransaksiPembelianDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_pembelian.*', 
         ])
@@ -3418,7 +3418,7 @@ class T_PembelianController extends Controller
        // print_r($details);exit();
 
         DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-       /* $data = TransaksiPembelianDetail::select([
+       /* $data = TransaksiPembelianDetail::on($this->getConnectionName())->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_pembelian.*', 
         ])
@@ -3433,7 +3433,7 @@ class T_PembelianController extends Controller
         })
         ->orderBy('tb_detail_nota_pembelian.id', 'ASC');*/
 
-        $data = TransaksiOrderDetail::select([
+        $data = TransaksiOrderDetail::on($this->getConnectionName())->select([
                         DB::raw('@rownum  := @rownum  + 1 AS no'),
                         'tb_detail_nota_order.*',
                         DB::raw('null as id_nota'),
@@ -3467,7 +3467,7 @@ class T_PembelianController extends Controller
                     });
 
 
-        /*$data2 = TransaksiPembelianDetail::select([
+        /*$data2 = TransaksiPembelianDetail::on($this->getConnectionName())->select([
                 'tb_detail_nota_pembelian.*', 
                 DB::raw('1 as is_terelasi')
         ])
