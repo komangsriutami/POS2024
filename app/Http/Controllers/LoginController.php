@@ -71,6 +71,7 @@ class LoginController extends Controller
             $user = User::on($this->getConnectionName())->where('username', '=', $request->username)->first();
             $cekuser = User::on($this->getConnectionName())->where('username', '=', $request->username)->count();
 
+            session(['user' => $user]);
             if ($cekuser >= 1) {
                 if ($user->is_admin == 1) {
                     if (Auth::guard()->attempt(['username' => $request->username, 'password' => $request->password], $request->remember)) {
@@ -196,6 +197,19 @@ class LoginController extends Controller
             $apotek = MasterApotek::on($this->getConnectionName())->where('kode_apotek', $request->kode_apotek)->first();
             if (!empty($apotek)) {
                 $user = User::on($this->getConnectionName())->where('username', '=', $request->username)->first();
+                if(empty($user)) {
+                    $userx = session('user');
+                    if(empty($userx)) {
+                        return redirect()->intended('login_system')->withErrors([
+                            'username' => 'Session anda telah habis, silakan login kembali.',
+                        ]);
+                    }
+
+                    $user = User::on($this->getConnectionName())->where('id', '=', $user->id)->first();
+                } else {
+                    session(['user' => $user]);
+                }
+
                 $cekuser = User::on($this->getConnectionName())->where('username', '=', $request->username)->count();
                 $cek_apotek_akses = RbacUserApotek::on($this->getConnectionName())->where('id_user', $user->id)->where('id_apotek', $apotek->id)->first();
 
