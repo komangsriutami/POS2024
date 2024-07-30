@@ -456,6 +456,12 @@ class T_PenjualanController extends Controller
             $hak_akses = 1;
         }
 
+        if($penjualan->total_bayar < 1 AND $penjualan->is_kredit == 0) {
+            if($penjualan->cek_retur[0]->total_cn == 0) {
+                $hak_akses = 1;
+            }
+        }
+
         $vendor_kerjama = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
 
         $hak_akses_margin = $hak_akses;
@@ -1413,6 +1419,12 @@ try {
 
         if($id_user == 1 || $id_user == 2 || $id_user == 16) {
             $hak_akses = 1;
+        }
+
+        if($penjualan->total_bayar < 1 AND $penjualan->is_kredit == 0) {
+            if($penjualan->cek_retur[0]->total_cn == 0) {
+                $hak_akses = 1;
+            }
         }
 
         $hak_akses_margin = $hak_akses;
