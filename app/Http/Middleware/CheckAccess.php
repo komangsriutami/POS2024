@@ -65,7 +65,7 @@ class CheckAccess
                     Cache::forget('sessionApotek_');
                     Cache::put('sessionApotek_', 1, now()->addDay());
 
-                    DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+                    DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
 
                     session(['super_admin' => 0]);
                     foreach ($user_roles as $user_role) {
@@ -192,7 +192,7 @@ class CheckAccess
                                 Cache::forget('sessionApotek_');
                                 Cache::put('sessionApotek_', $apotek->id, now()->addDay());
 
-                                DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+                                DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
 
                                 session(['super_admin' => 0]);
                                 foreach ($user_roles as $user_role) {
