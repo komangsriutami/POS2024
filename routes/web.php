@@ -40,15 +40,19 @@ Route::get('penjualan/load_closing_kasir_print/{id}', ['as' => 'penjualan.load_c
 
 Route::get('penjualan/cetak_nota_thermal/{id}', ['as' => 'penjualan.cetak_nota_thermal/{id}', 'uses' => 'T_PenjualanController@cetak_nota_thermal']);
 
-	Route::get('penjualan/print_closing_kasir_thermal/{id}', ['as' => 'penjualan.print_closing_kasir_thermal/{id}', 'uses' => 'T_PenjualanController@print_closing_kasir_thermal']);
+Route::get('penjualan/print_closing_kasir_thermal/{id}', ['as' => 'penjualan.print_closing_kasir_thermal/{id}', 'uses' => 'T_PenjualanController@print_closing_kasir_thermal']);
 
-	Route::get('penjualan/load_page_print_closing_kasir/{id}', ['as' => 'penjualan.load_page_print_closing_kasir/{id}', 'uses' => 'T_PenjualanController@load_page_print_closing_kasir']);
+Route::get('penjualan/load_page_print_closing_kasir/{id}', ['as' => 'penjualan.load_page_print_closing_kasir/{id}', 'uses' => 'T_PenjualanController@load_page_print_closing_kasir']);
 
-	Route::get('penjualan/load_page_print_nota/{id}', ['as' => 'penjualan.load_page_print_nota/{id}', 'uses' => 'T_PenjualanController@load_page_print_nota']);
+Route::get('penjualan/load_page_print_nota/{id}', ['as' => 'penjualan.load_page_print_nota/{id}', 'uses' => 'T_PenjualanController@load_page_print_nota']);
 
-	Route::get('penjualan/print_closing_kasir/{id}', ['as' => 'penjualan.print_closing_kasir', 'uses' => 'T_PenjualanController@print_closing_kasir']);
+Route::get('penjualan/print_closing_kasir/{id}', ['as' => 'penjualan.print_closing_kasir', 'uses' => 'T_PenjualanController@print_closing_kasir']);
 
-	Route::get('penjualan/print_closing_kasir_pdf', ['as' => 'penjualan.print_closing_kasir_pdf', 'uses' => 'T_PenjualanController@print_closing_kasir_pdf']);
+Route::get('penjualan/print_closing_kasir_pdf', ['as' => 'penjualan.print_closing_kasir_pdf', 'uses' => 'T_PenjualanController@print_closing_kasir_pdf']);
+
+Route::get('transfer_outlet/_cetak_nota/{id}', ['as' => 'transfer_outlet._cetak_nota', 'uses' => 'T_TOController@cetak_nota_thermal']);
+
+Route::get('transfer_outlet/load_page_print_nota/{id}', ['as' => 'transfer_outlet.load_page_print_nota/{id}', 'uses' => 'T_TOController@load_page_print_nota']);
 
 /*Route::get('/', function () {
 
@@ -1202,10 +1206,6 @@ Route::group(['middleware' => 'cekakses', 'auth:web'], function () {
 	Route::get('transfer_outlet/list_konfirmasi_barang', ['as' => 'transfer_outlet.list_konfirmasi_barang', 'uses' => 'T_TOController@list_konfirmasi_barang']);
 
 	Route::get('transfer_outlet/konfirm/{id}', ['as' => 'transfer_outlet.konfirm', 'uses' => 'T_TOController@konfirm']);
-
-	Route::get('transfer_outlet/_cetak_nota/{id}', ['as' => 'transfer_outlet._cetak_nota', 'uses' => 'T_TOController@cetak_nota_thermal']);
-
-	Route::get('transfer_outlet/load_page_print_nota/{id}', ['as' => 'transfer_outlet.load_page_print_nota/{id}', 'uses' => 'T_TOController@load_page_print_nota']);
 
 	Route::get('transfer_outlet/cari_info', ['as' => 'transfer_outlet.cari_info', 'uses' => 'T_TOController@cari_info']);
 
