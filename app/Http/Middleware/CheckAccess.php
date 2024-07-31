@@ -16,8 +16,11 @@ use App\MasterApotek;
 use App\MasterGroupApotek;
 use App\MasterTahun;
 use Cache;
+use Route;
+use Session;
+use Cache;
+use App\Traits\DynamicConnectionTrait;
 use DB;
-
 use App\Traits\DynamicConnectionTrait;
 
 class CheckAccess
