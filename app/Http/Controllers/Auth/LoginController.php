@@ -27,6 +27,7 @@ use Route;
 use Session;
 use Cache;
 use App\Traits\DynamicConnectionTrait;
+use DB;
 
 class LoginController extends Controller
 {
@@ -63,7 +64,6 @@ class LoginController extends Controller
 
     public function login_system()
     {
-        dd(session('user'));exit();
        return view('frontend.login');
     }
 
@@ -85,9 +85,11 @@ class LoginController extends Controller
                         session(['user' => $user]);
                         Cache::forget('sessionUser_');
                         Cache::put('sessionUser_', $user, now()->addDay());
+                        Cache::forget('sessionApotek_');
+                        Cache::put('sessionApotek_', 1, now()->addDay());
 
-                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'id_user' => $user->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
-                        
+                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+
                         session(['super_admin' => 0]);
                         foreach ($user_roles as $user_role) {
                             if ($user_role->is_superadmin == 1) {
@@ -235,7 +237,11 @@ class LoginController extends Controller
                         session(['user' => $user]);
                         Cache::forget('sessionUser_');
                         Cache::put('sessionUser_', $user, now()->addDay());
-                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'id_user' => $user->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+                        Cache::forget('sessionApotek_');
+                        Cache::put('sessionApotek_', $apotek->id, now()->addDay());
+
+                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+
                         session(['super_admin' => 0]);
                         foreach ($user_roles as $user_role) {
                             if ($user_role->is_superadmin == 1) {
@@ -618,6 +624,7 @@ class LoginController extends Controller
         Session::forget('nama_apotek_active');
         Session::forget('id_apotek_active');
         Cache::forget('sessionUser_');
+        Cache::forget('sessionApotek_');
         Auth::logout();
         return redirect()->intended('/');
     }
