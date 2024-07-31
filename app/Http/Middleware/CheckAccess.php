@@ -52,7 +52,9 @@ class CheckAccess
             if(session()->has('user')){
                 $user = session('user');
                 Auth::login($user);
-                if ($user->is_admin == 1) {
+                DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 1]);
+                
+                /*if ($user->is_admin == 1) {
                     $role_list = array();
                     $actions = array();
                     $user_roles = RbacUserRole::leftJoin('rbac_roles', 'rbac_roles.id', '=', 'rbac_user_role.id_role')
@@ -65,7 +67,7 @@ class CheckAccess
                     Cache::forget('sessionApotek_');
                     Cache::put('sessionApotek_', 1, now()->addDay());
 
-                    DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+                    DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 1]);
 
                     session(['super_admin' => 0]);
                     foreach ($user_roles as $user_role) {
@@ -192,7 +194,7 @@ class CheckAccess
                                 Cache::forget('sessionApotek_');
                                 Cache::put('sessionApotek_', $apotek->id, now()->addDay());
 
-                                DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+                                DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 1]);
 
                                 session(['super_admin' => 0]);
                                 foreach ($user_roles as $user_role) {
@@ -300,7 +302,7 @@ class CheckAccess
                             'username' => 'Username <strong>' . $request->username . '</strong> tidak terdaftar, silakan periksa dan login kembali.',
                         ]);
                     }
-                }
+                }*/
                 
             } else {
                 session()->flash('error', 'Silakan Login terlebih dahulu sebelum anda mengakses halaman ini!');
