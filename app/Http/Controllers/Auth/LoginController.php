@@ -88,7 +88,7 @@ class LoginController extends Controller
                         Cache::forget('sessionApotek_');
                         Cache::put('sessionApotek_', 1, now()->addDay());
 
-                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['type' => 1, 'server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 0]);
 
                         session(['super_admin' => 0]);
                         foreach ($user_roles as $user_role) {
@@ -240,7 +240,7 @@ class LoginController extends Controller
                         Cache::forget('sessionApotek_');
                         Cache::put('sessionApotek_', $apotek->id, now()->addDay());
 
-                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')]);
+                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['type' => 1, 'server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 0]);
 
                         session(['super_admin' => 0]);
                         foreach ($user_roles as $user_role) {
@@ -610,6 +610,9 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
+        $user = session('user');
+        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['type' => 2, 'server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => session('id_apotek_active'), 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 0]);
+
         Session::flush();
         Session::forget('user');
         Session::forget('super_admin');

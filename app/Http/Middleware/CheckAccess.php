@@ -52,7 +52,7 @@ class CheckAccess
             if(session()->has('user')){
                 $user = session('user');
                 Auth::login($user);
-                DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 1]);
+                DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['type' => 1, 'server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => session('id_apotek_active'), 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 1]);
 
                 /*if ($user->is_admin == 1) {
                     $role_list = array();
