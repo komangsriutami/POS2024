@@ -204,12 +204,14 @@ class LoginController extends Controller
             }
         } else {
             $apotek = MasterApotek::on($this->getConnectionDefault())->where('kode_apotek', $request->kode_apotek)->first();
+            $from_cache = 0;
             if (!empty($apotek)) {
                 if(isset($request->username)) {
                     $user = User::on($this->getConnectionDefault())->where('username', '=', $request->username)->first();
                 } else {
                     if(!is_null(session('user'))) {
                         $user = session('user');
+                        $from_cache = 1;
                     } else {
                         return redirect()->back()->withInput($request->only('username', 'remember', 'kode_apotek'))->withErrors([
                             'username' => 'Silakan login kembali.',
@@ -240,7 +242,7 @@ class LoginController extends Controller
                         Cache::forget('sessionApotek_');
                         Cache::put('sessionApotek_', $apotek->id, now()->addDay());
 
-                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['type' => 1, 'server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 0]);
+                        DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['type' => 1, 'server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => $apotek->id, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => $from_cache]);
 
                         session(['super_admin' => 0]);
                         foreach ($user_roles as $user_role) {
