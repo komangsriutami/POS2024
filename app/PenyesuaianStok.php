@@ -6,11 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class PenyesuaianStok extends Model
 {
-    use DynamicConnectionTrait;
     protected $table = 'tb_penyesuaian_stok_obat';
     public $primaryKey = 'id';
     protected $fillable = ['id_obat',

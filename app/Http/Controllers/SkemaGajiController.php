@@ -16,11 +16,8 @@ use App;
 use Datatables;
 use DB;
 use Excel;
-use App\Traits\DynamicConnectionTrait;
-
 class SkemaGajiController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -49,8 +46,8 @@ class SkemaGajiController extends Controller
         $order_dir = $order[0]['dir'];
 
         $super_admin = session('super_admin');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = SkemaGaji::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_skema_gaji.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = SkemaGaji::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_skema_gaji.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_skema_gaji.is_deleted','=','0');
             if($super_admin == 0) {
@@ -88,7 +85,6 @@ class SkemaGajiController extends Controller
     public function create()
     {
     	$skema_gaji = new SkemaGaji;
-        $skema_gaji->setDynamicConnection();
 
         return view('skema_gaji.create')->with(compact('skema_gaji'));
     }
@@ -102,11 +98,8 @@ class SkemaGajiController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
+
         $skema_gaji = new SkemaGaji;
-        $skema_gaji->setDynamicConnection();
         $skema_gaji->fill($request->except('_token'));
         $skema_gaji->id_group_apotek = Auth::user()->id_group_apotek;
 
@@ -143,7 +136,7 @@ class SkemaGajiController extends Controller
     */
     public function edit($id)
     {
-        $skema_gaji = SkemaGaji::on($this->getConnectionName())->find($id);
+        $skema_gaji = SkemaGaji::find($id);
 
         return view('skema_gaji.edit')->with(compact('skema_gaji'));
     }
@@ -157,10 +150,7 @@ class SkemaGajiController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $skema_gaji = SkemaGaji::on($this->getConnectionName())->find($id);
+        $skema_gaji = SkemaGaji::find($id);
         $skema_gaji->fill($request->except('_token'));
         $skema_gaji->id_group_apotek = Auth::user()->id_group_apotek;
 
@@ -184,10 +174,7 @@ class SkemaGajiController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $skema_gaji = SkemaGaji::on($this->getConnectionName())->find($id);
+        $skema_gaji = SkemaGaji::find($id);
         $skema_gaji->is_deleted = 1;
         $skema_gaji->deleted_at = date('Y-m-d H:i:s');
         $skema_gaji->deleted_by = Auth::user()->id;
@@ -199,9 +186,9 @@ class SkemaGajiController extends Controller
     }
 
     public function setting($id) {
-        $skema_gaji = SkemaGaji::on($this->getConnectionName())->find($id);
-        $jabatans = MasterJabatan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->get();
-        $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->get();
+        $skema_gaji = SkemaGaji::find($id);
+        $jabatans = MasterJabatan::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->get();
+        $posisis = MasterPosisi::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->get();
         $status_karyawans = MasterStatusKaryawan::get();
 
         $data_ = array();
@@ -209,10 +196,9 @@ class SkemaGajiController extends Controller
             $new = array();
             foreach ($jabatans as $b => $jb) {
                 foreach ($status_karyawans as $c => $sk) {
-                    $cek = SkemaGajiDetail::on($this->getConnectionName())->where('id_skema_gaji', $id)->where('id_jabatan', $jb->id)->where('id_posisi', $ps->id)->where('id_status_karyawan', $sk->id)->first();
+                    $cek = SkemaGajiDetail::where('id_skema_gaji', $id)->where('id_jabatan', $jb->id)->where('id_posisi', $ps->id)->where('id_status_karyawan', $sk->id)->first();
                     if(empty($cek)) {
                         $skema_gaji_detail = new SkemaGajiDetail;
-                        $skema_gaji_detail->setDynamicConnection();
                         $skema_gaji_detail->nama_jabatan = $jb->nama;
                         $skema_gaji_detail->nama_status = $sk->nama;
                         $skema_gaji_detail->id_skema_gaji = $id;
@@ -220,7 +206,7 @@ class SkemaGajiController extends Controller
                         $skema_gaji_detail->id_jabatan = $jb->id;
                         $skema_gaji_detail->id_status_karyawan = $sk->id;
                     } else {
-                        $skema_gaji_detail = SkemaGajiDetail::on($this->getConnectionName())->find($cek->id);
+                        $skema_gaji_detail = SkemaGajiDetail::find($cek->id);
                         $skema_gaji_detail->nama_jabatan = $jb->nama;
                         $skema_gaji_detail->nama_status = $sk->nama;
                     }
@@ -235,19 +221,18 @@ class SkemaGajiController extends Controller
     } 
 
     public function add_update_detail(Request $request, $id) {
-        $skema_gaji = SkemaGaji::on($this->getConnectionName())->find($id);
+        $skema_gaji = SkemaGaji::find($id);
         $skema_gaji_details = $request->detail;
         $i = 0;
         foreach ($skema_gaji_details as $key => $val) {
-            $cek = SkemaGajiDetail::on($this->getConnectionName())->where('id_skema_gaji', $val['id_skema_gaji'])->where('id_jabatan', $val['id_jabatan'])->where('id_posisi', $val['id_posisi'])->where('id_status_karyawan', $val['id_status_karyawan'])->first();
+            $cek = SkemaGajiDetail::where('id_skema_gaji', $val['id_skema_gaji'])->where('id_jabatan', $val['id_jabatan'])->where('id_posisi', $val['id_posisi'])->where('id_status_karyawan', $val['id_status_karyawan'])->first();
             if(empty($cek)) {
                 $skema_gaji_detail = new SkemaGajiDetail;
-                $skema_gaji_detail->setDynamicConnection();
                 $skema_gaji_detail->fill($request->except('_token'));
                 $skema_gaji_detail->created_at = date('Y-m-d H:i:s');
                 $skema_gaji_detail->created_by = Auth::user()->id;
             } else {
-                $skema_gaji_detail = SkemaGajiDetail::on($this->getConnectionName())->find($cek->id);
+                $skema_gaji_detail = SkemaGajiDetail::find($cek->id);
                 $skema_gaji_detail->fill($request->except('_token'));
                 $skema_gaji_detail->updated_at = date('Y-m-d H:i:s');
                 $skema_gaji_detail->updated_by = Auth::user()->id;

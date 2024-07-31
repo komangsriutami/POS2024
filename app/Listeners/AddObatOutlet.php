@@ -28,14 +28,14 @@ class AddObatOutlet
      */
     public function handle(ObatCreate $event)
     {
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::where('is_deleted', 0)->get();
         foreach ($apoteks as $key => $apotek) {
             $inisial = strtolower($apotek->nama_singkat);
-            $cek = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $event->obat->id_obat)->first();
+            $cek = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $event->obat->id_obat)->first();
             
             if(empty($cek)) {
                 # insert data ke master stok dan harga
-                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->insert([
+                DB::table('tb_m_stok_harga_'.$inisial)->insert([
                     'id_obat' => $event->obat->id_obat,
                     'stok_awal' => 0,
                     'stok_akhir' => 0,

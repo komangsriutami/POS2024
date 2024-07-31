@@ -39,7 +39,7 @@ class JurnalPenyesuaianImport implements ToCollection
         $idjurnal = '';
         $lasttrx = '';
 
-        $kodeakun = MasterKodeAkun::on($this->getConnectionName())->whereNull("deleted_by")->get();
+        $kodeakun = MasterKodeAkun::whereNull("deleted_by")->get();
 
         $total_debit = 0;
         $total_kredit = 0;
@@ -52,8 +52,6 @@ class JurnalPenyesuaianImport implements ToCollection
 
 
                     $jurnaldetail = new JurnalUmumDetail;
-                    $jurnaldetail->setDynamicConnection();
-
 
                     if(!is_null($row[0])){
                         // dd("sini");
@@ -85,7 +83,6 @@ class JurnalPenyesuaianImport implements ToCollection
 
                             if(!is_null($row[0]) && !is_null($row[1]) && !is_null($row[2])){
                                 $jurnal = new JurnalUmum;
-                                $jurnal->setDynamicConnection();
                                 $jurnal->id_apotek = session('id_apotek_active');
                                 $jurnal->no_transaksi = $row[0];
                                 $jurnal->tgl_transaksi = $tgl;
@@ -109,7 +106,6 @@ class JurnalPenyesuaianImport implements ToCollection
                             if(!is_null($row[6])){
                                 // import detail //
                                 $detail = new JurnalUmumDetail;
-                                $detail->setDynamicConnection();
                                 $detail->id_jurnal = $idjurnal;
                                 $detail->id_jenis_transaksi = $row[2];
                                 $detail->kode_referensi = $row[3];

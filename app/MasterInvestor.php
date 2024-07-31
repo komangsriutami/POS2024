@@ -7,11 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Traits\DynamicConnectionTrait;
 
 class MasterInvestor extends Model
 {
-    use DynamicConnectionTrait;
     /* 
         Model   : Untuk Master Investor
         Author  : Govi.
@@ -63,7 +61,6 @@ class MasterInvestor extends Model
         $this->save();
 
         $user = new User;
-        $user->setDynamicConnection();
         $user->nama = $this->nama;
         $user->password = Hash::make('investor2021');
         $user->username = 'generate';
@@ -88,7 +85,7 @@ class MasterInvestor extends Model
         $this->updated_by = Auth::user()->id;
         $this->save();
 
-        $user = User::on($this->getConnectionName())->find($this->id_user);
+        $user = User::find($this->id_user);
         $user->nama = $this->nama;
         $user->tempat_lahir = $this->tempat_lahir;
         $user->tgl_lahir = $this->tgl_lahir;
@@ -106,7 +103,7 @@ class MasterInvestor extends Model
         $this->is_deleted = 1;
         $this->save();
 
-        $user = User::on($this->getConnectionName())->find($this->id_user);
+        $user = User::find($this->id_user);
         $user->is_deleted = 1;
         $user->save();
     }

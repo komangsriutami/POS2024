@@ -9,14 +9,12 @@ use App\News;
 use App\MasterSpesialis;
 use App\MasterDokter;
 use App\MasterApoteker;
-use App\Traits\DynamicConnectionTrait;
 
 class HomePageController extends Controller
 {
-	use DynamicConnectionTrait;
 	public function index()
 	{
-		$newss = News::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(4)->get();
+		$newss = News::where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(4)->get();
 		foreach ($newss as $key => $value) {
 			$text = strip_tags($value->content);
 			$panjang = strlen($text);
@@ -24,7 +22,7 @@ class HomePageController extends Controller
 			$newss[$key]->content = $content;
 		}
 
-		$tipss = Tips::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(4)->get();
+		$tipss = Tips::where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(4)->get();
 		foreach ($tipss as $key => $value) {
 			$text = strip_tags($value->content);
 			$panjang = strlen($text);
@@ -36,7 +34,7 @@ class HomePageController extends Controller
 
 		$apoteks = MasterApotek::all();
 
-		$dokters = MasterDokter::on($this->getConnectionName())->select([
+		$dokters = MasterDokter::select([
 			'tb_m_dokter.*',
 			'tb_m_spesialis.spesialis'
 		])
@@ -51,9 +49,9 @@ class HomePageController extends Controller
 
 	public function tips(Request $request)
 	{
-		$listTipss = Tips::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
+		$listTipss = Tips::where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
 
-		$query_tips = Tips::on($this->getConnectionName())->select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
+		$query_tips = Tips::select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
 
 		if ($request->title) {
 			$query_title = str_replace('+', ' ', $request->title);
@@ -74,14 +72,14 @@ class HomePageController extends Controller
 	public function tipsDetails(Request $request, $slug)
 	{
 
-		$query_tips = Tips::on($this->getConnectionName())->where('slug', $slug);
+		$query_tips = Tips::where('slug', $slug);
 
 		if ($request->title) {
 			$query_title = str_replace('+', ' ', $request->title);
 			$query_tips->where('tb_tips.title', 'LIKE', "%$query_title%");
 		}
 
-		$listTipss = Tips::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
+		$listTipss = Tips::where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
 
 		$tipss = $query_tips->get();
 		return view('frontend.v2.tips._detail')->with(compact('tipss', 'listTipss'));
@@ -89,9 +87,9 @@ class HomePageController extends Controller
 
 	public function news(Request $request)
 	{
-		$listNewss = News::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
+		$listNewss = News::where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
 
-		$query_news = News::on($this->getConnectionName())->select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
+		$query_news = News::select('*')->orderBy('created_at', 'DESC')->where('is_deleted', 0);
 
 		if ($request->title) {
 			$query_title = str_replace('+', ' ', $request->title);
@@ -112,14 +110,14 @@ class HomePageController extends Controller
 	public function newsDetails(Request $request, $slug)
 	{
 
-		$query_news = News::on($this->getConnectionName())->where('slug', $slug);
+		$query_news = News::where('slug', $slug);
 
 		if ($request->title) {
 			$query_title = str_replace('+', ' ', $request->title);
 			$query_news->where('tb_news.title', 'LIKE', "%$query_title%");
 		}
 
-		$listNewss = News::on($this->getConnectionName())->where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
+		$listNewss = News::where('is_deleted', 0)->orderBy('created_at', 'DESC')->limit(5)->get();
 
 		$newss = $query_news->get();
 
@@ -144,7 +142,7 @@ class HomePageController extends Controller
 	{
 		$spesialiss = MasterSpesialis::orderBy("spesialis")->get();
 
-		$query_dokter = MasterDokter::on($this->getConnectionName())->select([
+		$query_dokter = MasterDokter::select([
 			'tb_m_dokter.*',
 			'tb_m_spesialis.spesialis'
 		])
@@ -168,7 +166,7 @@ class HomePageController extends Controller
 	public function konsultasiApoteker(Request $request)
 	{
 
-		$query_apoteker = MasterApoteker::on($this->getConnectionName())->select('*');
+		$query_apoteker = MasterApoteker::select('*');
 		if ($request->nama) {
 			$query_nama = str_replace('+', ' ', $request->nama);
 			$query_apoteker->where('tb_m_apoteker.nama', 'LIKE', "%$query_nama%");
@@ -181,7 +179,7 @@ class HomePageController extends Controller
 	public function konsultasiApotek(Request $request)
 	{
 
-		$query_apotek = MasterApotek::on($this->getConnectionName())->select('*');
+		$query_apotek = MasterApotek::select('*');
 		if ($request->nama) {
 			$query_nama = str_replace('+', ' ', $request->nama);
 			$query_apotek->where('tb_m_apoteker.nama', 'LIKE', "%$query_nama%");
@@ -195,7 +193,7 @@ class HomePageController extends Controller
 	{
 		$spesialiss = MasterSpesialis::orderBy("spesialis")->get();
 
-		$dokters = MasterDokter::on($this->getConnectionName())->select([
+		$dokters = MasterDokter::select([
 			'tb_m_dokter.*',
 			'tb_m_spesialis.spesialis',
 		])
@@ -211,7 +209,7 @@ class HomePageController extends Controller
 	public function apoteker_profile($id)
 	{
 
-		$apotekers =  MasterApoteker::on($this->getConnectionName())->find($id);
+		$apotekers =  MasterApoteker::find($id);
 
 
 		return view('frontend.apoteker_profile')->with(compact('apotekers'));
@@ -220,7 +218,7 @@ class HomePageController extends Controller
 	public function apotek_detail($id)
 	{
 
-		$apoteks =  MasterApotek::on($this->getConnectionName())->find($id);
+		$apoteks =  MasterApotek::find($id);
 
 
 		return view('frontend.apotek_detail')->with(compact('apoteks'));

@@ -10,11 +10,8 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
-
 class M_GolonganDarahController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -42,8 +39,8 @@ class M_GolonganDarahController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterGolonganDarah::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_golongan_darah.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterGolonganDarah::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_golongan_darah.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_golongan_darah.is_deleted','=','0');
         });
@@ -77,7 +74,6 @@ class M_GolonganDarahController extends Controller
     public function create()
     {
         $golongan_darah = new MasterGolonganDarah;
-        $golongan_darah->setDynamicConnection();
 
         return view('golongan_darah.create')->with(compact('golongan_darah'));
     }
@@ -91,11 +87,7 @@ class M_GolonganDarahController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $golongan_darah = new MasterGolonganDarah;
-        $golongan_darah->setDynamicConnection();
         $golongan_darah->fill($request->except('_token'));
 
         $validator = $golongan_darah->validate();
@@ -131,7 +123,7 @@ class M_GolonganDarahController extends Controller
     */
     public function edit($id)
     {
-        $golongan_darah = MasterGolonganDarah::on($this->getConnectionName())->find($id);
+        $golongan_darah = MasterGolonganDarah::find($id);
 
         return view('golongan_darah.edit')->with(compact('golongan_darah'));
     }
@@ -145,10 +137,7 @@ class M_GolonganDarahController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $golongan_darah = MasterGolonganDarah::on($this->getConnectionName())->find($id);
+        $golongan_darah = MasterGolonganDarah::find($id);
         $golongan_darah->fill($request->except('_token'));
 
         $validator = $golongan_darah->validate();
@@ -171,10 +160,7 @@ class M_GolonganDarahController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $golongan_darah = MasterGolonganDarah::on($this->getConnectionName())->find($id);
+        $golongan_darah = MasterGolonganDarah::find($id);
         $golongan_darah->is_deleted = 1;
         if($golongan_darah->save()){
             echo 1;

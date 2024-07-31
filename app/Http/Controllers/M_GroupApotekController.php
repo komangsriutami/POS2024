@@ -8,11 +8,9 @@ use App\MasterGroupApotek;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class M_GroupApotekController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,8 +38,8 @@ class M_GroupApotekController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterGroupApotek::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_group_apotek.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterGroupApotek::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_group_apotek.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_group_apotek.is_deleted','=','0');
         });
@@ -81,7 +79,6 @@ class M_GroupApotekController extends Controller
     public function create()
     {
     	$group_apotek = new MasterGroupApotek;
-        $group_apotek->setDynamicConnection();
 
         return view('group_apotek.create')->with(compact('group_apotek'));
     }
@@ -95,11 +92,7 @@ class M_GroupApotekController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $group_apotek = new MasterGroupApotek;
-        $group_apotek->setDynamicConnection();
         $group_apotek->fill($request->except('_token'));
 
         $validator = $group_apotek->validate();
@@ -133,7 +126,7 @@ class M_GroupApotekController extends Controller
     */
     public function edit($id)
     {
-        $group_apotek 		= MasterGroupApotek::on($this->getConnectionName())->find($id);
+        $group_apotek 		= MasterGroupApotek::find($id);
 
         return view('group_apotek.edit')->with(compact('group_apotek'));
     }
@@ -147,10 +140,7 @@ class M_GroupApotekController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $group_apotek = MasterGroupApotek::on($this->getConnectionName())->find($id);
+        $group_apotek = MasterGroupApotek::find($id);
         $group_apotek->fill($request->except('_token'));
 
         $validator = $group_apotek->validate();
@@ -171,10 +161,7 @@ class M_GroupApotekController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $group_apotek = MasterGroupApotek::on($this->getConnectionName())->find($id);
+        $group_apotek = MasterGroupApotek::find($id);
         $group_apotek->is_deleted = 1;
         if($group_apotek->save()){
             echo 1;

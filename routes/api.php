@@ -61,4 +61,5 @@ Route::middleware('api')->group( function () {
 	Route::post('/getDataApoteker','API\ServiceAppController@GetDataApoteker');
 	Route::post('/getDataKlinik','API\ServiceAppController@GetDataKlinik');
 	Route::post('/getDataDokter','API\ServiceAppController@GetDataDokter');
+	Route::post('/login', 'API\ServiceAppController@apiLogin');
 });

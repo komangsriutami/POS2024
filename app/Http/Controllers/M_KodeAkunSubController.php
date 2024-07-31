@@ -10,10 +10,8 @@ use Auth;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 class M_KodeAkunSubController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -41,8 +39,8 @@ class M_KodeAkunSubController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKodeAkunSub::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_sub_kode_akun.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterKodeAkunSub::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_sub_kode_akun.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_sub_kode_akun.is_deleted','=','0');
         });
@@ -82,9 +80,8 @@ class M_KodeAkunSubController extends Controller
     public function create()
     {
     	$sub_kode_akuntansi = new MasterKodeAkunSub;
-        $sub_kode_akuntansi->setDynamicConnection();
 
-    	$kode_akuntansis      = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+    	$kode_akuntansis      = MasterKodeAkun::where('is_deleted', 0)->pluck('nama', 'id');
         $kode_akuntansis->prepend('-- Pilih Kode Akuntansi --','');
 
         return view('sub_kode_akuntansi.create')->with(compact('sub_kode_akuntansi', 'kode_akuntansis'));
@@ -99,16 +96,12 @@ class M_KodeAkunSubController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $sub_kode_akuntansi = new MasterKodeAkunSub;
-        $sub_kode_akuntansi->setDynamicConnection();
         $sub_kode_akuntansi->fill($request->except('_token'));
 
         $validator = $sub_kode_akuntansi->validate();
         if($validator->fails()){
-        	$kode_akuntansis      = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        	$kode_akuntansis      = MasterKodeAkun::where('is_deleted', 0)->pluck('nama', 'id');
         	$kode_akuntansis->prepend('-- Pilih Kode Akuntansi --','');
 
             return view('sub_kode_akuntansi.create')->with(compact('sub_kode_akuntansi', 'kode_akuntansis'))->withErrors($validator);
@@ -140,9 +133,9 @@ class M_KodeAkunSubController extends Controller
     */
     public function edit($id)
     {
-        $sub_kode_akuntansi = MasterKodeAkunSub::on($this->getConnectionName())->find($id);
+        $sub_kode_akuntansi = MasterKodeAkunSub::find($id);
 
-        $kode_akuntansis      = MasterKodeAkun::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kode_akuntansis      = MasterKodeAkun::where('is_deleted', 0)->pluck('nama', 'id');
         $kode_akuntansis->prepend('-- Pilih Kode Akuntansi --','');
 
         return view('sub_kode_akuntansi.edit')->with(compact('sub_kode_akuntansi', 'kode_akuntansis'));
@@ -157,10 +150,7 @@ class M_KodeAkunSubController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $sub_kode_akuntansi = MasterKodeAkunSub::on($this->getConnectionName())->find($id);
+        $sub_kode_akuntansi = MasterKodeAkunSub::find($id);
         $sub_kode_akuntansi->fill($request->except('_token'));
 
         $validator = $sub_kode_akuntansi->validate();
@@ -181,10 +171,7 @@ class M_KodeAkunSubController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $sub_kode_akuntansi = MasterKodeAkun::on($this->getConnectionName())->find($id);
+        $sub_kode_akuntansi = MasterKodeAkun::find($id);
         $sub_kode_akuntansi->is_deleted = 1;
         $sub_kode_akuntansi->deleted_at = date('Y-m-d H:i:s');
         $sub_kode_akuntansi->deleted_by = Auth::user()->id;

@@ -7,11 +7,9 @@ use Validator;
 use Auth;
 use DB;
 use App\Events\PembelianCreate;
-use App\Traits\DynamicConnectionTrait;
 
 class TransaksiPembelian extends Model
 {
-    use DynamicConnectionTrait;
     protected $table = 'tb_nota_pembelian';
     public $primaryKey = 'id';
     public $timestamps = false;
@@ -62,7 +60,7 @@ class TransaksiPembelian extends Model
         if($this->save()) {
             $id_nota = $this->id;
         } else {
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             $rsp = array('status' => 0, 'message' => 'Error, periksa kembali data yang disimpan');
             return $rsp;
         }
@@ -74,10 +72,9 @@ class TransaksiPembelian extends Model
         foreach ($detail_pembelians as $detail_pembelian) {
             if(!in_array($detail_pembelian['id_obat'], $array_id_obat)){
                 if($detail_pembelian['id']>0){
-                    $obj = TransaksiPembelianDetail::on($this->getConnectionName())->find($detail_pembelian['id']);
+                    $obj = TransaksiPembelianDetail::find($detail_pembelian['id']);
                 }else{
                     $obj = new TransaksiPembelianDetail;
-                    $obj->setDynamicConnection();
                 }
                 
                 $obj->id_nota = $this->id;
@@ -99,7 +96,7 @@ class TransaksiPembelian extends Model
                 if($obj->save()) {
 
                     if(isset($this->is_from_order) AND $this->is_from_order == 1) {
-                        $order = TransaksiOrderDetail::on($this->getConnectionName())->find($detail_pembelian['id_detail_order']);
+                        $order = TransaksiOrderDetail::find($detail_pembelian['id_detail_order']);
                         $order->is_status = 1;
                         $order->id_nota_pembelian = $this->id;
                         $order->id_det_nota_pembalian = $obj->id;
@@ -107,13 +104,13 @@ class TransaksiPembelian extends Model
                         $order->created_at = date('Y-m-d H:i:s');
                         if($order->save()) {
                         } else {
-                            DB::connection($this->getConnectionName())->rollback();
+                            DB::rollback();
                             $rsp = array('status' => 0, 'message' => 'Error, periksa kembali data yang disimpan');
                             return $rsp;
                         }
 
                         if($order->id_defecta != null OR $order->id_defecta != 0) {
-                            DefectaOutlet::on($this->getConnectionName())->where('id', $order->id_defecta)->update(['id_process' => 2, 'last_update_process' => date('Y-m-d H:i:s')]);
+                            DefectaOutlet::where('id', $order->id_defecta)->update(['id_process' => 2, 'last_update_process' => date('Y-m-d H:i:s')]);
                             DefectaOutletHistori::create([
                                 'id_defecta' => $order->id_defecta,
                                 'id_status' => 1,
@@ -124,17 +121,17 @@ class TransaksiPembelian extends Model
                             ]);
                         }
 
-                        $cek_all_status = TransaksiOrderDetail::on($this->getConnectionName())->where('id_nota', $order->id_nota)->where('is_status', 0)->count();
+                        $cek_all_status = TransaksiOrderDetail::where('id_nota', $order->id_nota)->where('is_status', 0)->count();
                         if($cek_all_status < 1) {
-                            TransaksiOrder::on($this->getConnectionName())->where('id', $order->id_nota)->update(['is_status' => 1, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::id()]);
+                            TransaksiOrder::where('id', $order->id_nota)->update(['is_status' => 1, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::id()]);
                         }
                     }
 
                     $array_id_obat[] = $obj->id;
                     # update stok ke 
-                    $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+                    $apotek = MasterApotek::find(session('id_apotek_active'));
                     $inisial = strtolower($apotek->nama_singkat);
-                    $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+                    $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
                     $stok_now = $stok_before->stok_akhir+$obj->jumlah;
 
 
@@ -142,7 +139,7 @@ class TransaksiPembelian extends Model
                     if($stok_before->harga_beli != $obj->harga_beli) {
                         $data_histori_ = array('id_obat' => $obj->id_obat, 'harga_beli_awal' => $stok_before->harga_beli, 'harga_beli_akhir' => $obj->harga_beli, 'harga_jual_awal' => $stok_before->harga_jual, 'harga_jual_akhir' => $stok_before->harga_jual, 'created_by' => Auth::id(), 'created_at' => date('Y-m-d H:i:s'));
 
-                        DB::connection($this->getConnectionName())->table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
+                        DB::table('tb_histori_harga_'.$inisial.'')->insert($data_histori_);
                     }
 
                     /*$arrayupdate = array(
@@ -155,7 +152,7 @@ class TransaksiPembelian extends Model
                     );*/
 
                     # update ke table stok harga
-                    $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
+                    $stok_harga = MasterStokHarga::where('id_obat', $obj->id_obat)->first();
                     $stok_harga->stok_awal = $stok_before->stok_akhir;
                     $stok_harga->stok_akhir = $stok_now;
                     $stok_harga->updated_at = date('Y-m-d H:i:s'); 
@@ -164,7 +161,7 @@ class TransaksiPembelian extends Model
                     $stok_harga->updated_by = Auth::user()->id;
                     if($stok_harga->save()) {
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         $rsp = array('status' => 0, 'message' => 'Error, periksa kembali data yang disimpan');
                         return $rsp;
                     }
@@ -186,7 +183,7 @@ class TransaksiPembelian extends Model
                     );*/
 
                     # create histori
-                    $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
+                    $histori_stok = HistoriStok::where('id_obat', $obj->id_obat)->where('jumlah', $obj->jumlah)->where('id_jenis_transaksi', 2)->where('id_transaksi', $obj->id)->first();
                     if(empty($histori_stok)) {
                         $histori_stok = new HistoriStok;
                     }
@@ -206,7 +203,7 @@ class TransaksiPembelian extends Model
                     if($histori_stok->save()) {
 
                     } else {
-                         DB::connection($this->getConnectionName())->rollback();
+                         DB::rollback();
                         $rsp = array('status' => 0, 'message' => 'Error, periksa kembali data yang disimpan');
                         return $rsp;
                     }
@@ -215,12 +212,12 @@ class TransaksiPembelian extends Model
                         $rsp = array('status' => 1, 'message' => 'Data pembelian berhasil disimpan');
                         return $rsp;
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         $rsp = array('status' => 0, 'message' => 'Error, periksa kembali data yang disimpan');
                         return $rsp;
                     }
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     $rsp = array('status' => 0, 'message' => 'Error, periksa kembali data yang disimpan');
                     return $rsp;
                 }
@@ -228,11 +225,11 @@ class TransaksiPembelian extends Model
         }
 
         /*if(!empty($array_id_obat)){
-            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_nota_pembelian
+            DB::statement("DELETE FROM tb_detail_nota_pembelian
                             WHERE id_nota=".$this->id." AND 
                                     id NOT IN(".implode(',', $array_id_obat).")");
         }else{
-            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_nota_pembelian 
+            DB::statement("DELETE FROM tb_detail_nota_pembelian 
                             WHERE id_nota=".$this->id);
         }*/
     }

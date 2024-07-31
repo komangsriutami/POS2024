@@ -6,11 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use DB;
-use App\Traits\DynamicConnectionTrait;
-
 class TransaksiTransfer extends Model
 {
-    use DynamicConnectionTrait;
      // ini tabel order
     protected $table = 'tb_nota_transfer';
     public $primaryKey = 'id';
@@ -39,10 +36,9 @@ class TransaksiTransfer extends Model
         $array_id_obat = array();
         foreach ($detail_transfers as $detail_transfer) {
             if($detail_transfer['id']>0){
-                $obj = TransaksiTransferDetail::on($this->getConnectionName())->find($detail_transfer['id']);
+                $obj = TransaksiTransferDetail::find($detail_transfer['id']);
             }else{
                 $obj = new TransaksiTransferDetail;
-                $obj->setDynamicConnection();
             }
 
             $is_titip_order = 0;
@@ -66,7 +62,7 @@ class TransaksiTransfer extends Model
 
             if($detail_transfer['id_defecta'] != '') {
                 $obj->id_defecta = $detail_transfer['id_defecta'];
-                $defecta = DefectaOutlet::on($this->getConnectionName())->find($detail_transfer['id_defecta']);
+                $defecta = DefectaOutlet::find($detail_transfer['id_defecta']);
                 //setelah itu, update tabel temp order
                 $defecta->id_process = 1;
                 $defecta->save();
@@ -83,7 +79,6 @@ class TransaksiTransfer extends Model
             } else {
                 # create data defecta
                 $defecta = new DefectaOutlet;
-                $defecta->setDynamicConnection();
                 $defecta->id_obat = $obj->id_obat;
                 $defecta->id_suplier = null;
                 $defecta->id_suplier_order = null;
@@ -123,11 +118,11 @@ class TransaksiTransfer extends Model
         }
 
         if(!empty($array_id_obat)){
-            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_nota_transfer
+            DB::statement("DELETE FROM tb_detail_nota_transfer
                             WHERE id_nota=".$this->id." AND 
                                     id NOT IN(".implode(',', $array_id_obat).")");
         }else{
-            DB::connection($this->getConnection())->statement("DELETE FROM tb_detail_nota_transfer 
+            DB::statement("DELETE FROM tb_detail_nota_transfer 
                             WHERE id_nota=".$this->id);
         }
     }

@@ -3,11 +3,9 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\DynamicConnectionTrait;
 
 class MasterSpesialis extends Model
 {
-    use DynamicConnectionTrait;
     /*
 		Model 	: Model spesialis untuk Dokter@Controller
 		Author 	: Tangkas.

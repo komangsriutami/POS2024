@@ -5,11 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class RbacUserRole extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk RBAC User Role
 		Author 	: Sri U.

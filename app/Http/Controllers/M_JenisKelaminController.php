@@ -10,10 +10,8 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 class M_JenisKelaminController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -41,8 +39,8 @@ class M_JenisKelaminController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterJenisKelamin::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_kelamin.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterJenisKelamin::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jenis_kelamin.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jenis_kelamin.is_deleted','=','0');
         });
@@ -76,7 +74,6 @@ class M_JenisKelaminController extends Controller
     public function create()
     {
         $jenis_kelamin = new MasterJenisKelamin;
-        $jenis_kelamin->setDynamicConnection();
 
         return view('jenis_kelamin.create')->with(compact('jenis_kelamin'));
     }
@@ -90,11 +87,7 @@ class M_JenisKelaminController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $jenis_kelamin = new MasterJenisKelamin;
-        $jenis_kelamin->setDynamicConnection();
         $jenis_kelamin->fill($request->except('_token'));
 
         $validator = $jenis_kelamin->validate();
@@ -130,7 +123,7 @@ class M_JenisKelaminController extends Controller
     */
     public function edit($id)
     {
-        $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->find($id);
+        $jenis_kelamin = MasterJenisKelamin::find($id);
 
         return view('jenis_kelamin.edit')->with(compact('jenis_kelamin'));
     }
@@ -144,10 +137,7 @@ class M_JenisKelaminController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->find($id);
+        $jenis_kelamin = MasterJenisKelamin::find($id);
         $jenis_kelamin->fill($request->except('_token'));
 
         $validator = $jenis_kelamin->validate();
@@ -170,10 +160,7 @@ class M_JenisKelaminController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $jenis_kelamin = MasterJenisKelamin::on($this->getConnectionName())->find($id);
+        $jenis_kelamin = MasterJenisKelamin::find($id);
         $jenis_kelamin->is_deleted = 1;
         if($jenis_kelamin->save()){
             echo 1;

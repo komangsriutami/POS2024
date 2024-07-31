@@ -24,11 +24,8 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use App\Traits\DynamicConnectionTrait;
-
 class T_POController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -50,8 +47,8 @@ class T_POController extends Controller
     */
     public function list_obat_operasional(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses = 0;
@@ -64,8 +61,8 @@ class T_POController extends Controller
         }
 
         $tanggal = date('Y-m-d');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPO::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPO::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 	            'tb_nota_po.*', 
         ])
@@ -126,53 +123,47 @@ class T_POController extends Controller
     }
 
     public function create() {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = date('Y-m-d');
         $obat_operasional = new TransaksiPO;
-        $obat_operasional->setDynamicConnection();
         $detail_obat_operasionals = new TransaksiPODetail;
-        $detail_obat_operasionals->setDynamicConnection();
         $var = 1;
         return view('obat_operasional.create')->with(compact('obat_operasional', 'detail_obat_operasionals', 'var', 'apotek', 'inisial'));
     }
 
     public function store(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $obat_operasional = new TransaksiPO;
-            $obat_operasional->setDynamicConnection();
             $obat_operasional->fill($request->except('_token'));
             $obat_operasional->id_apotek_nota = session('id_apotek_active');
             $obat_operasional->tgl_nota = date('Y-m-d');
             $detail_obat_operasionals = collect();
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
             $tanggal = date('Y-m-d');
 
             $validator = $obat_operasional->validate();
             if($validator->fails()){
                 $var = 0;
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }else{
                 $obat_operasional->save_from_array($detail_obat_operasionals,1);
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo json_encode(array('status' => 1, 'id' => $obat_operasional->id));
             } 
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0, 'message' => $e->getMessage()));
         }
     }
 
     public function edit($id) {
-        $obat_operasional = TransaksiPO::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $obat_operasional = TransaksiPO::find($id);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = date('Y-m-d');
 
@@ -187,67 +178,61 @@ class T_POController extends Controller
     }
 
     public function update(Request $request, $id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-    	DB::connection($this->getConnectionName())->beginTransaction();  
+    	DB::beginTransaction(); 
         try{
-	        $obat_operasional = TransaksiPO::on($this->getConnectionName())->find($id);
+	        $obat_operasional = TransaksiPO::find($id);
 	        $obat_operasional->fill($request->except('_token'));
 	        $detail_obat_operasionals = collect();
 
-	        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+	        $apotek = MasterApotek::find(session('id_apotek_active'));
 	        $inisial = strtolower($apotek->nama_singkat);
 	        $tanggal = date('Y-m-d');
 
 	        $validator = $obat_operasional->validate();
 	        if($validator->fails()){
 	            $var = 1;
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
 	            echo json_encode(array('status' => 0));
 	        }else{
 	            $obat_operasional->save_from_array($detail_obat_operasionals,1);
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
 	            echo json_encode(array('status' => 1, 'id' => $obat_operasional->id));
 	        }
 	   	}catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0, 'message' => $e->getMessage()));
         }
     }
 
     public function destroy_($id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $to = TransaksiPO::on($this->getConnectionName())->find($id);
+            $to = TransaksiPO::find($id);
             $to->is_deleted = 1;
             $to->deleted_at = date('Y-m-d H:i:s');
             $to->deleted_by = Auth::user()->id;
             $to->grand_total = 0;
             
-            $detail_obat_operasionals = TransaksiPODetail::on($this->getConnectionName())->where('id_nota', $to->id)->get();
+            $detail_obat_operasionals = TransaksiPODetail::where('id_nota', $to->id)->get();
             foreach ($detail_obat_operasionals as $key => $val) {
-                $detail_obat_operasional = TransaksiPODetail::on($this->getConnectionName())->find($val->id);
+                $detail_obat_operasional = TransaksiPODetail::find($val->id);
                 $detail_obat_operasional->is_deleted = 1;
                 $detail_obat_operasional->deleted_at = date('Y-m-d H:i:s');
                 $detail_obat_operasional->deleted_by = Auth::user()->id;
                 $detail_obat_operasional->save();
 
-                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
+                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
                 $selisih = $detail_obat_operasional->jumlah;
 
                 $id_jenis_transaksi = 21;
                 $stok_now = $stok_before->stok_akhir+$selisih;
                 # update ke table stok harga
-                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                 # create histori
-                DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
+                DB::table('tb_histori_stok_'.$inisial)->insert([
                     'id_obat' => $detail_obat_operasional->id_obat,
                     'jumlah' => $selisih,
                     'stok_awal' => $stok_before->stok_akhir,
@@ -262,13 +247,13 @@ class T_POController extends Controller
             }
 
             if($to->save()){
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo 1;
             }else{
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             session()->flash('error', 'Error!');
             return redirect('obat_operasional');
         }
@@ -281,35 +266,32 @@ class T_POController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = TransaksiPODetail::on($this->getConnectionName())->find($id);
+        $detail = TransaksiPODetail::find($id);
         return view('obat_operasional._form_edit_detail')->with(compact('detail', 'no'));
     }
 
     public function hapus_detail($id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $detail_obat_operasional = TransaksiPODetail::on($this->getConnectionName())->find($id);
+            $detail_obat_operasional = TransaksiPODetail::find($id);
             $detail_obat_operasional->is_deleted = 1;
             $detail_obat_operasional->deleted_at= date('Y-m-d H:i:s');
             $detail_obat_operasional->deleted_by = Auth::user()->id;
             $detail_obat_operasional->save();
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
+            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->first();
             $selisih = $detail_obat_operasional->jumlah;
 
             $id_jenis_transaksi = 21;
             $stok_now = $stok_before->stok_akhir+$selisih;
            
             # update ke table stok harga
-            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_obat_operasional->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
+            DB::table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_obat_operasional->id_obat,
                 'jumlah' => $selisih,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -322,7 +304,7 @@ class T_POController extends Controller
                 'created_by' => Auth::user()->id
             ]);
 
-            $total = TransaksiPODetail::on($this->getConnectionName())->select([
+            $total = TransaksiPODetail::select([
                                 DB::raw('SUM(total) as total_all')
                                 ])
                                 ->where('id', '!=', $detail_obat_operasional->id)
@@ -337,7 +319,7 @@ class T_POController extends Controller
                 $y = $total->total_all;
             }
 
-            $obat_operasional = TransaksiPO::on($this->getConnectionName())->find($detail_obat_operasional->id_nota);
+            $obat_operasional = TransaksiPO::find($detail_obat_operasional->id_nota);
             if($y == 0) {
                 $obat_operasional->grand_total = $y;
                 $obat_operasional->is_deleted = 1;
@@ -346,13 +328,13 @@ class T_POController extends Controller
             }   
 
             if($obat_operasional->save()){
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo 1;
             }else{
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             session()->flash('error', 'Error!');
             return redirect('obat_operasional');
         }
@@ -360,11 +342,11 @@ class T_POController extends Controller
 
     public function cetak_nota(Request $request)
     {   
-        $obat_operasional = TransaksiPO::on($this->getConnectionName())->where('id', $request->id)->first();
-        $detail_obat_operasionals = TransaksiPODetail::on($this->getConnectionName())->select(['tb_detail_nota_po.*'])
+        $obat_operasional = TransaksiPO::where('id', $request->id)->first();
+        $detail_obat_operasionals = TransaksiPODetail::select(['tb_detail_nota_po.*'])
                                                ->where('tb_detail_nota_po.id_nota', $obat_operasional->id)
                                                ->get();
-        $apotek = MasterApotek::on($this->getConnectionName())->find($obat_operasional->id_apotek_nota);
+        $apotek = MasterApotek::find($obat_operasional->id_apotek_nota);
 
         $id_printer_active = session('id_printer_active');
         if(is_null($id_printer_active)) {
@@ -382,9 +364,9 @@ class T_POController extends Controller
     public function load_data_nota_print($id) {
         $no = 0;
 
-        $nota = TransaksiPO::on($this->getConnectionName())->find($id);
-        $detail_obat_operasionals = TransaksiPODetail::on($this->getConnectionName())->where('id_nota', $nota->id)->get();
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $nota = TransaksiPO::find($id);
+        $detail_obat_operasionals = TransaksiPODetail::where('id_nota', $nota->id)->get();
+        $apotek = MasterApotek::find(session('id_apotek_active'));
 	    $inisial = strtolower($apotek->nama_singkat);
         $nama_apotek = strtoupper($apotek->nama_panjang);
         $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
@@ -443,9 +425,9 @@ class T_POController extends Controller
     public function load_page_print_nota($id) {
         $no = 0;
 
-        $nota = TransaksiPO::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($nota->id_apotek_nota);
-        $detail_pos = TransaksiPODetail::on($this->getConnectionName())->where('id_nota', $nota->id)->where('is_deleted', 0)->get();
+        $nota = TransaksiPO::find($id);
+        $apotek = MasterApotek::find($nota->id_apotek_nota);
+        $detail_pos = TransaksiPODetail::where('id_nota', $nota->id)->where('is_deleted', 0)->get();
         $nama_apotek = strtoupper($apotek->nama_panjang);
         $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
 
@@ -573,7 +555,7 @@ class T_POController extends Controller
                 </tr>';
         
         if($nota->is_kredit == 1) {
-            $vendor = MasterVendor::on($this->getConnectionName())->find($nota->id_vendor);
+            $vendor = MasterVendor::find($nota->id_vendor);
             $a .= ' 
                 <tr>
                     <td colspan="2">------------------------------</td>
@@ -647,8 +629,8 @@ class T_POController extends Controller
     }
 
     public function list_pencarian_obat(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPODetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_po.*', 'a.nama'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPODetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_po.*', 'a.nama'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_po.id_obat')
         ->join('tb_nota_po as b', 'b.id', 'tb_detail_nota_po.id_nota')
         ->where(function($query) use($request){
@@ -693,7 +675,7 @@ class T_POController extends Controller
 
     public function export(Request $request) 
     {
-        $rekaps = TransaksiPO::on($this->getConnectionName())->select([
+        $rekaps = TransaksiPO::select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_nota_po.*'
                                 ])
@@ -789,7 +771,7 @@ class T_POController extends Controller
         if(is_null($id)) {
             
         } else {
-            $po = TransaksiPO::on($this->getConnectionName())->find($id);
+            $po = TransaksiPO::find($id);
     
             $total_po = $po->detail_po_total[0]->total;
             if($total_po == "" || $total_po == null) {
@@ -799,8 +781,8 @@ class T_POController extends Controller
             $counter = count($po->detail_po);
         }
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPODetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPODetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_po.*', 
         ])
@@ -867,13 +849,9 @@ class T_POController extends Controller
     }
 
     public function AddItem(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $po = new TransaksiPO;
-            $po->setDynamicConnection();
             $po->fill($request->except('_token'));
           
             $detail_pos = array();
@@ -889,31 +867,28 @@ class T_POController extends Controller
 
             $tanggal = date('Y-m-d');
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
             $result = $po->save_from_array($detail_pos, 1);
             if($result['status']) {
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo json_encode(array('status' => 1, 'id' => $po->id, 'message' => $result['message']));
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Error, silakan cek kembali data yang diinputkan'));
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0, 'message' => $e->getMessage()));
         }
     }
 
     public function UpdateItem(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $id = $request->id;
-            $po = TransaksiPO::on($this->getConnectionName())->find($id);
+            $po = TransaksiPO::find($id);
             if($po->is_deleted != 1) {
                 $po->fill($request->except('_token'));
 
@@ -929,59 +904,56 @@ class T_POController extends Controller
                 //dd($detail_penjualans);
                 $tanggal = date('Y-m-d');
 
-                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+                $apotek = MasterApotek::find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
                 
                 $result = $po->save_from_array($detail_pos, 2);
                 if($result['status']) {
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo json_encode(array('status' => 1, 'id' => $po->id, 'message' => $result['message']));
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, silakan cek kembali data yang diinputkan'));
                 }
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Error, nota ini sudah dihapus, silakan tambah nota baru'));
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function DeleteItem(Request $request, $id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         # yang bisa didelete adalah | yang belum dikonfirm
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $detail_po = TransaksiPODetail::on($this->getConnectionName())->find($id);
+            $detail_po = TransaksiPODetail::find($id);
             $detail_po->is_deleted = 1;
             $detail_po->deleted_at = date('Y-m-d H:i:s');
             $detail_po->deleted_by = Auth::user()->id;
            
             # crete histori stok barang
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
+            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
             $stok_now = $stok_before->stok_akhir+$detail_po->jumlah;
 
             # update ke table stok harga
-            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->first();
+            $stok_harga = MasterStokHarga::where('id_obat', $detail_po->id_obat)->first();
             $stok_harga->stok_awal = $stok_before->stok_akhir;
             $stok_harga->stok_akhir = $stok_now;
             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
             $stok_harga->updated_by = Auth::user()->id;
             if($stok_harga->save()) {
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }
 
             # create histori
-            $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
+            $histori_stok = HistoriStok::where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
             if(empty($histori_stok)) {
                 $histori_stok = new HistoriStok;
             }
@@ -999,24 +971,24 @@ class T_POController extends Controller
             $histori_stok->created_by = Auth::user()->id;
             if($histori_stok->save()) {
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }
 
             # update stok aktif 
             $histori_stok_details = json_decode($detail_po->id_histori_stok_detail);
             if(count($histori_stok_details) == 0) {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             } else {
                 foreach ($histori_stok_details as $y => $hist) {
-                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
+                    $cekHistori = HistoriStok::find($hist->id_histori_stok);
                     $keterangan = $cekHistori->keterangan.', Hapus PO pada IDdet.'.$detail_po->id.' sejumlah '.$hist->jumlah;
                     $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                     $cekHistori->keterangan = $keterangan;
                     if($cekHistori->save()) {
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         echo json_encode(array('status' => 0));
                     }
                 }
@@ -1024,73 +996,70 @@ class T_POController extends Controller
             
             if($detail_po->save()) {
                 # cek apakah masih ada item pada nota yang sama
-                $jum_details = TransaksiPODetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $detail_po->id_nota)->count();
+                $jum_details = TransaksiPODetail::where('is_deleted', 0)->where('id_nota', $detail_po->id_nota)->count();
                 $is_sisa = 1;
                 if($jum_details == 0) {
-                    $po = TransaksiPO::on($this->getConnectionName())->find($detail_po->id_nota);
+                    $po = TransaksiPO::find($detail_po->id_nota);
                     $po->is_deleted = 1;
                     $po->deleted_at = date('Y-m-d H:i:s');
                     $po->deleted_by = Auth::user()->id;
                     if($po->save()) {
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         echo json_encode(array('status' => 0));
                     }
 
                     $is_sisa = 0;
                 }
 
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo json_encode(array('status' => 1, 'is_sisa' => $is_sisa));
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function destroy($id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $po = TransaksiPO::on($this->getConnectionName())->find($id);
+            $po = TransaksiPO::find($id);
             $po->is_deleted = 1;
             $po->deleted_at = date('Y-m-d H:i:s');
             $po->deleted_by = Auth::user()->id;
 
-            $detail_pos = TransaksiPODetail::on($this->getConnectionName())->where('id_nota', $po->id)->get();
+            $detail_pos = TransaksiPODetail::where('id_nota', $po->id)->get();
             foreach ($detail_pos as $key => $detail_po) {
                 $detail_po->is_deleted = 1;
                 $detail_po->deleted_at = date('Y-m-d H:i:s');
                 $detail_po->deleted_by = Auth::user()->id;
                
                 # crete histori stok barang
-                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+                $apotek = MasterApotek::find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
+                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_po->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir+$detail_po->jumlah;
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->first();
+                $stok_harga = MasterStokHarga::where('id_obat', $detail_po->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                 $stok_harga->updated_by = Auth::user()->id;
                 if($stok_harga->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0));
                 }
 
                 # create histori
-                $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
+                $histori_stok = HistoriStok::where('id_obat', $detail_po->id_obat)->where('jumlah', $detail_po->jumlah)->where('id_jenis_transaksi', 21)->where('id_transaksi', $detail_po->id)->first();
                 if(empty($histori_stok)) {
                     $histori_stok = new HistoriStok;
                 }
@@ -1108,43 +1077,43 @@ class T_POController extends Controller
                 $histori_stok->created_by = Auth::user()->id;
                 if($histori_stok->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0));
                 }
 
                 # update stok aktif 
                 $histori_stok_details = json_decode($detail_po->id_histori_stok_detail);
                 if(count($histori_stok_details) == 0) {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0));
                 } else {
                     foreach ($histori_stok_details as $y => $hist) {
-                        $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
+                        $cekHistori = HistoriStok::find($hist->id_histori_stok);
                         $keterangan = $cekHistori->keterangan.', Hapus PO pada IDdet.'.$detail_po->id.' sejumlah '.$hist->jumlah;
                         $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                         $cekHistori->keterangan = $keterangan;
                         if($cekHistori->save()) {
                         } else {
-                            DB::connection($this->getConnectionName())->rollback();
+                            DB::rollback();
                         }
                     }
                 }
 
                 if($detail_po->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                 }
             }
             
             if($po->save()){
                 echo 1;
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
             }else{
                 echo 0;
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             session()->flash('error', 'Error!');
             return redirect('obat_operasional');
         }
@@ -1167,7 +1136,7 @@ class T_POController extends Controller
 
     public function kurangStok($id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -1194,7 +1163,7 @@ class T_POController extends Controller
                 $array_id_histori_stok_tota = array();
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -1242,7 +1211,7 @@ class T_POController extends Controller
 
     public function send_sign(Request $request)
     {
-        $po = TransaksiPO::on($this->getConnectionName())->find($request->id);
+        $po = TransaksiPO::find($request->id);
         $po->is_sign = 1;
         $po->sign_by = $request->sign_by;
         $po->sign_at = date('Y-m-d H:i:s');
@@ -1256,7 +1225,7 @@ class T_POController extends Controller
 
     public function batal_sign(Request $request)
     {
-        $po = TransaksiPO::on($this->getConnectionName())->find($request->id);
+        $po = TransaksiPO::find($request->id);
         $po->is_sign = 0;
         $po->sign_by = null;
         $po->sign_at = null;

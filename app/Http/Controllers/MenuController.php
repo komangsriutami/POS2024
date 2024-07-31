@@ -10,11 +10,9 @@ use App\RbacPermission;
 use Datatables;
 use DB;
 use URL;
-use App\Traits\DynamicConnectionTrait;
 
 class MenuController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
     	=================================================================================================================
     	For     : Tampilan index menu
@@ -24,7 +22,7 @@ class MenuController extends Controller
     */
     public function index()
     {
-        $menus = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang','id');
+        $menus = RbacMenu::where('is_deleted', 0)->pluck('nama_panjang','id');
         $menus->prepend('-- Pilih Menu --','');
 
         return view('menu.index')->with(compact('menus'));
@@ -41,7 +39,7 @@ class MenuController extends Controller
     public function list_menu(Request $request)
     {
         # ini untuk mencari menu yang menjadi parent
-        $parent = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)
+        $parent = RbacMenu::where('is_deleted', 0)
             ->where( function($query){
                 $query->where('parent', 0);
                 $query->orwhere('parent', null);
@@ -53,14 +51,14 @@ class MenuController extends Controller
 
             foreach ($parent as $p) {
                 #untuk mencari sub parent menu
-                $sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', $p->id)->where('sub_parent', 0)->orderby('weight','asc')->get();                
+                $sub_menu = RbacMenu::where('is_deleted', 0)->where('parent', $p->id)->where('sub_parent', 0)->orderby('weight','asc')->get();                
                 $menu .= $this->build_menu($p);
 
                 if($sub_menu != null){
                     $menu .= '<ol class="sortable">';
                     foreach ($sub_menu as $s) {
                         #untuk mencari menu
-                        $mn = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $s->id)->orderby('weight','asc')->get();    
+                        $mn = RbacMenu::where('is_deleted', 0)->where('sub_parent', $s->id)->orderby('weight','asc')->get();    
                         $menu .= $this->build_menu($s);
 
                         if($mn != null){
@@ -117,7 +115,7 @@ class MenuController extends Controller
         foreach ($list as $id => $value) {
             $weight++;
 
-            $menu = RbacMenu::on($this->getConnectionName())->find($id);
+            $menu = RbacMenu::find($id);
 
             if($value != 'null'){
                 $menu->parent = $value;
@@ -148,11 +146,10 @@ class MenuController extends Controller
     public function create()
     {
         $menu = new RbacMenu;
-        $menu->setDynamicConnection();
 
-        $parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', 0)->get();
+        $parents = RbacMenu::where('is_deleted', 0)->where('parent', 0)->get();
 
-        $sub_parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', '!=', 0)->get();
+        $sub_parents = RbacMenu::where('is_deleted', 0)->where('parent', '!=', 0)->get();
 
         $icons = Icon::all();
 
@@ -171,16 +168,12 @@ class MenuController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $menu = new RbacMenu;
-        $menu->setDynamicConnection();
         $menu->fill($request->except('_token'));
 
-        $parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', 0)->get();
+        $parents = RbacMenu::where('is_deleted', 0)->where('parent', 0)->get();
 
-        $sub_parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', '!=', 0)->get();
+        $sub_parents = RbacMenu::where('is_deleted', 0)->where('parent', '!=', 0)->get();
 
         $icons = Icon::all();
 
@@ -225,11 +218,11 @@ class MenuController extends Controller
     */
     public function edit($id)
     {
-        $menu = RbacMenu::on($this->getConnectionName())->find($id);
+        $menu = RbacMenu::find($id);
 
-        $parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', 0)->get();
+        $parents = RbacMenu::where('is_deleted', 0)->where('parent', 0)->get();
 
-        $sub_parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', '!=', 0)->get();
+        $sub_parents = RbacMenu::where('is_deleted', 0)->where('parent', '!=', 0)->get();
 
         $icons = Icon::all();
 
@@ -247,16 +240,13 @@ class MenuController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $menu = RbacMenu::on($this->getConnectionName())->find($id);
+        $menu = RbacMenu::find($id);
         $menu->fill($request->except('_token'));
         $menu->sub_parent = 0;
 
-        $parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', 0)->get();
+        $parents = RbacMenu::where('is_deleted', 0)->where('parent', 0)->get();
 
-        $sub_parents = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', '!=', 0)->get();
+        $sub_parents = RbacMenu::where('is_deleted', 0)->where('parent', '!=', 0)->get();
 
         $icons = Icon::all();
 
@@ -281,10 +271,7 @@ class MenuController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $menu = RbacMenu::on($this->getConnectionName())->find($id);
+        $menu = RbacMenu::find($id);
         $menu->is_deleted = 1;
 
         if($menu->save()){

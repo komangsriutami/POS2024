@@ -40,15 +40,14 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use App\Traits\DynamicConnectionTrait;
 
 class ServiceAppController extends BaseController
 {
-    use DynamicConnectionTrait;
+
     public function apiLogin(Request $request)
     {
-        $user = User::on($this->getConnectionName())->where('username', '=', $request->username)->first();
-        $cekuser = User::on($this->getConnectionName())->where('username', '=', $request->username)->count();
+        $user = User::where('username', '=', $request->username)->first();
+        $cekuser = User::where('username', '=', $request->username)->count();
 
         if ($cekuser >= 1) {
             if (Auth::guard()->attempt(['username' => $request->username, 'password' => $request->password], $request->remember)) {
@@ -66,7 +65,7 @@ class ServiceAppController extends BaseController
     public function ef4c2ce3032d8f024c320308d9880a06() {
         $inisial = 'lv';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -96,7 +95,7 @@ class ServiceAppController extends BaseController
     public function f31d5936f25442ecf43a2e4a9aa911d1() {
         $inisial = 'bkl';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -127,7 +126,7 @@ class ServiceAppController extends BaseController
     public function f36c008db00e367c7dae1c4a856e55ca() {
         $inisial = 'pjm';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -158,7 +157,7 @@ class ServiceAppController extends BaseController
     public function ed70a85853284244f63de7fbd08ccea5(){
         $inisial = 'pg';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -189,7 +188,7 @@ class ServiceAppController extends BaseController
     public function f60ba84e9e162c05eaf305d15372e4f4(){
         $inisial = 'tl';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
         			->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -221,7 +220,7 @@ class ServiceAppController extends BaseController
     public function f5dae429688af1c521ad87ac394192c6d(){
         $inisial = 'sg';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -259,7 +258,7 @@ class ServiceAppController extends BaseController
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterApotek::on($this->getConnectionName())->select('id as STORE_NUMBER', 'nama_singkat as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4, 6, 7, 10, 11])->get()->toArray();
+        $list = MasterApotek::select('id as STORE_NUMBER', 'nama_singkat as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4, 6, 7, 10, 11])->get()->toArray();
 
         # add headers for each column in the CSV download
         array_unshift($list, array_keys($list[0]));
@@ -287,7 +286,7 @@ class ServiceAppController extends BaseController
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterObat::on($this->getConnectionName())->select('tb_m_obat.id as NO_SKU', 
+        $list = MasterObat::select('tb_m_obat.id as NO_SKU', 
                             'tb_m_obat.nama as PRODUCT_NAME', 
                             DB::raw('a.satuan as UNIT'), 
                             'tb_m_obat.barcode as BAR_CODE', 
@@ -361,7 +360,7 @@ class ServiceAppController extends BaseController
     }
 
     public function hitung_stok_apotek($var, $apotek) {
-        $list = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$apotek.' as a')
+        $list = DB::table('tb_m_stok_harga_'.$apotek.' as a')
         			->select([DB::raw(''.$var.' as STORE_NUMBER'),
         					'b.id as NO_SKU',
                             'a.stok_akhir as STOCK_AVAILABILITY',
@@ -381,7 +380,7 @@ class ServiceAppController extends BaseController
     public function template_lv() {
         $inisial = 'lv';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -437,7 +436,7 @@ class ServiceAppController extends BaseController
     public function template_bkl() {
         $inisial = 'bkl';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -494,7 +493,7 @@ class ServiceAppController extends BaseController
     public function template_pjm() {
         $inisial = 'pjm';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -551,7 +550,7 @@ class ServiceAppController extends BaseController
     public function template_pg(){
         $inisial = 'pg';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -608,7 +607,7 @@ class ServiceAppController extends BaseController
     public function template_tl(){
         $inisial = 'tl';
 
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.' as a')
                     ->select(['b.id',
                             'b.barcode', 
                             'b.nama', 
@@ -666,14 +665,14 @@ class ServiceAppController extends BaseController
         header('Access-Control-Allow-Methods: *');
         header('Access-Control-Allow-Headers: *');*/
 
-        $user_apoteks = RbacUserApotek::on($this->getConnectionName())->select(['rbac_user_apotek.id_user'])->get(); //->where('id_apotek', $id_apotek)
-        $apoteker = User::on($this->getConnectionName())->where('is_deleted', 0)->get(); //whereIn('id', $user_apoteks)->
+        $user_apoteks = RbacUserApotek::select(['rbac_user_apotek.id_user'])->get(); //->where('id_apotek', $id_apotek)
+        $apoteker = User::where('is_deleted', 0)->get(); //whereIn('id', $user_apoteks)->
         $apoteker = $apoteker->toArray();
-       /* $plus_1 = User::on($this->getConnectionName())->find(1);
+       /* $plus_1 = User::find(1);
         $plus_1 = $plus_1->toArray();
         $apoteker[] = $plus_1;
 
-        $plus_1 = User::on($this->getConnectionName())->find(1);
+        $plus_1 = User::find(1);
         $plus_1 = $plus_1->toArray();
         $apoteker[] = $plus_1;*/
 
@@ -684,8 +683,8 @@ class ServiceAppController extends BaseController
     }
 
     public function cek_absen($id_user, $id_apotek) {
-        $absensi = Absensi::on($this->getConnectionName())->where('id_user', $id_user)->where('id_apotek', $id_apotek)->where('tgl', date('Y-m-d'))->first();
-        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+        $absensi = Absensi::where('id_user', $id_user)->where('id_apotek', $id_apotek)->where('tgl', date('Y-m-d'))->first();
+        $apotek = MasterApotek::find($id_apotek);
 
         $new_array = array();
         if(empty($absensi)) {
@@ -720,16 +719,15 @@ class ServiceAppController extends BaseController
     }
 
     public function send_absen($id_user, $id_apotek, $password, $id_jenis_absen) {
-        $user = User::on($this->getConnectionName())->find($id_user);
+        $user = User::find($id_user);
         $password_ = bcrypt($password);
 
         if(Hash::check($password,$user->password)) {
             // jika password usernya sama
-            $cek_absen_ = Absensi::on($this->getConnectionName())->where('id_user', $id_user)->where('id_apotek', $id_apotek)->where('tgl', date('Y-m-d'))->first();
+            $cek_absen_ = Absensi::where('id_user', $id_user)->where('id_apotek', $id_apotek)->where('tgl', date('Y-m-d'))->first();
 
             if(empty($cek_absen_)) {
                 $cek_absen_ = new Absensi;
-                $cek_absen_->setDynamicConnection();
                 $cek_absen_->id_apotek = $id_apotek;
                 $cek_absen_->id_kasir_aktif = 1;
                 $cek_absen_->id_user = $id_user;
@@ -783,7 +781,7 @@ class ServiceAppController extends BaseController
     public function list_data_rekap_absensi_per_bulan($id_user, $tahun) {
         $array_all = array();
 
-        $absensi = Absensi::on($this->getConnectionName())->select([
+        $absensi = Absensi::select([
                                 DB::raw('YEAR(tgl) as tahun'),
                                 DB::raw('MONTH(tgl) as bulan_ke'),
                                 DB::raw('COUNT(id) as jumlah_kehadiran')
@@ -807,7 +805,7 @@ class ServiceAppController extends BaseController
         $array_all = array();
         $jum_hari = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
 
-        $absensi = Absensi::on($this->getConnectionName())->select([
+        $absensi = Absensi::select([
                                 'tb_absensi.id',
                                 'tb_absensi.tgl',
                                 'tb_absensi.id_apotek',
@@ -840,10 +838,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterGroupApotek::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterGroupApotek::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -865,10 +863,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterApotek::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterApotek::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -889,10 +887,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = User::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = User::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = User::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = User::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -913,10 +911,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterSuplier::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterSuplier::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -937,10 +935,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterGolonganObat::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterGolonganObat::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -961,10 +959,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterPenandaanObat::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterPenandaanObat::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -985,10 +983,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterProdusen::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterProdusen::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -1009,10 +1007,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterSatuan::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterSatuan::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -1033,10 +1031,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterMember::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterMember::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -1057,10 +1055,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterApoteker::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterApoteker::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterApoteker::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterApoteker::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -1081,10 +1079,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterKlinik::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterKlinik::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterKlinik::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterKlinik::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }
@@ -1105,10 +1103,10 @@ class ServiceAppController extends BaseController
         $data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
         if(isset($request->key)) {
             if($data['kategori'] == 'all') {
-                $all = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $all = MasterDokter::where('is_deleted', 0)->get();
             } else {
                 if(isset($data['id'])) {
-                    $all = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->where('id', $data['id'])->first();
+                    $all = MasterDokter::where('is_deleted', 0)->where('id', $data['id'])->first();
                 } else {
                     $all = collect();
                 }

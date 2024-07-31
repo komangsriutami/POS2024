@@ -5,12 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
-use App\Traits\DynamicConnectionTrait;
-
 class SkemaGajiDetail extends Model
 {
     use HasFactory;
-    use DynamicConnectionTrait;
     protected $table = 'tb_skema_gaji_detail';
     public $primaryKey = 'id';
     public  $timestamps = false;

@@ -25,11 +25,9 @@ use App\MasterDokter;
 use Auth;
 use Route;
 use Session;
-use App\Traits\DynamicConnectionTrait;
 
 class LoginController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
     |--------------------------------------------------------------------------
     | Login Controller
@@ -68,10 +66,9 @@ class LoginController extends Controller
     public function login_check(Request $request)
     {
         if(!isset($request->kode_apotek)){
-            $user = User::on($this->getConnectionName())->where('username', '=', $request->username)->first();
-            $cekuser = User::on($this->getConnectionName())->where('username', '=', $request->username)->count();
+            $user = User::where('username', '=', $request->username)->first();
+            $cekuser = User::where('username', '=', $request->username)->count();
 
-            session(['user' => $user]);
             if ($cekuser >= 1) {
                 if ($user->is_admin == 1) {
                     if (Auth::guard()->attempt(['username' => $request->username, 'password' => $request->password], $request->remember)) {
@@ -96,28 +93,28 @@ class LoginController extends Controller
                             session(['id_role_active' => $user_roles[0]->id]);
                             $menus = array();
 
-                            $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
+                            $role_permissions = RbacRolePermission::where("id_role", $user_roles[0]->id)->get();
                             foreach ($role_permissions as $role_permission) {
-                                $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                                $permission = RbacPermission::find($role_permission->id_permission);
                                 $actions[] = $permission->nama;
 
                                 $menus[] = $permission->id_menu;
                             }
 
-                            $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                            $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
                             $parents = array();
                             foreach ($menu as $key => $val) {
                                 if ($val->parent == 0) {
-                                    $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                                    $data_parent = RbacMenu::find($val->id);
                                     $parents[] = $data_parent->id;
                                 } else {
-                                    $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                                    $data_parent = RbacMenu::find($val->parent);
                                     $parents[] = $data_parent->id;
                                 }
                             }
 
-                            $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                            $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                             foreach ($parent_menu as $key => $obj) {
                                 $sub_menu = array();
@@ -127,7 +124,7 @@ class LoginController extends Controller
                                         if ($val->parent == $obj->id) {
                                             if ($val->link == "#") {
                                                 $val->link == "#";
-                                                $sub_sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
+                                                $sub_sub_menu = RbacMenu::where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
                                                 $val->subsubmenu = $sub_sub_menu;
                                                 $val->ada_sub_sub = 1;
                                                 $sub_menu[] = $val;
@@ -148,15 +145,15 @@ class LoginController extends Controller
                             }
                         }
 
-                        $apotek_group = MasterGroupApotek::on($this->getConnectionName())->find(Auth::user()->id_group_apotek);
+                        $apotek_group = MasterGroupApotek::find(Auth::user()->id_group_apotek);
                         if(session('id_role_active') == 1) {
-                            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
+                            $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
                         } else {
-                            $cek_apotek_akses = RbacUserApotek::on($this->getConnectionName())->select('id_apotek')->where('id_user', $user->id)->get();
-                            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->whereIn('id', $cek_apotek_akses)->get();
+                            $cek_apotek_akses = RbacUserApotek::select('id_apotek')->where('id_user', $user->id)->get();
+                            $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->whereIn('id', $cek_apotek_akses)->get();
                         }
                         $tahuns = MasterTahun::orderby('id', 'DESC')->get();
-                        $apotek = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->first();
+                        $apotek = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->first();
                         session(['id_tahun_active' => date('Y')]);
                         session(['nama_apotek_singkat_active' => strtolower($apotek->nama_singkat)]);
                         session(['nama_apotek_panjang_active' => $apotek->nama_panjang]);
@@ -194,24 +191,11 @@ class LoginController extends Controller
                 ]);
             }
         } else {
-            $apotek = MasterApotek::on($this->getConnectionName())->where('kode_apotek', $request->kode_apotek)->first();
+            $apotek = MasterApotek::where('kode_apotek', $request->kode_apotek)->first();
             if (!empty($apotek)) {
-                $user = User::on($this->getConnectionName())->where('username', '=', $request->username)->first();
-                if(empty($user)) {
-                    $userx = session('user');
-                    if(empty($userx)) {
-                        return redirect()->intended('login_system')->withErrors([
-                            'username' => 'Session anda telah habis, silakan login kembali.',
-                        ]);
-                    }
-
-                    $user = User::on($this->getConnectionName())->where('id', '=', $user->id)->first();
-                } else {
-                    session(['user' => $user]);
-                }
-
-                $cekuser = User::on($this->getConnectionName())->where('username', '=', $request->username)->count();
-                $cek_apotek_akses = RbacUserApotek::on($this->getConnectionName())->where('id_user', $user->id)->where('id_apotek', $apotek->id)->first();
+                $user = User::where('username', '=', $request->username)->first();
+                $cekuser = User::where('username', '=', $request->username)->count();
+                $cek_apotek_akses = RbacUserApotek::where('id_user', $user->id)->where('id_apotek', $apotek->id)->first();
 
                 if ($cekuser >= 1) {
                     if (!empty($cek_apotek_akses)) {
@@ -237,28 +221,28 @@ class LoginController extends Controller
                                 session(['id_role_active' => $user_roles[0]->id]);
                                 $menus = array();
 
-                                $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
+                                $role_permissions = RbacRolePermission::where("id_role", $user_roles[0]->id)->get();
                                 foreach ($role_permissions as $role_permission) {
-                                    $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                                    $permission = RbacPermission::find($role_permission->id_permission);
                                     $actions[] = $permission->nama;
 
                                     $menus[] = $permission->id_menu;
                                 }
 
-                                $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                                $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
                                 $parents = array();
                                 foreach ($menu as $key => $val) {
                                     if ($val->parent == 0) {
-                                        $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                                        $data_parent = RbacMenu::find($val->id);
                                         $parents[] = $data_parent->id;
                                     } else {
-                                        $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                                        $data_parent = RbacMenu::find($val->parent);
                                         $parents[] = $data_parent->id;
                                     }
                                 }
 
-                                $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                                $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                                 foreach ($parent_menu as $key => $obj) {
                                     $sub_menu = array();
@@ -268,7 +252,7 @@ class LoginController extends Controller
                                             if ($val->parent == $obj->id) {
                                                 if ($val->link == "#") {
                                                     $val->link == "#";
-                                                    $sub_sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
+                                                    $sub_sub_menu = RbacMenu::where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
                                                     $val->subsubmenu = $sub_sub_menu;
                                                     $val->ada_sub_sub = 1;
                                                     $sub_menu[] = $val;
@@ -288,7 +272,7 @@ class LoginController extends Controller
                                     }
                                 }
                             }
-                            $apotek_group = MasterGroupApotek::on($this->getConnectionName())->find($apotek->id_group_apotek);
+                            $apotek_group = MasterGroupApotek::find($apotek->id_group_apotek);
 
                             session(['nama_apotek_singkat_active' => strtolower($apotek->nama_singkat)]);
                             session(['nama_apotek_panjang_active' => $apotek->nama_panjang]);
@@ -296,7 +280,7 @@ class LoginController extends Controller
                             session(['kode_apotek_active' => $apotek->kode_apotek]);
                             session(['id_apotek_active' => $apotek->id]);
 
-                            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
+                            $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
                             $tahuns = MasterTahun::orderby('id', 'DESC')->get();
                             session(['id_tahun_active' => date('Y')]);
 
@@ -349,11 +333,11 @@ class LoginController extends Controller
 
     public function login_outlet_check(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->where('kode_apotek', $request->kode_apotek)->first();
+        $apotek = MasterApotek::where('kode_apotek', $request->kode_apotek)->first();
         if (!empty($apotek)) {
-            $user = User::on($this->getConnectionName())->where('username', '=', $request->username)->first();
-            $cekuser = User::on($this->getConnectionName())->where('username', '=', $request->username)->count();
-            $cek_apotek_akses = RbacUserApotek::on($this->getConnectionName())->where('id_user', $user->id)->where('id_apotek', $apotek->id)->first();
+            $user = User::where('username', '=', $request->username)->first();
+            $cekuser = User::where('username', '=', $request->username)->count();
+            $cek_apotek_akses = RbacUserApotek::where('id_user', $user->id)->where('id_apotek', $apotek->id)->first();
 
             if ($cekuser >= 1) {
                 if (!empty($cek_apotek_akses)) {
@@ -379,28 +363,28 @@ class LoginController extends Controller
                             session(['id_role_active' => $user_roles[0]->id]);
                             $menus = array();
 
-                            $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
+                            $role_permissions = RbacRolePermission::where("id_role", $user_roles[0]->id)->get();
                             foreach ($role_permissions as $role_permission) {
-                                $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                                $permission = RbacPermission::find($role_permission->id_permission);
                                 $actions[] = $permission->nama;
 
                                 $menus[] = $permission->id_menu;
                             }
 
-                            $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                            $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
                             $parents = array();
                             foreach ($menu as $key => $val) {
                                 if ($val->parent == 0) {
-                                    $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                                    $data_parent = RbacMenu::find($val->id);
                                     $parents[] = $data_parent->id;
                                 } else {
-                                    $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                                    $data_parent = RbacMenu::find($val->parent);
                                     $parents[] = $data_parent->id;
                                 }
                             }
 
-                            $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                            $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                             foreach ($parent_menu as $key => $obj) {
                                 $sub_menu = array();
@@ -410,7 +394,7 @@ class LoginController extends Controller
                                         if ($val->parent == $obj->id) {
                                             if ($val->link == "#") {
                                                 $val->link == "#";
-                                                $sub_sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
+                                                $sub_sub_menu = RbacMenu::where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
                                                 $val->subsubmenu = $sub_sub_menu;
                                                 $val->ada_sub_sub = 1;
                                                 $sub_menu[] = $val;
@@ -430,7 +414,7 @@ class LoginController extends Controller
                                 }
                             }
                         }
-                        $apotek_group = MasterGroupApotek::on($this->getConnectionName())->find($apotek->id_group_apotek);
+                        $apotek_group = MasterGroupApotek::find($apotek->id_group_apotek);
 
                         session(['nama_apotek_singkat_active' => strtolower($apotek->nama_singkat)]);
                         session(['nama_apotek_panjang_active' => $apotek->nama_panjang]);
@@ -438,7 +422,7 @@ class LoginController extends Controller
                         session(['kode_apotek_active' => $apotek->kode_apotek]);
                         session(['id_apotek_active' => $apotek->id]);
 
-                        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
+                        $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
                         $tahuns = MasterTahun::orderby('id', 'DESC')->get();
                         session(['id_tahun_active' => date('Y')]);
 
@@ -479,8 +463,8 @@ class LoginController extends Controller
 
     public function login_admin_check(Request $request)
     {
-        $user = User::on($this->getConnectionName())->where('username', '=', $request->username)->first();
-        $cekuser = User::on($this->getConnectionName())->where('username', '=', $request->username)->count();
+        $user = User::where('username', '=', $request->username)->first();
+        $cekuser = User::where('username', '=', $request->username)->count();
 
         if ($cekuser >= 1) {
             if ($user->is_admin == 1) {
@@ -506,28 +490,28 @@ class LoginController extends Controller
                         session(['id_role_active' => $user_roles[0]->id]);
                         $menus = array();
 
-                        $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
+                        $role_permissions = RbacRolePermission::where("id_role", $user_roles[0]->id)->get();
                         foreach ($role_permissions as $role_permission) {
-                            $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                            $permission = RbacPermission::find($role_permission->id_permission);
                             $actions[] = $permission->nama;
 
                             $menus[] = $permission->id_menu;
                         }
 
-                        $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                        $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
                         $parents = array();
                         foreach ($menu as $key => $val) {
                             if ($val->parent == 0) {
-                                $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                                $data_parent = RbacMenu::find($val->id);
                                 $parents[] = $data_parent->id;
                             } else {
-                                $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                                $data_parent = RbacMenu::find($val->parent);
                                 $parents[] = $data_parent->id;
                             }
                         }
 
-                        $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                        $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                         foreach ($parent_menu as $key => $obj) {
                             $sub_menu = array();
@@ -537,7 +521,7 @@ class LoginController extends Controller
                                     if ($val->parent == $obj->id) {
                                         if ($val->link == "#") {
                                             $val->link == "#";
-                                            $sub_sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
+                                            $sub_sub_menu = RbacMenu::where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
                                             $val->subsubmenu = $sub_sub_menu;
                                             $val->ada_sub_sub = 1;
                                             $sub_menu[] = $val;
@@ -558,9 +542,9 @@ class LoginController extends Controller
                         }
                     }
 
-                    $apotek_group = MasterGroupApotek::on($this->getConnectionName())->find(Auth::user()->id_group_apotek);
+                    $apotek_group = MasterGroupApotek::find(Auth::user()->id_group_apotek);
 
-                    $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
+                    $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', Auth::user()->id_group_apotek)->get();
                     $tahuns = MasterTahun::orderby('id', 'DESC')->get();
                     session(['id_tahun_active' => date('Y')]);
 
@@ -641,13 +625,13 @@ class LoginController extends Controller
 
     public function login_pasien_check(Request $request)
     {
-        $user = MasterPasien::on($this->getConnectionName())->where('email','=',$request->email)->first();
-        $cekuser = MasterPasien::on($this->getConnectionName())->where('email','=',$request->email)->count();
+        $user = MasterPasien::where('email','=',$request->email)->first();
+        $cekuser = MasterPasien::where('email','=',$request->email)->count();
         if($cekuser>=1){
             if (Auth::guard("pasien")->attempt(['email' => $request->email, 'password' => $request->password])) {
                 $role_list = array();
                 $actions = array();
-                $user_roles = RbacRole::on($this->getConnectionName())->whereIn('id',[10])->get();
+                $user_roles = RbacRole::whereIn('id',[10])->get();
                 session(['super_admin' => 0]);
                 foreach ($user_roles as $user_role) {
                     array_push($role_list, $user_role->nama);
@@ -658,28 +642,28 @@ class LoginController extends Controller
                     session(['id_role_active' => $user_roles[0]->id]);
                     $menus = array();
 
-                    $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
+                    $role_permissions = RbacRolePermission::where("id_role", $user_roles[0]->id)->get();
                     foreach ($role_permissions as $role_permission) {
-                        $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                        $permission = RbacPermission::find($role_permission->id_permission);
                         $actions[] = $permission->nama;
 
                         $menus[] = $permission->id_menu;
                     }
 
-                    $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                    $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
                     $parents = array();
                     foreach ($menu as $key => $val) {
                         if ($val->parent == 0) {
-                            $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                            $data_parent = RbacMenu::find($val->id);
                             $parents[] = $data_parent->id;
                         } else {
-                            $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                            $data_parent = RbacMenu::find($val->parent);
                             $parents[] = $data_parent->id;
                         }
                     }
 
-                    $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                    $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                     foreach ($parent_menu as $key => $obj) {
                         $sub_menu = array();
@@ -689,7 +673,7 @@ class LoginController extends Controller
                                 if ($val->parent == $obj->id) {
                                     if ($val->link == "#") {
                                         $val->link == "#";
-                                        $sub_sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
+                                        $sub_sub_menu = RbacMenu::where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
                                         $val->subsubmenu = $sub_sub_menu;
                                         $val->ada_sub_sub = 1;
                                         $sub_menu[] = $val;
@@ -725,7 +709,7 @@ class LoginController extends Controller
                 session(['is_status_login' => '1']);
                 session(['id' => $user['id']]);
 
-                $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
+                $kewarganegaraan = MasterKewarganegaraan::select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
                 if (!is_null($kewarganegaraan)) {
                     session(['kewarganegaraan' => $kewarganegaraan["kewarganegaraan"]]);
                 }
@@ -764,14 +748,14 @@ class LoginController extends Controller
 
     public function login_dokter_check(Request $request)
     {
-        $user = MasterDokter::on($this->getConnectionName())->where('email', '=', $request->email)->first();
-        $cekuser = MasterDokter::on($this->getConnectionName())->where('email', '=', $request->email)->count();
+        $user = MasterDokter::where('email', '=', $request->email)->first();
+        $cekuser = MasterDokter::where('email', '=', $request->email)->count();
 
         if ($cekuser >= 1) {
             if (Auth::guard("dokter")->attempt(['email' => $request->email, 'password' => $request->password])) {
                 $role_list = array();
                 $actions = array();
-                $user_roles = RbacRole::on($this->getConnectionName())->whereIn('id', [7])->get();
+                $user_roles = RbacRole::whereIn('id', [7])->get();
 
                 session(['super_admin' => 0]);
                 foreach ($user_roles as $user_role) {
@@ -783,28 +767,28 @@ class LoginController extends Controller
                     session(['id_role_active' => $user_roles[0]->id]);
                     $menus = array();
 
-                    $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
+                    $role_permissions = RbacRolePermission::where("id_role", $user_roles[0]->id)->get();
                     foreach ($role_permissions as $role_permission) {
-                        $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                        $permission = RbacPermission::find($role_permission->id_permission);
                         $actions[] = $permission->nama;
 
                         $menus[] = $permission->id_menu;
                     }
 
-                    $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                    $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
                     $parents = array();
                     foreach ($menu as $key => $val) {
                         if ($val->parent == 0) {
-                            $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                            $data_parent = RbacMenu::find($val->id);
                             $parents[] = $data_parent->id;
                         } else {
-                            $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                            $data_parent = RbacMenu::find($val->parent);
                             $parents[] = $data_parent->id;
                         }
                     }
 
-                    $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                    $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                     foreach ($parent_menu as $key => $obj) {
                         $sub_menu = array();
@@ -814,7 +798,7 @@ class LoginController extends Controller
                                 if ($val->parent == $obj->id) {
                                     if ($val->link == "#") {
                                         $val->link == "#";
-                                        $sub_sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
+                                        $sub_sub_menu = RbacMenu::where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
                                         $val->subsubmenu = $sub_sub_menu;
                                         $val->ada_sub_sub = 1;
                                         $sub_menu[] = $val;
@@ -835,9 +819,9 @@ class LoginController extends Controller
                     }
                 }
 
-                $apotek_group = MasterGroupApotek::on($this->getConnectionName())->find(Auth::guard('dokter')->user()->id_group_apotek);
+                $apotek_group = MasterGroupApotek::find(Auth::guard('dokter')->user()->id_group_apotek);
 
-                $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $apoteks = MasterApotek::where('is_deleted', 0)->get();
                 $tahuns = MasterTahun::orderby('id', 'DESC')->get();
                 session(['id_tahun_active' => date('Y')]);
 
@@ -874,15 +858,15 @@ class LoginController extends Controller
 
     public function login_apoteker_check(Request $request)
     {
-        $user = MasterApoteker::on($this->getConnectionName())->where('email', '=', $request->email)->first();
-        $cekuser = MasterApoteker::on($this->getConnectionName())->where('email', '=', $request->email)->count();
+        $user = MasterApoteker::where('email', '=', $request->email)->first();
+        $cekuser = MasterApoteker::where('email', '=', $request->email)->count();
 
 
         if ($cekuser >= 1) {
             if (Auth::guard("apoteker")->attempt(['email' => $request->email, 'password' => $request->password])) {
                 $role_list = array();
                 $actions = array();
-                $user_roles = RbacRole::on($this->getConnectionName())->whereIn('id', [9])->get();
+                $user_roles = RbacRole::whereIn('id', [9])->get();
 
                 session(['super_admin' => 0]);
                 foreach ($user_roles as $user_role) {
@@ -894,28 +878,28 @@ class LoginController extends Controller
                     session(['id_role_active' => $user_roles[0]->id]);
                     $menus = array();
 
-                    $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_roles[0]->id)->get();
+                    $role_permissions = RbacRolePermission::where("id_role", $user_roles[0]->id)->get();
                     foreach ($role_permissions as $role_permission) {
-                        $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                        $permission = RbacPermission::find($role_permission->id_permission);
                         $actions[] = $permission->nama;
 
                         $menus[] = $permission->id_menu;
                     }
 
-                    $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+                    $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
                     $parents = array();
                     foreach ($menu as $key => $val) {
                         if ($val->parent == 0) {
-                            $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                            $data_parent = RbacMenu::find($val->id);
                             $parents[] = $data_parent->id;
                         } else {
-                            $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                            $data_parent = RbacMenu::find($val->parent);
                             $parents[] = $data_parent->id;
                         }
                     }
 
-                    $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+                    $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
                     foreach ($parent_menu as $key => $obj) {
                         $sub_menu = array();
@@ -925,7 +909,7 @@ class LoginController extends Controller
                                 if ($val->parent == $obj->id) {
                                     if ($val->link == "#") {
                                         $val->link == "#";
-                                        $sub_sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
+                                        $sub_sub_menu = RbacMenu::where('is_deleted', 0)->where('sub_parent', $val->id)->orderBy('weight')->get();
                                         $val->subsubmenu = $sub_sub_menu;
                                         $val->ada_sub_sub = 1;
                                         $sub_menu[] = $val;
@@ -946,7 +930,7 @@ class LoginController extends Controller
                     }
                 }
 
-                $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $apoteks = MasterApotek::where('is_deleted', 0)->get();
                 $tahuns = MasterTahun::orderby('id', 'DESC')->get();
                 session(['id_tahun_active' => date('Y')]);
 

@@ -5,11 +5,8 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
-
 class TransaksiTDDetail extends Model
 {
-    use DynamicConnectionTrait;
     // ini tabel nota detail penjualan
     protected $table = 'tb_detail_nota_transfer_dokter';
     public $primaryKey = 'id';

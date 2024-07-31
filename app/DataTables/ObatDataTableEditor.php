@@ -72,7 +72,7 @@ class ObatDataTableEditor extends DataTablesEditor
     {
         if(isset($data['id_golongan_obat'])) {
             #echo "update stok";
-            DB::connection($this->getConnectionName())->table('tb_m_obat')->where('id', $model->id)->update(['id_golongan_obat'=> $data['id_golongan_obat'], 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::table('tb_m_obat')->where('id', $model->id)->update(['id_golongan_obat'=> $data['id_golongan_obat'], 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
         }
 

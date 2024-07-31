@@ -19,11 +19,9 @@ use Auth;
 use Dotenv\Validator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use App\Traits\DynamicConnectionTrait;
 
 class M_ApotekerController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -52,8 +50,8 @@ class M_ApotekerController extends Controller
         $order_dir = $order[0]['dir'];
 
         $super_admin = session('super_admin');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterApoteker::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_apoteker.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterApoteker::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_apoteker.*'])
             ->where(function ($query) use ($request, $super_admin) {
                 $query->where('tb_m_apoteker.is_deleted', '=', '0');
                 if ($super_admin == 0) {
@@ -93,21 +91,20 @@ class M_ApotekerController extends Controller
     public function create()
     {
         $apoteker = new MasterApoteker;
-        $apoteker->setDynamicConnection();
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --', '');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --', '');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --', '');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --', '');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --', '');
 
         return view('apoteker.create')->with(compact('apoteker', 'jenis_kelamins', 'agamas', 'kewarganegaraans', 'golongan_darahs', 'group_apoteks'));
@@ -122,26 +119,22 @@ class M_ApotekerController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $apoteker = new MasterApoteker;
-        $apoteker->setDynamicConnection();
         $apoteker->fill($request->except('_token'));
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --', '');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --', '');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --', '');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --', '');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --', '');
 
         $validator = $apoteker->validate();
@@ -177,21 +170,21 @@ class M_ApotekerController extends Controller
     */
     public function edit($id)
     {
-        $apoteker        = MasterApoteker::on($this->getConnectionName())->find($id);
+        $apoteker        = MasterApoteker::find($id);
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --', '');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --', '');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --', '');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --', '');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --', '');
 
         return view('apoteker.edit')->with(compact('apoteker', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'golongan_darahs', 'group_apoteks'));
@@ -206,10 +199,7 @@ class M_ApotekerController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $apoteker = MasterApoteker::on($this->getConnectionName())->find($id);
+        $apoteker = MasterApoteker::find($id);
         $apoteker->fill($request->except('_token'));
 
         $validator = $apoteker->validate();
@@ -232,10 +222,7 @@ class M_ApotekerController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $apoteker = MasterApoteker::on($this->getConnectionName())->find($id);
+        $apoteker = MasterApoteker::find($id);
         $apoteker->is_deleted = 1;
         if ($apoteker->save()) {
             echo 1;
@@ -248,16 +235,14 @@ class M_ApotekerController extends Controller
     public function invite_view(Request $request)
     {
         $apoteker = new MasterApoteker;
-        $apoteker->setDynamicConnection();
         return view('apoteker.invite')->with(compact('apoteker'));
     }
 
     public function invite_submit(Request $request)
     {
-        DB::connection($this->getConnectionName())->beginTransaction(); 
+        DB::beginTransaction();
         try {
             $apoteker = new MasterApoteker;
-            $apoteker->setDynamicConnection();
             $apoteker->fill($request->except('_token'));
 
             $validator = $apoteker->validate_invite();
@@ -273,14 +258,14 @@ class M_ApotekerController extends Controller
 
                 $link = route('confirm_apoteker', $apoteker->remember_token);
                 Mail::to($apoteker->email)->send(new \App\Mail\MailInviteApoteker($apoteker, $link));
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
 
                 session()->flash('success', 'Sukses invite Apoteker!');
                 return redirect('apoteker');
             }
         } catch (\Exception $e) {
             dd($e);
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             session()->flash('error', 'Error!');
             return redirect('apoteker');
         }
@@ -288,21 +273,21 @@ class M_ApotekerController extends Controller
 
     public function invite_confirm(Request $request)
     {
-        $apoteker = MasterApoteker::on($this->getConnectionName())->where('remember_token', $request->token)->first();
+        $apoteker = MasterApoteker::where('remember_token', $request->token)->first();
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --', '');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --', '');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --', '');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --', '');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --', '');
 
         return view('frontend.confirm_invite_apoteker')->with(compact(
@@ -317,26 +302,26 @@ class M_ApotekerController extends Controller
 
     public function invite_confirm_post(Request $request)
     {
-        $apoteker = MasterApoteker::on($this->getConnectionName())->where('id', $request->id)->first();
+        $apoteker = MasterApoteker::where('id', $request->id)->first();
         $apoteker->fill($request->except('_token'));
 
         $validator = $apoteker->validate_confirm_apoteker();
 
         if ($validator->fails()) {
 
-            $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+            $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
             $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --', '');
 
-            $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+            $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
             $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --', '');
 
-            $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+            $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
             $agamas->prepend('-- Pilih Agama --', '');
 
-            $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+            $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
             $golongan_darahs->prepend('-- Pilih Golongan Darah --', '');
 
-            $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $group_apoteks->prepend('-- Pilih Group Apotek --', '');
 
             return view('frontend.confirm_invite_apoteker')

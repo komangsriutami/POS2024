@@ -4,11 +4,8 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Validator;
-use App\Traits\DynamicConnectionTrait;
-
 class MasterPosisi extends Model
 {
-    use DynamicConnectionTrait;
     protected $table = 'tb_m_posisi';
     public $primaryKey = 'id';
     public  $timestamps = false;

@@ -8,11 +8,9 @@ use App\MasterPenandaanObat;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class M_PenandaanObatController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,8 +38,8 @@ class M_PenandaanObatController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPenandaanObat::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_penandaan_obat.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterPenandaanObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_penandaan_obat.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_penandaan_obat.is_deleted','=','0');
         });
@@ -75,7 +73,6 @@ class M_PenandaanObatController extends Controller
     public function create()
     {
     	$penandaan_obat = new MasterPenandaanObat;
-        $penandaan_obat->setDynamicConnection();
 
         return view('penandaan_obat.create')->with(compact('penandaan_obat'));
     }
@@ -89,11 +86,7 @@ class M_PenandaanObatController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $penandaan_obat = new MasterPenandaanObat;
-        $penandaan_obat->setDynamicConnection();
         $penandaan_obat->fill($request->except('_token'));
 
         $validator = $penandaan_obat->validate();
@@ -127,7 +120,7 @@ class M_PenandaanObatController extends Controller
     */
     public function edit($id)
     {
-        $penandaan_obat = MasterPenandaanObat::on($this->getConnectionName())->find($id);
+        $penandaan_obat = MasterPenandaanObat::find($id);
 
         return view('penandaan_obat.edit')->with(compact('penandaan_obat'));
     }
@@ -141,10 +134,7 @@ class M_PenandaanObatController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $penandaan_obat = MasterPenandaanObat::on($this->getConnectionName())->find($id);
+        $penandaan_obat = MasterPenandaanObat::find($id);
         $penandaan_obat->fill($request->except('_token'));
 
         $validator = $penandaan_obat->validate();
@@ -165,10 +155,7 @@ class M_PenandaanObatController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $penandaan_obat = MasterPenandaanObat::on($this->getConnectionName())->find($id);
+        $penandaan_obat = MasterPenandaanObat::find($id);
         $penandaan_obat->is_deleted = 1;
         if($penandaan_obat->save()){
             echo 1;

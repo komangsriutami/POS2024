@@ -28,11 +28,9 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use App\Traits\DynamicConnectionTrait;
 
 class M_MemberController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -61,8 +59,8 @@ class M_MemberController extends Controller
         $order_dir = $order[0]['dir'];
 
         $super_admin = session('super_admin');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterMember::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_member.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterMember::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_member.*'])
         ->where(function($query) use($request, $super_admin){
             $query->where('tb_m_member.is_deleted','=','0');
             if($super_admin == 0) {
@@ -84,7 +82,7 @@ class M_MemberController extends Controller
             return $data->group_apotek->nama_singkat; 
         }) 
         ->editcolumn('total_transaksi', function($data){
-            $getTotal = TransaksiPenjualan::on($this->getConnectionName())->select([
+            $getTotal = TransaksiPenjualan::select([
                             DB::raw('SUM(total_belanja) as total_belanja_fix')
                         ])
                         ->where('id_pasien', $data->id)
@@ -116,24 +114,23 @@ class M_MemberController extends Controller
     public function create()
     {
         $member = new MasterMember;
-        $member->setDynamicConnection();
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $tipe_members      = MasterMemberTipe::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $tipe_members      = MasterMemberTipe::where('is_deleted', 0)->pluck('nama', 'id');
         $tipe_members->prepend('-- Pilih Tipe Member --','');
 
         return view('member.create')->with(compact('member', 'jenis_kelamins', 'agamas', 'kewarganegaraans', 'golongan_darahs', 'group_apoteks', 'tipe_members'));
@@ -148,31 +145,27 @@ class M_MemberController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $member = new MasterMember;
-        $member->setDynamicConnection();
         $member->fill($request->except('_token', 'password'));
         $member->password = md5($request->password);
         $member->activated = 1;
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $tipe_members      = MasterMemberTipe::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $tipe_members      = MasterMemberTipe::where('is_deleted', 0)->pluck('nama', 'id');
         $tipe_members->prepend('-- Pilih Tipe Member --','');
 
         $validator = $member->validate();
@@ -208,24 +201,24 @@ class M_MemberController extends Controller
     */
     public function edit($id)
     {
-        $member        = MasterMember::on($this->getConnectionName())->find($id);
+        $member        = MasterMember::find($id);
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $tipe_members      = MasterMemberTipe::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $tipe_members      = MasterMemberTipe::where('is_deleted', 0)->pluck('nama', 'id');
         $tipe_members->prepend('-- Pilih Tipe Member --','');
 
         return view('member.edit')->with(compact('member', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'golongan_darahs', 'group_apoteks', 'tipe_members'));
@@ -240,10 +233,7 @@ class M_MemberController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $member = MasterMember::on($this->getConnectionName())->find($id);
+        $member = MasterMember::find($id);
         $member->fill($request->except('_token', 'password'));
 
         if(isset($request->is_ganti_password)) {
@@ -272,10 +262,7 @@ class M_MemberController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $member = MasterMember::on($this->getConnectionName())->find($id);
+        $member = MasterMember::find($id);
         $member->is_deleted = 1;
         if($member->save()){
             echo 1;
@@ -286,7 +273,7 @@ class M_MemberController extends Controller
 
     public function GetDetail($id_pasien) {
         $id_pasien = Crypt::decrypt($id_pasien);
-        $data = MasterMember::on($this->getConnectionName())->find($id_pasien);
+        $data = MasterMember::find($id_pasien);
 
         return view('member.detail')->with(compact('data'));
     }
@@ -298,8 +285,8 @@ class M_MemberController extends Controller
         $order_dir = $order[0]['dir'];
 
         $id_pasien = Crypt::decryptString($request->id_user);
-        $user = MasterMember::on($this->getConnectionName())->find($id_pasien);
-        $getTotal = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $user = MasterMember::find($id_pasien);
+        $getTotal = TransaksiPenjualan::select([
                             DB::raw('SUM(total_belanja) as total_belanja_fix')
                         ])
                         ->where('id_pasien', $user->id)
@@ -307,8 +294,8 @@ class M_MemberController extends Controller
                         ->first();
         $total = $getTotal->total_belanja_fix;
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request, $user){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->where('tb_nota_penjualan.id_pasien', $user->id);
@@ -357,8 +344,8 @@ class M_MemberController extends Controller
     }
 
     public function GetExportDetail($tgl_awal, $tgl_akhir) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $trxs = TransaksiPenjualanDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.tgl_nota', 'a.id_pasien'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $trxs = TransaksiPenjualanDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.tgl_nota', 'a.id_pasien'])
                 ->join('tb_nota_penjualan as a', 'a.id', '=', 'tb_detail_nota_penjualan.id_nota')
                 ->where(function($query) use($tgl_awal, $tgl_akhir){
                     $query->whereDate('a.tgl_nota','>=', $tgl_awal);
@@ -371,7 +358,7 @@ class M_MemberController extends Controller
                 })
                 ->get();
 
-        $outlet = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $outlet = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($outlet->nama_singkat);
 
         $collection = collect();
@@ -380,8 +367,8 @@ class M_MemberController extends Controller
         $total_excel=0;
         foreach($trxs as $trx) {
             $no++;
-            $member = MasterMember::on($this->getConnectionName())->find($trx->id_pasien);
-            $barang = MasterObat::on($this->getConnectionName())->find($trx->id_obat);
+            $member = MasterMember::find($trx->id_pasien);
+            $barang = MasterObat::find($trx->id_obat);
             $total = ($trx->harga_jual * $trx->jumlah)-$trx->diskon;
             $array_iterasi[] = count($collection)+2;
             $collection[] = array(

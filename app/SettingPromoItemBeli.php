@@ -5,11 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class SettingPromoItemBeli extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Setting Promo -> item beli
 		Author 	: Sri U.

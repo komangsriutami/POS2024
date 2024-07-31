@@ -5,11 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth; 
-use App\Traits\DynamicConnectionTrait;
 
 class MasterPenandaanObat extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Golongan Oban berdasarkan penandaan 
 		Author 	: Sri U.

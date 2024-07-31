@@ -9,11 +9,9 @@ use App\MasterProvinsi;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class M_KabupatenController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -41,8 +39,8 @@ class M_KabupatenController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKabupaten::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kabupaten.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterKabupaten::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kabupaten.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_kabupaten.is_deleted','=','0');
         });
@@ -79,9 +77,8 @@ class M_KabupatenController extends Controller
     public function create()
     {
     	$kabupaten = new MasterKabupaten;
-        $kabupaten->setDynamicConnection();
 
-    	$provinsis = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+    	$provinsis = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Jenis kabupaten --','');
 
         return view('kabupaten.create')->with(compact('kabupaten', 'provinsis'));
@@ -96,14 +93,10 @@ class M_KabupatenController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $kabupaten = new MasterKabupaten;
-        $kabupaten->setDynamicConnection();
         $kabupaten->fill($request->except('_token'));
 
-        $provinsis = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Jenis kabupaten --','');
 
         $validator = $kabupaten->validate();
@@ -137,9 +130,9 @@ class M_KabupatenController extends Controller
     */
     public function edit($id)
     {
-        $kabupaten = MasterKabupaten::on($this->getConnectionName())->find($id);
+        $kabupaten = MasterKabupaten::find($id);
 
-        $provinsis = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Jenis kabupaten --','');
 
         return view('kabupaten.edit')->with(compact('kabupaten', 'provinsis'));
@@ -154,10 +147,7 @@ class M_KabupatenController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $kabupaten = MasterKabupaten::on($this->getConnectionName())->find($id);
+        $kabupaten = MasterKabupaten::find($id);
         $kabupaten->fill($request->except('_token'));
 
         $validator = $kabupaten->validate();
@@ -178,10 +168,7 @@ class M_KabupatenController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $kabupaten = MasterKabupaten::on($this->getConnectionName())->find($id);
+        $kabupaten = MasterKabupaten::find($id);
         $kabupaten->is_deleted = 1;
         if($kabupaten->save()){
             echo 1;

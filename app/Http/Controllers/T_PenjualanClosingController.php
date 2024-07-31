@@ -9,11 +9,9 @@ use App;
 use Datatables;
 use DB;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class T_PenjualanClosingController extends Controller
 {
-    use DynamicConnectionTrait;
     public function index() {
 
     }
@@ -23,11 +21,7 @@ class T_PenjualanClosingController extends Controller
     }
 
     public function store(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
     	$penjualan_closing = new TransaksiPenjualanClosing;
-        $penjualan_closing->setDynamicConnection();
         $penjualan_closing->fill($request->except('_token'));
         $penjualan_closing->id_apotek_nota = session('id_apotek_active');
         // dd($penjualan_closing);exit();
@@ -54,7 +48,7 @@ class T_PenjualanClosingController extends Controller
         /*$tgl_awal_baru = $tanggal.' 00:00:00';
         $tgl_akhir_baru = $tanggal.' 23:59:59';*/
 
-        /*$cari  = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('created_at','>=', $tgl_awal_baru)
+        /*$cari  = TransaksiPenjualanClosing::whereDate('created_at','>=', $tgl_awal_baru)
                         ->whereDate('created_at','<=', $tgl_akhir_baru)->get();
         if(!empty($cari)) {
             $date = date('Y-m-d', strtotime($tanggal)).' 15:00:00';
@@ -81,10 +75,7 @@ class T_PenjualanClosingController extends Controller
     }
 
     public function update(Request $request, $id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-    	$penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
+    	$penjualan_closing = TransaksiPenjualanClosing::find($id);
         $penjualan_closing->fill($request->except('_token'));
        
         $tanggal = $request->tanggal;
@@ -93,7 +84,7 @@ class T_PenjualanClosingController extends Controller
         /*$tgl_awal_baru = $tanggal.' 00:00:00';
         $tgl_akhir_baru = $tanggal.' 23:59:59';
 
-        $cari  = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('created_at','>=', $tgl_awal_baru)
+        $cari  = TransaksiPenjualanClosing::whereDate('created_at','>=', $tgl_awal_baru)
                         ->whereDate('created_at','<=', $tgl_akhir_baru)->get();
         if(!empty($cari)) {
             $date = date('Y-m-d', strtotime($tanggal)).' 15:00:00';

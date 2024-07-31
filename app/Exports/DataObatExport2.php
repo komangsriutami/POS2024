@@ -41,7 +41,7 @@ class DataObatExport2 implements FromCollection, WithColumnWidths, WithStyles, W
         $id_penandaan_obat = $this->id_penandaan_obat;
         $id_golongan_obat = $this->id_golongan_obat;
         $id_produsen = $this->id_produsen;
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
                         ->select([
                             DB::raw('@rownum  := @rownum  + 1 AS no'),
                             'tb_m_stok_harga_'.$inisial.'.id_obat',
@@ -52,7 +52,8 @@ class DataObatExport2 implements FromCollection, WithColumnWidths, WithStyles, W
                             'tb_m_stok_harga_'.$inisial.'.stok_akhir',
                             'tb_m_produsen.nama as produsen', 
                             'tb_m_penandaan_obat.nama as penandaan_obat', 
-                            'tb_m_golongan_obat.keterangan as golongan_obat'
+                            'tb_m_golongan_obat.keterangan as golongan_obat',
+                            'a.sku'
                         ])
                         ->join('tb_m_obat as a', 'a.id', 'tb_m_stok_harga_'.$inisial.'.id_obat')
                         ->join('tb_m_produsen', 'tb_m_produsen.id', '=', 'a.id_produsen')
@@ -76,7 +77,7 @@ class DataObatExport2 implements FromCollection, WithColumnWidths, WithStyles, W
                         ->get();
 
         $collection = collect();
-        $collection[] = array('No', 'ID', 'Barcode', 'Nama', 'Penandaan Obat', 'Golongan Obat', 'Produsen', 'Harga Beli PPN', 'Harga Jual', 'Stok Akhir'); //1
+        $collection[] = array('No', 'ID', 'SKU', 'Nama', 'Penandaan Obat', 'Golongan Obat', 'Produsen', 'Harga Beli PPN', 'Harga Jual', 'Stok Akhir'); //1
         $no = 0;
         $total = 0;
         foreach ($rekaps as $obj) {
@@ -84,7 +85,7 @@ class DataObatExport2 implements FromCollection, WithColumnWidths, WithStyles, W
             $collection[] = array(
                 $no,
                 $obj->id_obat,
-                $obj->barcode,
+                $obj->sku,
                 $obj->nama,
                 $obj->penandaan_obat,
                 $obj->golongan_obat,

@@ -109,7 +109,7 @@ class ParetoPerMonthSheet implements FromCollection, WithTitle, WithColumnWidths
         $akhir = date('d-m-Y', strtotime($this->tgl_akhir));
 
         foreach ($this->dataCollection as $item) {
-            $stok_akhir = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$this->inisial)
+            $stok_akhir = DB::table('tb_m_stok_harga_'.$this->inisial)
                 ->select(
                     'id_obat',
                     'stok_akhir',

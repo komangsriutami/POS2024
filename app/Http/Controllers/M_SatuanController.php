@@ -8,11 +8,9 @@ use App\MasterSatuan;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class M_SatuanController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -40,8 +38,8 @@ class M_SatuanController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterSatuan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_satuan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterSatuan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_satuan.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_satuan.is_deleted','=','0');
         });
@@ -75,7 +73,6 @@ class M_SatuanController extends Controller
     public function create()
     {
     	$satuan = new MasterSatuan;
-        $satuan->setDynamicConnection();
 
         return view('satuan.create')->with(compact('satuan'));
     }
@@ -89,11 +86,7 @@ class M_SatuanController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $satuan = new MasterSatuan;
-        $satuan->setDynamicConnection();
         $satuan->fill($request->except('_token'));
 
         $validator = $satuan->validate();
@@ -127,7 +120,7 @@ class M_SatuanController extends Controller
     */
     public function edit($id)
     {
-        $satuan 		= MasterSatuan::on($this->getConnectionName())->find($id);
+        $satuan 		= MasterSatuan::find($id);
 
         return view('satuan.edit')->with(compact('satuan'));
     }
@@ -141,11 +134,7 @@ class M_SatuanController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-
-        $satuan = MasterSatuan::on($this->getConnectionName())->find($id);
+        $satuan = MasterSatuan::find($id);
         $satuan->fill($request->except('_token'));
 
         $validator = $satuan->validate();
@@ -166,10 +155,7 @@ class M_SatuanController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $satuan = MasterSatuan::on($this->getConnectionName())->find($id);
+        $satuan = MasterSatuan::find($id);
         $satuan->is_deleted = 1;
         if($satuan->save()){
             echo 1;

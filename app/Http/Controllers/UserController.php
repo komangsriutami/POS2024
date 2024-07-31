@@ -26,11 +26,9 @@ use Excel;
 use Auth;
 use Storage;
 use File;;
-use App\Traits\DynamicConnectionTrait;
 
 class UserController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =================================================================================================================
         For     : Tampilan index data user
@@ -40,7 +38,7 @@ class UserController extends Controller
     */
     public function index()
     {
-        $users = User::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama','id');
+        $users = User::where('is_deleted', 0)->pluck('nama','id');
         $users->prepend('-- Pilih User --', "");
 
         return view('admin.index')->with(compact('users'));
@@ -55,8 +53,8 @@ class UserController extends Controller
     */
     public function list_user(Request $request)
     {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = User::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = User::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 
                 'users.*'])
         ->where(function($query) use($request){
             $query->where('users.is_deleted', 0);
@@ -113,7 +111,7 @@ class UserController extends Controller
     }
 
     public function list_calon_user(Request $request){
-        $users = User::on($this->getConnectionName())->select(DB::raw('CAST(id AS CHAR CHARACTER SET utf8) AS id'), 'nama') 
+        $users = User::select(DB::raw('CAST(id AS CHAR CHARACTER SET utf8) AS id'), 'nama') 
                                     ->where('id', 'LIKE', '%'.$request->q.'%')
                                     ->orWhere('nama', 'LIKE', '%'.$request->q.'%')
                                     ->limit(30)
@@ -146,29 +144,28 @@ class UserController extends Controller
     public function create()
     {
         $user = new User;
-        $user->setDynamicConnection();
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $jabatans = MasterJabatan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $jabatans = MasterJabatan::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $jabatans->prepend('-- Pilih Jabatan --','');
 
-        $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $posisis = MasterPosisi::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         return view('admin.create')->with(compact('user', 'jenis_kelamins', 'agamas', 'kewarganegaraans', 'golongan_darahs', 'group_apoteks', 'jabatans', 'posisis', 'status_karyawans'));
@@ -200,37 +197,33 @@ class UserController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $user = new User;
-        $user->setDynamicConnection();
         $user->fill($request->except('_token', 'password'));
         $user->password = bcrypt($request->password);
         $user->activated = 1;
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $jabatans = MasterJabatan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $jabatans = MasterJabatan::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $jabatans->prepend('-- Pilih Jabatan --','');
 
-        $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $posisis = MasterPosisi::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         $validator = $user->validate();
@@ -255,31 +248,31 @@ class UserController extends Controller
     */
     public function edit($id)
     {
-        $user = User::on($this->getConnectionName())->find($id);
+        $user = User::find($id);
         $user->tgl_lahir = date('Y-m-d', strtotime($user->tgl_lahir));
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $jabatans = MasterJabatan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $jabatans = MasterJabatan::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $jabatans->prepend('-- Pilih Jabatan --','');
 
-        $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $posisis = MasterPosisi::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         return view('admin.edit')->with(compact('user', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'golongan_darahs', 'group_apoteks', 'jabatans', 'posisis', 'status_karyawans'));
@@ -303,10 +296,7 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $user = User::on($this->getConnectionName())->find($id);
+        $user = User::find($id);
         $user->fill($request->except('_token', 'password'));
 
         $from_profile = $request->from_profile;
@@ -316,28 +306,28 @@ class UserController extends Controller
             }
         } 
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $jabatans = MasterJabatan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $jabatans = MasterJabatan::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $jabatans->prepend('-- Pilih Jabatan --','');
 
-        $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $posisis = MasterPosisi::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
         $validator = $user->validate();
@@ -355,11 +345,11 @@ class UserController extends Controller
 
     public function setting_role_akses($id)
     {
-        $user = User::on($this->getConnectionName())->find($id);
-        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $user = User::find($id);
+        $roles = RbacRole::where('is_deleted', 0)->get();
 
         foreach ($roles as $key => $val) {
-            $user_role  = RbacUserRole::on($this->getConnectionName())->where('id_user', $user->id)->where('id_role', $val->id)->first();
+            $user_role  = RbacUserRole::where('id_user', $user->id)->where('id_role', $val->id)->first();
             if(!empty($user_role)) {
                 $val->ada_role = 1;
             } else {
@@ -372,12 +362,12 @@ class UserController extends Controller
 
     public function update_roles_akses(Request $request, $id)
     {
-        $user = User::on($this->getConnectionName())->find($id);
-        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $user = User::find($id);
+        $roles = RbacRole::where('is_deleted', 0)->get();
 
         if(isset($roles)){
             foreach ($roles as $key => $val) {
-                $user_role  = RbacUserRole::on($this->getConnectionName())->where('id_user', $user->id)->where('id_role', $val->id)->first();
+                $user_role  = RbacUserRole::where('id_user', $user->id)->where('id_role', $val->id)->first();
                 if(!empty($user_role)) {
                     $val->ada_role = 1;
                 } else {
@@ -404,8 +394,7 @@ class UserController extends Controller
         $no = $counter+1;
 
         $user_role = new RbacUserRole;
-        $user_role->setDynamicConnection();
-        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $roles = RbacRole::where('is_deleted', 0)->get();
 
         return view('admin._role_detail_form')->with(compact('user_role','no','roles'));
     }
@@ -418,10 +407,7 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $user = User::on($this->getConnectionName())->find($id);
+        $user = User::find($id);
         $user->user_roles()->delete();
         $user->is_deleted = 1;
         if($user->save()){
@@ -433,40 +419,40 @@ class UserController extends Controller
 
     public function profile() {
         $id = Auth::user()->id;
-        $user = User::on($this->getConnectionName())->find($id);
+        $user = User::find($id);
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+        $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
         $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-        $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+        $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
         $agamas->prepend('-- Pilih Agama --','');
 
-        $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+        $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
         $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-        $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-        $jabatans = MasterJabatan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $jabatans = MasterJabatan::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $jabatans->prepend('-- Pilih Jabatan --','');
 
-        $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+        $posisis = MasterPosisi::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
         $posisis->prepend('-- Pilih Posisi --','');
 
-        $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
+        $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
         $status_karyawans->prepend('-- Pilih Status --','');
 
-        $ttd = DB::connection($this->getConnectionName())->table('tb_users_ttd')->where('id_user', $user->id)->first();
+        $ttd = DB::table('tb_users_ttd')->where('id_user', $user->id)->first();
 
         return view('admin.profile')->with(compact('user', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'golongan_darahs', 'group_apoteks', 'jabatans', 'posisis', 'status_karyawans', 'ttd'));
     }
 
     public function ubah_password($id) 
     {
-        $user = User::on($this->getConnectionName())->find($id);
+        $user = User::find($id);
 
         return view('admin.ubah_password')->with(compact('user'));
     }
@@ -480,10 +466,8 @@ class UserController extends Controller
     */
     public function update_profile(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $user = User::on($this->getConnectionName())->find($id);
+
+        $user = User::find($id);
         $url_file = $user->file;
         $user->fill($request->except('_token', 'password'));
 
@@ -496,28 +480,28 @@ class UserController extends Controller
 
         $validator = $user->validate();
         if($validator->fails()){
-            $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+            $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
             $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-            $kewarganegaraans = MasterKewarganegaraan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
+            $kewarganegaraans = MasterKewarganegaraan::where('is_deleted', 0)->pluck('kewarganegaraan', 'id');
             $kewarganegaraans->prepend('-- Pilih Kewarganegaraan --','');
 
-            $agamas = MasterAgama::on($this->getConnectionName())->where('is_deleted', 0)->pluck('agama', 'id');
+            $agamas = MasterAgama::where('is_deleted', 0)->pluck('agama', 'id');
             $agamas->prepend('-- Pilih Agama --','');
 
-            $golongan_darahs = MasterGolonganDarah::on($this->getConnectionName())->where('is_deleted', 0)->pluck('golongan_darah', 'id');
+            $golongan_darahs = MasterGolonganDarah::where('is_deleted', 0)->pluck('golongan_darah', 'id');
             $golongan_darahs->prepend('-- Pilih Golongan Darah --','');
 
-            $group_apoteks      = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+            $group_apoteks      = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
             $group_apoteks->prepend('-- Pilih Group Apotek --','');
 
-            $jabatans = MasterJabatan::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+            $jabatans = MasterJabatan::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
             $jabatans->prepend('-- Pilih Jabatan --','');
 
-            $posisis = MasterPosisi::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
+            $posisis = MasterPosisi::where('is_deleted', 0)->where('id_group_apotek', session('id_apotek_active'))->pluck('nama', 'id');
             $posisis->prepend('-- Pilih Posisi --','');
 
-            $status_karyawans = MasterStatusKaryawan::on($this->getConnectionName())->pluck('nama', 'id');
+            $status_karyawans = MasterStatusKaryawan::pluck('nama', 'id');
             $status_karyawans->prepend('-- Pilih Status --','');
 
             return view('profile')->with(compact('user', 'jenis_kelamins', 'kewarganegaraans', 'agamas', 'golongan_darahs', 'group_apoteks', 'jabatans', 'posisis', 'status_karyawans'))->withErrors($validator);
@@ -543,11 +527,11 @@ class UserController extends Controller
                     $ttd = file_get_contents($path);
                     $base64 = base64_encode($ttd);
 
-                    $cek = DB::connection($this->getConnectionName())->table('tb_users_ttd')->where('id_user', $user->id)->first();
+                    $cek = DB::table('tb_users_ttd')->where('id_user', $user->id)->first();
                     if(is_null($cek)) {
-                        DB::connection($this->getConnectionName())->table('tb_users_ttd')->insert(['id_user' => $user->id, 'image' => $base64, 'created_at' => date('Y-m-d H:i:s')]);
+                        DB::table('tb_users_ttd')->insert(['id_user' => $user->id, 'image' => $base64, 'created_at' => date('Y-m-d H:i:s')]);
                     } else {
-                        DB::connection($this->getConnectionName())->table('tb_users_ttd')->where('id_user', $user->id)->update(['image' => $base64, 'updated_at' => date('Y-m-d H:i:s')]);
+                        DB::table('tb_users_ttd')->where('id_user', $user->id)->update(['image' => $base64, 'updated_at' => date('Y-m-d H:i:s')]);
                     }
 
                     # SRI | hapus image
@@ -571,11 +555,11 @@ class UserController extends Controller
 
     public function setting_apotek_akses($id)
     {
-        $user = User::on($this->getConnectionName())->find($id);
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', $user->id_group_apotek)->get();
+        $user = User::find($id);
+        $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', $user->id_group_apotek)->get();
 
         foreach ($apoteks as $key => $val) {
-            $user_apotek  = RbacUserApotek::on($this->getConnectionName())->where('id_user', $user->id)->where('id_apotek', $val->id)->first();
+            $user_apotek  = RbacUserApotek::where('id_user', $user->id)->where('id_apotek', $val->id)->first();
             if(!empty($user_apotek)) {
                 $val->ada_apotek = 1;
             } else {
@@ -588,12 +572,12 @@ class UserController extends Controller
 
     public function update_apotek_akses(Request $request, $id)
     {
-        $user = User::on($this->getConnectionName())->find($id);
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id_group_apotek', $user->id_group_apotek)->get();
+        $user = User::find($id);
+        $apoteks = MasterApotek::where('is_deleted', 0)->where('id_group_apotek', $user->id_group_apotek)->get();
 
         if(isset($apoteks)){
             foreach ($apoteks as $key => $val) {
-                $user_apotek  = RbacUserApotek::on($this->getConnectionName())->where('id_user', $user->id)->where('id_apotek', $val->id)->first();
+                $user_apotek  = RbacUserApotek::where('id_user', $user->id)->where('id_apotek', $val->id)->first();
                 if(!empty($user_apotek)) {
                     $val->ada_apotek = 1;
                 } else {

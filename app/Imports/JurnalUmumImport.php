@@ -49,7 +49,7 @@ class JurnalUmumImport implements ToCollection
             $idjurnal = '';
             $lasttrx = '';
 
-            $kodeakun = MasterKodeAkun::on($this->getConnectionName())->whereNull("deleted_by")->get();
+            $kodeakun = MasterKodeAkun::whereNull("deleted_by")->get();
 
             $total_debit = 0;
             $total_kredit = 0;
@@ -62,8 +62,6 @@ class JurnalUmumImport implements ToCollection
 
 
                         $jurnaldetail = new JurnalUmumDetail;
-                        $jurnaldetail->setDynamicConnection();
-
 
                         if(!is_null($row[0])){
                             // dd("sini");

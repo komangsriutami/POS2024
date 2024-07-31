@@ -9,11 +9,8 @@ use App\MasterJenisprovinsi;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
-
 class M_ProvinsiController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -41,8 +38,8 @@ class M_ProvinsiController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterProvinsi::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_provinsi.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterProvinsi::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_provinsi.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_provinsi.is_deleted','=','0');
         });
@@ -76,7 +73,6 @@ class M_ProvinsiController extends Controller
     public function create()
     {
     	$provinsi = new MasterProvinsi;
-        $provinsi->setDynamicConnection();
 
         return view('provinsi.create')->with(compact('provinsi'));
     }
@@ -90,11 +86,7 @@ class M_ProvinsiController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $provinsi = new MasterProvinsi;
-        $provinsi->setDynamicConnection();
         $provinsi->fill($request->except('_token'));
 
         $validator = $provinsi->validate();
@@ -128,7 +120,7 @@ class M_ProvinsiController extends Controller
     */
     public function edit($id)
     {
-        $provinsi = MasterProvinsi::on($this->getConnectionName())->find($id);
+        $provinsi = MasterProvinsi::find($id);
 
         return view('provinsi.edit')->with(compact('provinsi'));
     }
@@ -142,10 +134,7 @@ class M_ProvinsiController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $provinsi = MasterProvinsi::on($this->getConnectionName())->find($id);
+        $provinsi = MasterProvinsi::find($id);
         $provinsi->fill($request->except('_token'));
 
         $validator = $provinsi->validate();
@@ -166,10 +155,7 @@ class M_ProvinsiController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $provinsi = MasterProvinsi::on($this->getConnectionName())->find($id);
+        $provinsi = MasterProvinsi::find($id);
         $provinsi->is_deleted = 1;
         if($provinsi->save()){
             echo 1;

@@ -54,11 +54,9 @@ use Excel;
 use Crypt;
 use PDF;
 use Mail;
-use App\Traits\DynamicConnectionTrait;
 
 class T_PenjualanController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -81,8 +79,8 @@ class T_PenjualanController extends Controller
     */
     public function list_penjualan(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses = 0;
@@ -95,8 +93,8 @@ class T_PenjualanController extends Controller
         }
 
         $tanggal = date('Y-m-d');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -262,10 +260,8 @@ class T_PenjualanController extends Controller
     public function create()
     {
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
         $detail_penjualans = new TransaksiPenjualanDetail;
-        $detail_penjualans->setDynamicConnection();
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = date('Y-m-d');
         $var = 1;
@@ -273,11 +269,11 @@ class T_PenjualanController extends Controller
         $is_kredit = 0;
         $is_margin = 0;
 
-        $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
         $members->prepend('-- Pilih Member --','');
         $hak_akses = 1;
 
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses_margin = 0;
@@ -301,16 +297,12 @@ class T_PenjualanController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $penjualan = new TransaksiPenjualan;
-            $penjualan->setDynamicConnection();
             $penjualan->fill($request->except('_token'));
             if($request->is_kredit == 1) {
-                $vendor = MasterVendor::on($this->getConnectionName())->find($request->id_vendor);
+                $vendor = MasterVendor::find($request->id_vendor);
                 $penjualan->id_vendor = $request->id_vendor;
                 $penjualan->diskon_vendor = $vendor->diskon;
                 $penjualan->tgl_jatuh_tempo = $request->tgl_jatuh_tempo;
@@ -355,22 +347,22 @@ class T_PenjualanController extends Controller
             $penjualan->is_penjualan_tanpa_item = $is_penjualan_tanpa_item;
 
             if(!empty($penjualan->id_jasa_resep)) {
-                $biaya_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+                $biaya_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
                 $penjualan->biaya_resep = $biaya_resep->biaya;
             }
            
             $tanggal = date('Y-m-d');
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
-            $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+            $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
             $members->prepend('-- Pilih Member --','');
 
             $validator = $penjualan->validate();
             if($validator->fails()){
                 $var = 0;
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
                 /*return view('penjualan.create')->with(compact('penjualan', 'apotek', 'tanggal', 'detail_penjualans', 'var', 'is_kredit', 'inisial', 'members'))->withErrors($validator);*/
             }else{
@@ -378,20 +370,20 @@ class T_PenjualanController extends Controller
                     $var = 0;
                     //session()->flash('error', 'Item penjualan belum ditambahkan!');
                     /*return view('penjualan.create')->with(compact('penjualan', 'apoteks', 'tanggal', 'detail_penjualans', 'var', 'is_kredit', 'members'))->withErrors($validator);*/
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'id' => $penjualan->id));
                 } else {                   
                     $penjualan->save_from_array($detail_penjualans,1);
                     //session()->flash('success', 'Sukses menyimpan data!');
                     //return redirect('penjualan');
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     //return redirect('penjualan/cetak_nota/'.$penjualan->id);
                     
                     echo json_encode(array('status' => 1, 'id' => $penjualan->id));
                 }
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             //session()->flash('error', 'Error!');
             echo json_encode(array('status' => 0));
             //return redirect('penjualan');
@@ -419,11 +411,11 @@ class T_PenjualanController extends Controller
     */
     public function edit($id)
     {
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $penjualan = TransaksiPenjualan::find($id);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $detail_penjualans = $penjualan->detail_penjualan;
-        /*DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        /*DB::table('tb_detail_nota_penjualan')
                                 ->select('tb_detail_nota_penjualan.id',
                                     'tb_detail_nota_penjualan.id_obat',
                                     'tb_detail_nota_penjualan.id_nota',
@@ -441,10 +433,10 @@ class T_PenjualanController extends Controller
         $tanggal = date('Y-m-d');
         $is_kredit = $penjualan->is_kredit;
 
-        $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
         $members->prepend('-- Pilih Member --','');
 
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses = 0;
@@ -456,13 +448,7 @@ class T_PenjualanController extends Controller
             $hak_akses = 1;
         }
 
-        if($penjualan->total_bayar < 1 AND $penjualan->is_kredit == 0) {
-            if($penjualan->cek_retur[0]->total_cn == 0) {
-                $hak_akses = 1;
-            }
-        }
-
-        $vendor_kerjama = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $vendor_kerjama = MasterVendor::where('is_deleted', 0)->get();
 
         $hak_akses_margin = $hak_akses;
 
@@ -478,16 +464,13 @@ class T_PenjualanController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
+            $penjualan = TransaksiPenjualan::find($id);
             $penjualan->fill($request->except('_token', 'created_at'));
 
             $is_penjualan_tanpa_item = 1;
-            $jum = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $penjualan->id)->where('is_deleted', 0)->count();
+            $jum = TransaksiPenjualanDetail::where('id_nota', $penjualan->id)->where('is_deleted', 0)->count();
             if($jum > 0) {
                 $is_penjualan_tanpa_item = 0;
             } else {
@@ -519,20 +502,20 @@ class T_PenjualanController extends Controller
                 }   
 
                 if(!empty($penjualan->id_jasa_resep)) {
-                    $biaya_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+                    $biaya_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
                     $penjualan->biaya_resep = $biaya_resep->biaya;
                 }
 
                 $detail_penjualans = $request->detail_penjualan;
-                $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+                $apoteks = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
 
-                $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+                $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
                 $members->prepend('-- Pilih Member --','');
 
                 $validator = $penjualan->validate();
                 if($validator->fails()){
                     $var = 0;
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'id' => $penjualan->id));
                     //return view('penjualan.edit')->with(compact('penjualan', 'apoteks', 'var', 'detail_penjualans', 'members'))->withErrors($validator);
                 }else{
@@ -543,13 +526,13 @@ class T_PenjualanController extends Controller
                     $penjualan->save();
                     //session()->flash('success', 'Sukses memperbaharui data!');
                     //return redirect('penjualan')->with('message', 'Sukses menyimpan data');
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     
                     echo json_encode(array('status' => 1, 'id' => $penjualan->id));
                 }
             }     
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0));
         }  
     }
@@ -564,39 +547,36 @@ class T_PenjualanController extends Controller
     */
     public function destroy_back($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
+            $penjualan = TransaksiPenjualan::find($id);
             $penjualan->is_deleted = 1;
             $penjualan->deleted_at = date('Y-m-d H:i:s');
             $penjualan->deleted_by = Auth::user()->id;
 
-            $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $id)->where('is_deleted', 0)->get();
-            $cek = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $id)->where('is_cn', 1)->count();
+            $detail_penjualans = TransaksiPenjualanDetail::where('id_nota', $id)->where('is_deleted', 0)->get();
+            $cek = TransaksiPenjualanDetail::where('id_nota', $id)->where('is_cn', 1)->count();
             if($cek > 0) {
                 echo 0;
             } else {
                 foreach ($detail_penjualans as $key => $val) {
-                    $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($val->id);
+                    $detail_penjualan = TransaksiPenjualanDetail::find($val->id);
                     $detail_penjualan->is_deleted = 1;
                     $detail_penjualan->deleted_at = date('Y-m-d H:i:s');
                     $detail_penjualan->deleted_by = Auth::user()->id;
                     $detail_penjualan->save();
 
-                    $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
+                    $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
                     $jumlah = $detail_penjualan->jumlah;
                     $stok_now = $stok_before->stok_akhir+$jumlah;
 
                     # update ke table stok harga
-                    DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+                    DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
                     # create histori
-                    DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
+                    DB::table('tb_histori_stok_'.$inisial)->insert([
                         'id_obat' => $detail_penjualan->id_obat,
                         'jumlah' => $jumlah,
                         'stok_awal' => $stok_before->stok_akhir,
@@ -611,27 +591,27 @@ class T_PenjualanController extends Controller
                 }
 
                 if($penjualan->save()){
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo 1;
                 }else{
                     echo 0;
                 }
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             session()->flash('error', 'Error!');
             return redirect('penjualan');
         }
     }
 
     public function cari_obat(Request $request) {
-        $obat = MasterObat::on($this->getConnectionName())->where('barcode', $request->barcode)->first();
+        $obat = MasterObat::where('barcode', $request->barcode)->first();
 
         $cek_ = 0;
         $batas_max_hpp = 0;
         if(!empty($obat)) {
             $cek_ = 1;
-            $harga_stok = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$request->inisial)->where('id_obat', $obat->id)->first();
+            $harga_stok = DB::table('tb_m_stok_harga_'.$request->inisial)->where('id_obat', $obat->id)->first();
             $batas_max_hpp = $harga_stok->harga_beli_ppn + (10/100*$harga_stok->harga_beli_ppn);
         } else {
             $harga_stok = array();
@@ -642,17 +622,17 @@ class T_PenjualanController extends Controller
     }
 
     public function cari_obatID(Request $request) {
-        $obat = MasterObat::on($this->getConnectionName())->where('id', $request->id_obat)->first();
+        $obat = MasterObat::where('id', $request->id_obat)->first();
 
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $cek_ = 0;
         $batas_max_hpp = 0;
         if(!empty($obat)) {
             $cek_ = 1;
-            $harga_stok = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
+            $harga_stok = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obat->id)->first();
             $batas_max_hpp = $harga_stok->harga_beli_ppn + (10/100*$harga_stok->harga_beli_ppn);
         } else {
             $harga_stok = array();
@@ -663,7 +643,7 @@ class T_PenjualanController extends Controller
     }
 
     public function cari_obat_dialog(Request $request) {
-        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
+        $obat = MasterObat::find($request->id_obat);
 
         return json_encode($obat);
     }
@@ -674,7 +654,7 @@ class T_PenjualanController extends Controller
     }
 
     public function cari_pasien_dialog(Request $request) {
-        $pasien = MasterMember::on($this->getConnectionName())->find($request->id);
+        $pasien = MasterMember::find($request->id);
 
         return json_encode($pasien);
     }
@@ -688,8 +668,8 @@ class T_PenjualanController extends Controller
     {
         $pasien = $request->pasien;
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterMember::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterMember::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_m_member.*'
         ])
@@ -718,11 +698,11 @@ class T_PenjualanController extends Controller
     public function list_data_obat(Request $request)
     {
         $barcode = $request->barcode;
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = DB::table('tb_m_stok_harga_'.$inisial.' as a')
         ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'a.*',
@@ -777,12 +757,11 @@ class T_PenjualanController extends Controller
 
     public function set_jasa_dokter(Request $request){
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
         if($request->id) {
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($request->id);
+            $penjualan = TransaksiPenjualan::find($request->id);
         }
-        $dokters = MasterDokter::on($this->getConnectionName())->where('is_deleted', 0)->get();
-        $jasa_reseps = MasterJasaResep::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $dokters = MasterDokter::where('is_deleted', 0)->get();
+        $jasa_reseps = MasterJasaResep::where('is_deleted', 0)->get();
         $harga_total = $request->harga_total;
         if(empty($harga_total)) {
             $harga_total = 0;
@@ -798,8 +777,7 @@ class T_PenjualanController extends Controller
 
     public function set_diskon_persen(Request $request){
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
-        $karyawans = User::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $karyawans = User::where('is_deleted', 0)->get();
         $total_penjualan = $request->total_penjualan; 
         $harga_total = $request->harga_total; //+ $request->total_biaya_dokter;
         $diskon_total = $request->diskon_total;
@@ -819,13 +797,12 @@ class T_PenjualanController extends Controller
     public function open_pembayaran(Request $request){
         if($request->id == "") {
             $penjualan = new TransaksiPenjualan;
-            $penjualan->setDynamicConnection();
         } else {
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($request->id);
+            $penjualan = TransaksiPenjualan::find($request->id);
         }
-        $karyawans = User::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $karyawans = User::where('is_deleted', 0)->get();
         $harga_total = $request->harga_total;
-        $kartu_debets = MasterKartu::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $kartu_debets = MasterKartu::where('is_deleted', 0)->get();
 
         if(empty($harga_total)) {
             $harga_total = 0;
@@ -842,15 +819,12 @@ class T_PenjualanController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
+        $detail = TransaksiPenjualanDetail::find($id);
         return view('penjualan._form_edit_detail')->with(compact('detail', 'no'));
     }
 
     public function update_penjualan_detail(Request $request, $id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $detail = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
+        $detail = TransaksiPenjualanDetail::find($id);
         $detail->harga_jual = $request->harga_jual;
         $detail->diskon = $request->diskon;
         $detail->jumlah = $request->jumlah;
@@ -873,14 +847,14 @@ class T_PenjualanController extends Controller
     }
 
     public function cetak_tes($id) {
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('id', $id)->first();
+        $penjualan = TransaksiPenjualan::where('id', $id)->first();
         if($penjualan->id_jasa_resep == "" || $penjualan->id_jasa_resep == 0 || $penjualan->id_jasa_resep == null || $penjualan->id_jasa_resep == '0') {
             $penjualan->jasa_resep = 0;
         } else {
-            $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+            $jasa_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 'tb_detail_nota_penjualan.jumlah',
@@ -892,7 +866,7 @@ class T_PenjualanController extends Controller
                                                ->where('tb_detail_nota_penjualan.id_nota', $id)
                                                ->where('tb_detail_nota_penjualan.is_deleted', 0)
                                                ->get();
-        $apotek = MasterApotek::on($this->getConnectionName())->find($penjualan->id_apotek_nota);
+        $apotek = MasterApotek::find($penjualan->id_apotek_nota);
 
 try {
     //$connector = new WindowsPrintConnector("POS58 Printer");
@@ -957,7 +931,7 @@ try {
             $printer = new Printer($connector);
             $no = 0;
 
-            $nota = TransaksiPenjualan::on($this->getConnectionName())->find($id);
+            $nota = TransaksiPenjualan::find($id);
 
             $active_apotek = session('id_apotek_active');
             if ($active_apotek == 1) {
@@ -1068,14 +1042,14 @@ try {
 
     public function cetak_nota($id)
     {   
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('id', $id)->first();
+        $penjualan = TransaksiPenjualan::where('id', $id)->first();
         if($penjualan->id_jasa_resep == "" || $penjualan->id_jasa_resep == 0 || $penjualan->id_jasa_resep == null || $penjualan->id_jasa_resep == '0') {
             $penjualan->jasa_resep = 0;
         } else {
-            $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+            $jasa_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 DB::raw('(tb_detail_nota_penjualan.jumlah-tb_detail_nota_penjualan.jumlah_cn) as jumlah'),
@@ -1087,7 +1061,7 @@ try {
                                                ->where('tb_detail_nota_penjualan.id_nota', $id)
                                                ->where('tb_detail_nota_penjualan.is_deleted', 0)
                                                ->get();
-        $apotek = MasterApotek::on($this->getConnectionName())->find($penjualan->id_apotek_nota);
+        $apotek = MasterApotek::find($penjualan->id_apotek_nota);
 
         $debet = 0;
         if(!empty($penjualan->id_kartu_debet_credit)) {
@@ -1111,15 +1085,15 @@ try {
 
     public function cetak_retur($id)
     {   
-        $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('id', $detail_penjualan->id_nota)->first();
+        $detail_penjualan = TransaksiPenjualanDetail::find($id);
+        $penjualan = TransaksiPenjualan::where('id', $detail_penjualan->id_nota)->first();
         if($penjualan->id_jasa_resep == "" || $penjualan->id_jasa_resep == 0 || $penjualan->id_jasa_resep == null || $penjualan->id_jasa_resep == '0') {
             $penjualan->jasa_resep = 0;
         } else {
-            $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+            $jasa_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $apotek = MasterApotek::on($this->getConnectionName())->find($penjualan->id_apotek_nota);
+        $apotek = MasterApotek::find($penjualan->id_apotek_nota);
 
         return view('penjualan._form_cetak_retur')->with(compact('penjualan', 'detail_penjualan', 'apotek'));
     } 
@@ -1128,19 +1102,19 @@ try {
         $tanggal = date('Y-m-d H:i:s');
         $jam = date('H:i:s');
         if(Auth::user()->is_admin == 1) {
-            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+            $apoteks = MasterApotek::where('is_deleted', 0)->get();
         } else {
-            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
+            $apoteks = MasterApotek::where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
         }
-        $pasiens = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->get();
-        $users = User::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $pasiens = MasterMember::where('is_deleted', 0)->get();
+        $users = User::where('is_deleted', 0)->get();
         return view('histori.penjualan')->with(compact('pasiens', 'apoteks', 'tanggal', 'jam', 'users'));
     }
 
     public function list_histori(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses = 0;
@@ -1152,11 +1126,11 @@ try {
             $hak_akses = 1;
         }
 
-        $last_so = SettingStokOpnam::on($this->getConnectionName())->where('id_apotek', session('id_apotek_active'))->orderBy('id', 'DESC')->first();
+        $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->orderBy('id', 'DESC')->first();
 
         $tanggal = date('Y-m-d');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -1323,8 +1297,8 @@ try {
         $date2 = date('Y-m-d', strtotime($date2));
 
         $tanggal = date('Y-m-d');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
                 DB::raw('SUM(tb_detail_nota_penjualan.jumlah * tb_detail_nota_penjualan.harga_jual - tb_detail_nota_penjualan.diskon) AS total')
@@ -1399,18 +1373,18 @@ try {
 
     public function detail($id)
     {
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $penjualan = TransaksiPenjualan::find($id);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $detail_penjualans = $penjualan->detail_penjualan;
         $var = 3;
         $tanggal = date('Y-m-d');
         $is_kredit = $penjualan->is_kredit;
 
-        $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
         $members->prepend('-- Pilih Member --','');
 
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
@@ -1421,39 +1395,31 @@ try {
             $hak_akses = 1;
         }
 
-        if($penjualan->total_bayar < 1 AND $penjualan->is_kredit == 0) {
-            if($penjualan->cek_retur[0]->total_cn == 0) {
-                $hak_akses = 1;
-            }
-        }
-
         $hak_akses_margin = $hak_akses;
 
-        $vendor_kerjama = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $vendor_kerjama = MasterVendor::where('is_deleted', 0)->get();
 
         return view('penjualan.detail')->with(compact('penjualan', 'tanggal', 'detail_penjualans', 'var', 'is_kredit', 'inisial', 'apotek', 'members', 'hak_akses', 'vendor_kerjama', 'hak_akses_margin'));
     }
 
     public function create_credit() {
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
         $detail_penjualans = new TransaksiPenjualanDetail;
-        $detail_penjualans->setDynamicConnection();
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = date('Y-m-d');
         $var = 1;
 
-        $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
         $members->prepend('-- Pilih Member --','');
 
         $is_kredit = 1;
         $is_margin = 0;
-        $vendor_kerjama = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $vendor_kerjama = MasterVendor::where('is_deleted', 0)->get();
 
         $hak_akses = 1;
 
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses_margin = 0;
@@ -1469,7 +1435,7 @@ try {
     }
 
     public function kredit() {
-        $vendor_kerjamas      = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $vendor_kerjamas      = MasterVendor::where('is_deleted', 0)->pluck('nama', 'id');
         $vendor_kerjamas->prepend('-- Pilih Vendor --','');
 
         return view('histori.penjualan_kredit')->with(compact('vendor_kerjamas'));
@@ -1488,8 +1454,8 @@ try {
         $date1 = date('Y-m-d', strtotime($date1));
         $date2 = date('Y-m-d', strtotime($date2));
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
@@ -1501,8 +1467,8 @@ try {
         }
 
         $tanggal = date('Y-m-d');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -1628,14 +1594,14 @@ try {
 
     public function pembayaran_kredit($id)
     {   
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('id', $id)->first();
+        $penjualan = TransaksiPenjualan::where('id', $id)->first();
         if($penjualan->id_jasa_resep == "" || $penjualan->id_jasa_resep == 0 || $penjualan->id_jasa_resep == null || $penjualan->id_jasa_resep == '0') {
             $penjualan->jasa_resep = 0;
         } else {
-            $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+            $jasa_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 'tb_detail_nota_penjualan.jumlah',
@@ -1649,9 +1615,9 @@ try {
                                                ->where('tb_detail_nota_penjualan.is_deleted', 0)
                                                ->get();
 
-        $kartu_debets = MasterKartu::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $kartu_debets = MasterKartu::where('is_deleted', 0)->get();
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
 
         /*echo $penjualan->diskon_persen;exit()*/
 
@@ -1677,7 +1643,7 @@ try {
                 echo json_encode(array('status' =>5));
             } else {
                 if($kembalian >= 0) {
-                    $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
+                    $penjualan = TransaksiPenjualan::find($id);
                     $penjualan->cash = $cash;
                     $penjualan->id_kartu_debet_credit = $id_kartu_debet_credit_input;
                     $penjualan->no_kartu = $no_kartu;
@@ -1715,8 +1681,8 @@ try {
         $details = $request->id_detail;
         $i = 0;
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $apoteker = $apoteker->toArray();
         //$email = $apoteker->email;
         $email = $apoteker['email'];
@@ -1724,7 +1690,7 @@ try {
         $array_ = array();
         foreach ($details as $key => $val) {
             $new_ = array();
-            $det_ = TransaksiPenjualanDetail::on($this->getConnectionName())->find($val);
+            $det_ = TransaksiPenjualanDetail::find($val);
             $det_->is_cn = 1;
             $det_->is_cn = 1;
             $det_->cn_at = date('Y-m-d H:i:s');
@@ -1740,10 +1706,10 @@ try {
             } 
         }
 
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id_nota);
+        $penjualan = TransaksiPenjualan::find($id_nota);
         $penjualan->created_at = Carbon::parse($penjualan->created_at)->format('d-m-Y H:i:s');
         $penjualan = $penjualan->toArray();
-        $user = User::on($this->getConnectionName())->find(Auth::user()->id);
+        $user = User::find(Auth::user()->id);
         $user = $user->toArray();
         $tanggal = date('d-m-Y H:i:s');
 
@@ -1764,12 +1730,12 @@ try {
 
     public function retur_item(Request $request) {
         $details = explode(",", $request->input('id_detail'));
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->whereIn('id', $details)->get();
+        $detail_penjualans = TransaksiPenjualanDetail::whereIn('id', $details)->get();
         $id_nota = $detail_penjualans[0]->id_nota;
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id_nota);
+        $penjualan = TransaksiPenjualan::find($id_nota);
         $penjualan->created_at = Carbon::parse($penjualan->created_at)->format('d-m-Y H:i:s');
 
         return view('retur.retur_penjulan')->with(compact('detail_penjualans', 'penjualan', 'apotek', 'inisial'));
@@ -1777,29 +1743,29 @@ try {
 
     public function set_jumlah_retur(Request $request) {
         $no = $request->no;
-        $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($request->id);
+        $detail_penjualan = TransaksiPenjualanDetail::find($request->id);
 
-        $alasan_returs = MasterAlasanRetur::on($this->getConnectionName())->where('is_deleted', 0)->pluck('alasan', 'id');
+        $alasan_returs = MasterAlasanRetur::where('is_deleted', 0)->pluck('alasan', 'id');
         $alasan_returs->prepend('-- Pilih Alasan Retur --','');
 
         return view('penjualan._form_set_jumlah_retur')->with(compact('detail_penjualan', 'no', 'alasan_returs'));
     }
 
     public function update_retur(Request $request, $id) {
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             if($request->jumlah_cn > 0) {
                 $array_ = array();
                 $i = 0;
-                $obj = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
-                $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($obj->id_nota);
-                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-                $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+                $obj = TransaksiPenjualanDetail::find($id);
+                $penjualan = TransaksiPenjualan::find($obj->id_nota);
+                $apotek = MasterApotek::find(session('id_apotek_active'));
+                $apoteker = User::find($apotek->id_apoteker);
                 $apoteker = $apoteker->toArray();
                 $email = $apoteker['email'];
                 //$email = 'sriutami821@gmail.com';
                 
-                $user = User::on($this->getConnectionName())->find(Auth::user()->id);
+                $user = User::find(Auth::user()->id);
                 $user = $user->toArray();
                 $tanggal = date('d-m-Y H:i:s');
 
@@ -1812,10 +1778,9 @@ try {
                     $obj->alasan_lain = $request->alasan_lain;
 
                     // buat histori  retur
-                    /*$retur_penjulan = ReturPenjualan::on($this->getConnectionName())->where('id_detail_nota', $obj->id)->where('is_deleted', 0)->first();
+                    /*$retur_penjulan = ReturPenjualan::where('id_detail_nota', $obj->id)->where('is_deleted', 0)->first();
                     if(empty($retur_penjulan)) {
-                        $retur_penjulan = new ReturPenjualan;  
-                        $retur_penjulan->setDynamicConnection();  
+                        $retur_penjulan = new ReturPenjualan;    
                     }
 
                     $retur_penjulan->id_detail_nota = $obj->id;
@@ -1827,13 +1792,13 @@ try {
 
                     if($retur_penjulan->save()){
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         echo json_encode(array('status' => 0, 'message' => 'Gagal menyimpan data!'));
                     }
                     $obj->id_retur_penjualan = $retur_penjulan->id;*/
 
                     if($obj->save()) {
-                        DB::connection($this->getConnectionName())->commit();
+                        DB::commit();
 
                         $new_ = $obj->toArray();
                         $new_['nama_obat'] = $obj->obat->nama;
@@ -1849,15 +1814,15 @@ try {
                         echo json_encode(array('status' => 1, 'message' => 'Sukses menyimpan data!'));
                     }
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Gagal menyimpan data! Pastikan jumlah retur tidak melebihi jumlah penjualan!'));
                 }
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Gagal menyimpan data! Pastikan jumlah retur telah terisi lebih dari 0!'));
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0, 'message' => $e->getMessage()));
         }
     }
@@ -1869,16 +1834,16 @@ try {
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
             $hak_akses = 1;
         }
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
         ])
@@ -1969,8 +1934,8 @@ try {
     }
 
     public function batal_retur(Request $request) {
-        $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($request->id);
-        $retur_penjulan = ReturPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_retur_penjualan);
+        $detail_penjualan = TransaksiPenjualanDetail::find($request->id);
+        $retur_penjulan = ReturPenjualan::find($detail_penjualan->id_retur_penjualan);
         $retur_penjulan->is_deleted = 1;
         $retur_penjulan->deleted_at = date('Y-m-d H:i:s');
         $retur_penjulan->deleted_by = Auth::user()->id;
@@ -2015,16 +1980,16 @@ try {
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
             $hak_akses = 1;
         }
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
                 //DB::Raw('IFNULL(a.is_approved, 0) as is_approved'),
@@ -2131,16 +2096,16 @@ try {
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
             $hak_akses = 1;
         }
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
                 DB::Raw('IFNULL(a.is_approved, 0) as is_approved'),
@@ -2236,28 +2201,28 @@ try {
     }
 
     public function retur_aprove($id) {
-        $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
-        $retur_penjulan = ReturPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_retur_penjualan);
+        $detail_penjualan = TransaksiPenjualanDetail::find($id);
+        $retur_penjulan = ReturPenjualan::find($detail_penjualan->id_retur_penjualan);
 
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_nota);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($penjualan->id_apotek_nota);
+        $penjualan = TransaksiPenjualan::find($detail_penjualan->id_nota);
+        $apotek = MasterApotek::find($penjualan->id_apotek_nota);
 
         return view('retur._retur_penjualan_aprove')->with(compact('detail_penjualan', 'retur_penjulan', 'penjualan', 'apotek'));
     }
 
     public function retur_aprove_update(Request $request, $id) {
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $act = $request->act; //1 = setuju, 2 = tidak setuju
-            $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_nota);
-           // $retur_penjulan = ReturPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_retur_penjualan);
+            $detail_penjualan = TransaksiPenjualanDetail::find($id);
+            $penjualan = TransaksiPenjualan::find($detail_penjualan->id_nota);
+           // $retur_penjulan = ReturPenjualan::find($detail_penjualan->id_retur_penjualan);
             $i = 0;
             // update stok awal ->. histori retur
             //PenjualanRetur::dispatch($detail_penjualan);
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
+            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
             $stok_now = $stok_before->stok_akhir+$detail_penjualan->jumlah_cn;
 
             # update ke table stok harga
@@ -2269,14 +2234,14 @@ try {
             );*/
 
             if($act == 1) {
-                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->first();
+                $stok_harga = MasterStokHarga::where('id_obat', $detail_penjualan->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s');
                 $stok_harga->updated_by = Auth::user()->id;
                 if($stok_harga->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, update master stok gagal'));
                 }
 
@@ -2285,7 +2250,7 @@ try {
                 // );
 
                 # create histori
-                $histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah_cn)->where('id_jenis_transaksi', 5)->where('id_transaksi', $detail_penjualan->id)->first();
+                $histori_stok = HistoriStok::where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah_cn)->where('id_jenis_transaksi', 5)->where('id_transaksi', $detail_penjualan->id)->first();
                 if(empty($histori_stok)) {
                     $histori_stok = new HistoriStok;
                 }
@@ -2303,7 +2268,7 @@ try {
                 $histori_stok->created_by = Auth::user()->id;
                 if($histori_stok->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, gagal create histori stok'));
                 }
                 
@@ -2312,7 +2277,7 @@ try {
                 if(!is_null($detail_penjualan->id_histori_stok_detail)) {
                     $histori_stok_details = json_decode($detail_penjualan->id_histori_stok_detail);
                     foreach ($histori_stok_details as $y => $hist) {
-                        $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
+                        $cekHistori = HistoriStok::find($hist->id_histori_stok);
                         if($i>0) {
                             if($hist->jumlah >= $detail_penjualan->jumlah_cn) {
                                 $keterangan = $cekHistori->keterangan.', Retur Penjualan pada IDdet.'.$detail_penjualan->id.' sejumlah '.$detail_penjualan->jumlah_cn;
@@ -2321,7 +2286,7 @@ try {
                                 $i = $i-$detail_penjualan->jumlah_cn;
                                 if($cekHistori->save()) {
                                 } else {
-                                    DB::connection($this->getConnectionName())->rollback();
+                                    DB::rollback();
                                     echo json_encode(array('status' => 0, 'message' => 'Error, gagal update stok sebelumnya'));
                                 }
                             } else {
@@ -2331,14 +2296,14 @@ try {
                                 $i = $i-$hist->jumlah;
                                 if($cekHistori->save()) {
                                 } else {
-                                    DB::connection($this->getConnectionName())->rollback();
+                                    DB::rollback();
                                     echo json_encode(array('status' => 0, 'message' => 'Error, gagal update stok sebelumnya'));
                                 }
                             }
                         }
                     }
                 } else {
-                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)
+                    $cekHistori = HistoriStok::where('id_obat', $detail_penjualan->id_obat)
                                     ->whereIn('id_jenis_transaksi', [2,3,11,9])
                                     ->orderBy('id', 'DESC')
                                     ->first();
@@ -2348,7 +2313,7 @@ try {
                     $cekHistori->keterangan = $keterangan;
                     if($cekHistori->save()) {
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         echo json_encode(array('status' => 0, 'message' => 'Error, gagal update stok sebelumnya'));
                     }
                 }
@@ -2359,10 +2324,10 @@ try {
                 $detail_penjualan->approved_by = Auth::user()->id;
 
                 if($detail_penjualan->save()) {
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo json_encode(array('status' => 1, 'message' => 'Success, retur berhasil disimpan'));
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, gagal aprove retur penjualan'));
                 }
             } else {
@@ -2375,10 +2340,9 @@ try {
                 $obj->jumlah_cn = $request->jumlah_cn;*/
 
                 // buat penjualan ulang
-                /*$penjualan_cek = TransaksiPenjualan::on($this->getConnectionName())->where('id_apotek_nota', session('id_apotek_active'))->orderBy('created_at', 'DESC')->first();
+                /*$penjualan_cek = TransaksiPenjualan::where('id_apotek_nota', session('id_apotek_active'))->orderBy('created_at', 'DESC')->first();
                 $total = ($detail_penjualan->jumlah*$detail_penjualan->harga_jual)-$detail_penjualan->diskon;
                 $penjualan_new = new TransaksiPenjualan;
-                $penjualan_new->setDynamicConnection(); 
                 $penjualan_new->id_apotek_nota = session('id_apotek_active');
                 $penjualan_new->id_pasien = $penjualan->id_pasien;
                 $penjualan_new->diskon_persen = 0;
@@ -2402,12 +2366,11 @@ try {
 
                 if($penjualan_new->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, gagal create pengajuan retur penjualan'));
                 }
 
                 $det_penjualan_new = new TransaksiPenjualanDetail;
-                $det_penjualan_new->setDynamicConnection(); 
                 $det_penjualan_new->id_nota = $penjualan_new->id;
                 $det_penjualan_new->id_obat = $detail_penjualan->id_obat;
                 $det_penjualan_new->harga_jual = $detail_penjualan->harga_jual;
@@ -2418,7 +2381,7 @@ try {
                 $det_penjualan_new->save();
                 if($det_penjualan_new->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, gagal create detail pengajuan retur penjualan'));
                 }*/
 
@@ -2431,25 +2394,25 @@ try {
                 $detail_penjualan->approved_by = Auth::user()->id;
 
                 if($detail_penjualan->save()) {
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo json_encode(array('status' => 1, 'message' => 'Success, retur berhasil disimpan'));
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, gagal aprove retur penjualan'));
                 }
             }  
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0));
         }   
     }
 
     public function lihat_detail_retur($id) {
-        $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
-        $retur_penjulan = ReturPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_retur_penjualan);
+        $detail_penjualan = TransaksiPenjualanDetail::find($id);
+        $retur_penjulan = ReturPenjualan::find($detail_penjualan->id_retur_penjualan);
 
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_nota);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($penjualan->id_apotek_nota);
+        $penjualan = TransaksiPenjualan::find($detail_penjualan->id_nota);
+        $apotek = MasterApotek::find($penjualan->id_apotek_nota);
 
         return view('retur._lihat_detail_retur')->with(compact('detail_penjualan', 'retur_penjulan', 'penjualan', 'apotek'));
     }
@@ -2479,10 +2442,10 @@ try {
 
         if(empty($request->id_apotek)) {
             $id_apotek =  session('id_apotek_active');
-            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+            $apotek = MasterApotek::find($id_apotek);
         } else {
             $id_apotek = $request->id_apotek;
-            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+            $apotek = MasterApotek::find($id_apotek);
         }
 
 
@@ -2493,7 +2456,7 @@ try {
         # buatkan fungsi untuk mendapatkan jumlah penjualan yang sudah dipotong diskon (baik diskon item atau diskon persen atau diskon % dari vendor)
 
 
-       /* $result = DB::on($this->getConnectionName())->select("
+       /* $result = DB::select("
                         SELECT getTotalPenjualan(?, ?, ?, ?) AS total_penjualan_non_kredit
                         UNION ALL
                         SELECT getTotalPenjualan(?, ?, ?, ?) AS total_penjualan_kredit
@@ -2515,7 +2478,7 @@ try {
       //  $total_penjualan_2 = $result[1]->total_penjualan_2;
 
 
-        $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2533,7 +2496,7 @@ try {
 
         //dd($request->tanggal); exit();
 
-        $sql = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $sql = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 ['b.*'])
                         ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
@@ -2548,13 +2511,13 @@ try {
                         ->groupBy('b.id')
                         ->toSql();
 
-        $penjualan = DB::connection($this->getConnectionName())->table(DB::raw("($sql) AS t1"))->select([
+        $penjualan = DB::table(DB::raw("($sql) AS t1"))->select([
                             DB::raw('SUM(t1.debet) AS total_debet')
                         ])
                         ->leftjoin('tb_m_jasa_resep as a','a.id','=','t1.id_jasa_resep')
                         ->first();
 
-        $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan2 =  DB::table('tb_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                 DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -2572,7 +2535,7 @@ try {
                         ->where('tb_nota_penjualan.is_kredit', 0)
                         ->first();
 
-        $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2595,7 +2558,7 @@ try {
         
         /*print_r($detail_penjualan_kredit);exit();*/
         
-        $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan_kredit =  DB::table('tb_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                 DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -2611,7 +2574,7 @@ try {
                         //->groupBy('tb_nota_penjualan.id')
                         ->first();
 
-        $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2630,7 +2593,7 @@ try {
                         ->first();
         /*print_r($detail_penjualan_cn);exit()*/
 
-        $penjualan_cn_cash = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_cn_cash = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan')
                             )
@@ -2647,7 +2610,7 @@ try {
                         ->where('b.is_kredit', 0)
                         ->first();
 
-        $sql2 = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $sql2 = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 ['b.*'])
                         ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
@@ -2664,13 +2627,13 @@ try {
                         ->groupBy('b.id')
                         ->toSql();
 
-        $penjualan_cn_debet = DB::connection($this->getConnectionName())->table(DB::raw("($sql2) AS t1"))->select([
+        $penjualan_cn_debet = DB::table(DB::raw("($sql2) AS t1"))->select([
                             DB::raw('SUM(t1.debet) AS total_debet')
                         ])
                         ->join('tb_m_jasa_resep as a','a.id','=','t1.id_jasa_resep')
                         ->first();
 
-        $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2691,7 +2654,7 @@ try {
                         ->first();
         
 
-        /*$data = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        /*$data = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 'b.id',
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
@@ -2713,7 +2676,7 @@ try {
                         ->get();
 
         foreach ($data as $key => $val) {
-            $cek = TransaksiPenjualan::on($this->getConnectionName())->find($val->id);
+            $cek = TransaksiPenjualan::find($val->id);
             if($cek->debet != $val->total) {
                 echo "ini totalnya-".$cek->debet.'--- dibandingkan dengan '.$val->total.'---<br>';
                 echo("ini data yang tidak sesuai".$val->id);
@@ -2722,7 +2685,7 @@ try {
 
         exit();*/
         
-        $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                 DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -2739,10 +2702,9 @@ try {
                         //->groupBy('tb_nota_penjualan.id')
                         ->first();
 
-        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->where('id_apotek_nota', $id_apotek)->where('id_user',$id_user)->where('tanggal', $tanggal)->first();
+        $penjualan_closing = TransaksiPenjualanClosing::where('id_apotek_nota', $id_apotek)->where('id_user',$id_user)->where('tanggal', $tanggal)->first();
         if(empty($penjualan_closing)) {
             $penjualan_closing = new TransaksiPenjualanClosing;
-            $penjualan_closing->setDynamicConnection(); 
         }
         
         return view('penjualan.closing_kasir')->with(compact('tanggal', 'penjualan', 'penjualan_closing', 'detail_penjualan', 'penjualan_kredit', 'detail_penjualan_kredit', 'detail_penjualan_cn', 'penjualan_kredit_terbayar', 'detail_penjualan_kredit_terbayar', 'tanggal', 'id_user', 'penjualan2', 'penjualan_cn_debet', 'penjualan_cn_cash', 'apotek'));
@@ -2773,17 +2735,17 @@ try {
 
         if(empty($request->id_apotek)) {
             $id_apotek =  session('id_apotek_active');
-            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+            $apotek = MasterApotek::find($id_apotek);
         } else {
             $id_apotek = $request->id_apotek;
-            $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+            $apotek = MasterApotek::find($id_apotek);
         }
 
 
         $tgl_awal_baru = $tanggal.' 00:00:00';
         $tgl_akhir_baru = $tanggal.' 23:59:59';
 
-        $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2801,7 +2763,7 @@ try {
 
         //dd($detail_penjualan); exit();
 
-        $sql = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $sql = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 ['b.*'])
                         ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
@@ -2816,13 +2778,13 @@ try {
                         ->groupBy('b.id')
                         ->toSql();
 
-        $penjualan = DB::connection($this->getConnectionName())->table(DB::raw("($sql) AS t1"))->select([
+        $penjualan = DB::table(DB::raw("($sql) AS t1"))->select([
                             DB::raw('SUM(t1.debet) AS total_debet')
                         ])
                         ->leftjoin('tb_m_jasa_resep as a','a.id','=','t1.id_jasa_resep')
                         ->first();
 
-        $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan2 =  DB::table('tb_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                 DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -2840,7 +2802,7 @@ try {
                         ->where('tb_nota_penjualan.is_kredit', 0)
                         ->first();
 
-        $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2863,7 +2825,7 @@ try {
         
         /*print_r($detail_penjualan_kredit);exit();*/
         
-        $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan_kredit =  DB::table('tb_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                 DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -2879,7 +2841,7 @@ try {
                         //->groupBy('tb_nota_penjualan.id')
                         ->first();
 
-        $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2898,7 +2860,7 @@ try {
                         ->first();
         /*print_r($detail_penjualan_cn);exit()*/
 
-        $penjualan_cn_cash = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_cn_cash = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan')
                             )
@@ -2915,7 +2877,7 @@ try {
                         ->where('b.is_kredit', 0)
                         ->first();
 
-        $sql2 = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $sql2 = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 ['b.*'])
                         ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
@@ -2932,13 +2894,13 @@ try {
                         ->groupBy('b.id')
                         ->toSql();
 
-        $penjualan_cn_debet = DB::connection($this->getConnectionName())->table(DB::raw("($sql2) AS t1"))->select([
+        $penjualan_cn_debet = DB::table(DB::raw("($sql2) AS t1"))->select([
                             DB::raw('SUM(t1.debet) AS total_debet')
                         ])
                         ->join('tb_m_jasa_resep as a','a.id','=','t1.id_jasa_resep')
                         ->first();
 
-        $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -2959,7 +2921,7 @@ try {
                         ->first();
         
 
-        /*$data = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        /*$data = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 'b.id',
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
@@ -2981,7 +2943,7 @@ try {
                         ->get();
 
         foreach ($data as $key => $val) {
-            $cek = TransaksiPenjualan::on($this->getConnectionName())->find($val->id);
+            $cek = TransaksiPenjualan::find($val->id);
             if($cek->debet != $val->total) {
                 echo "ini totalnya-".$cek->debet.'--- dibandingkan dengan '.$val->total.'---<br>';
                 echo("ini data yang tidak sesuai".$val->id);
@@ -2990,7 +2952,7 @@ try {
 
         exit();*/
         
-        $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                 DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -3007,10 +2969,9 @@ try {
                         //->groupBy('tb_nota_penjualan.id')
                         ->first();
 
-        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->where('id_apotek_nota', $id_apotek)->where('id_user',$id_user)->where('tanggal', $tanggal)->first();
+        $penjualan_closing = TransaksiPenjualanClosing::where('id_apotek_nota', $id_apotek)->where('id_user',$id_user)->where('tanggal', $tanggal)->first();
         if(empty($penjualan_closing)) {
             $penjualan_closing = new TransaksiPenjualanClosing;
-            $penjualan_closing->setDynamicConnection();
         }
         
         return view('penjualan.closing_kasir')->with(compact('tanggal', 'penjualan', 'penjualan_closing', 'detail_penjualan', 'penjualan_kredit', 'detail_penjualan_kredit', 'detail_penjualan_cn', 'penjualan_kredit_terbayar', 'detail_penjualan_kredit_terbayar', 'tanggal', 'id_user', 'penjualan2', 'penjualan_cn_debet', 'penjualan_cn_cash', 'apotek'));
@@ -3018,8 +2979,7 @@ try {
 
     public function set_paket_wd(Request $request){
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
-        $pakets = MasterPaketWD::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $pakets = MasterPaketWD::where('is_deleted', 0)->get();
         $harga_total = $request->harga_total;
         
         if(empty($harga_total)) {
@@ -3033,7 +2993,6 @@ try {
 
     public function set_lab(Request $request){
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
         $harga_total = $request->harga_total;
         
         if(empty($harga_total)) {
@@ -3048,7 +3007,6 @@ try {
 
     public function set_apd(Request $request){
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
         $harga_total = $request->harga_total;
         
         if(empty($harga_total)) {
@@ -3060,7 +3018,7 @@ try {
     }
 
     public function print_closing_kasir($id) {
-        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
+        $penjualan_closing = TransaksiPenjualanClosing::find($id);
 
         if(empty($request->tanggal)) {
             $tanggal = date('Y-m-d');
@@ -3092,7 +3050,7 @@ try {
         $tgl_awal_baru = $tanggal.' 00:00:00';
         $tgl_akhir_baru = $tanggal.' 23:59:59';
 
-        $jasa_resep = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $jasa_resep = TransaksiPenjualan::select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_resep'),
                                 DB::raw('SUM(biaya_resep) AS total_biaya_resep'), 
                                 'a.nama as nama_jasa_resep',
@@ -3114,7 +3072,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_jasa_resep')
                         ->get();
 
-        /*$penjualan_kredits = TransaksiPenjualan::on($this->getConnectionName())->select([
+        /*$penjualan_kredits = TransaksiPenjualan::select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(total_belanja) AS total'),
                                 'a.nama as nama_vendor'
@@ -3135,7 +3093,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_vendor')
                         ->get();*/
 
-        $penjualan_kredits = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_kredits = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('COUNT(b.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
@@ -3163,7 +3121,7 @@ try {
                         ->groupBy('b.id_vendor')
                         ->get();
 
-        $jasa_dokter = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $jasa_dokter = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(biaya_jasa_dokter) AS total_biaya_jasa_dokter'), 
                                 'a.nama as nama_dokter', 
@@ -3185,7 +3143,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_dokter')
                         ->get();
 
-        $paket_wd = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $paket_wd = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_paket'),
                             DB::raw('SUM(harga_wd) AS total_harga_wd'), 
                             'a.nama as nama_paket',
@@ -3207,7 +3165,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_paket_wd')
                         ->get();
 
-        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $penjualan_debet = TransaksiPenjualan::select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -3234,7 +3192,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 /*
-        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $penjualan_debet = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
                             'a.nama as nama_kartu',
@@ -3258,7 +3216,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();*/
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find($penjualan_closing->id_apotek_nota);
+        $apotek = MasterApotek::find($penjualan_closing->id_apotek_nota);
 
         
 
@@ -3295,8 +3253,8 @@ try {
                 $id_user = $request->id_user;
             }
 
-            $data = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
-            $apotek = MasterApotek::on($this->getConnectionName())->find($data->id_apotek_nota);
+            $data = TransaksiPenjualanClosing::find($id);
+            $apotek = MasterApotek::find($data->id_apotek_nota);
             $nama_apotek = strtoupper($apotek->nama_panjang);
             $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
 
@@ -3310,7 +3268,7 @@ try {
             $tanggal = $request->tanggal;
         }
         
-        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
+        $penjualan_closing = TransaksiPenjualanClosing::select([
 
                                     DB::raw('SUM(total_jasa_dokter) as total_jasa_dokter_a'),
                                     DB::raw('SUM(total_jasa_resep) as total_jasa_resep_a'),
@@ -3331,12 +3289,12 @@ try {
                                 ->where('id_apotek_nota', session('id_apotek_active'))
                                 ->first();
 
-        $rincians = TransaksiPenjualanClosing::on($this->getConnectionName())->where('tanggal', $tanggal)
+        $rincians = TransaksiPenjualanClosing::where('tanggal', $tanggal)
                                 ->where('id_apotek_nota', session('id_apotek_active'))
                                 ->get();
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $email = $apoteker->email;
         $apoteker = $apoteker->toArray();
 
@@ -3376,9 +3334,9 @@ try {
     public function load_data_nota_print($id) {
         $no = 0;
 
-        $nota = TransaksiPenjualan::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($nota->id_apotek_nota);
-        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $nota->id)->where('is_deleted', 0)->get();
+        $nota = TransaksiPenjualan::find($id);
+        $apotek = MasterApotek::find($nota->id_apotek_nota);
+        $detail_penjualans = TransaksiPenjualanDetail::where('id_nota', $nota->id)->where('is_deleted', 0)->get();
         $nama_apotek = strtoupper($apotek->nama_panjang);
         $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
 
@@ -3392,7 +3350,7 @@ try {
         "Tanggal  : ".Carbon::parse($nota['created_at'])->format('d-m-Y H:i:s')."\n".
         "----------------------------------------\n";
         if($nota->is_kredit == 1) {
-            $vendor = MasterVendor::on($this->getConnectionName())->find($nota->id_vendor);
+            $vendor = MasterVendor::find($nota->id_vendor);
             $a = $a."\n".
             "----------------------------------------\n".
             "Penjualan Melalui : ".$vendor['nama']."\n".
@@ -3439,7 +3397,7 @@ try {
         }
 
         if(!empty($nota->id_jasa_resep)) {
-            $x = MasterJasaResep::on($this->getConnectionName())->find($nota->id_jasa_resep);
+            $x = MasterJasaResep::find($nota->id_jasa_resep);
             $jasa_resep_biaya = number_format($x->biaya,0,',',',');
             $total_belanja = $total_belanja+$x->biaya;
             $a=$a."\n"."Jasa Resep       : Rp ".$jasa_resep_biaya;
@@ -3515,8 +3473,8 @@ try {
             $id_user = $request->id_user;
         }
 
-        $data = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($data->id_apotek_nota);
+        $data = TransaksiPenjualanClosing::find($id);
+        $apotek = MasterApotek::find($data->id_apotek_nota);
         $nama_apotek = strtoupper($apotek->nama_panjang);
         $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
 
@@ -3525,7 +3483,7 @@ try {
         $tgl_awal_baru = $data->tanggal.' 00:00:00';
         $tgl_akhir_baru = $data->tanggal.' 23:59:59';
 
-        $jasa_resep = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $jasa_resep = TransaksiPenjualan::select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_resep'),
                                 DB::raw('SUM(biaya_resep) AS total_biaya_resep'), 
                                 'a.id as id_jasa_resep',
@@ -3548,7 +3506,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_jasa_resep')
                         ->get();
 
-        /*$penjualan_kredits = TransaksiPenjualan::on($this->getConnectionName())->select([
+        /*$penjualan_kredits = TransaksiPenjualan::select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(total_belanja) AS total'),
                                 'a.nama as nama_vendor'
@@ -3569,7 +3527,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_vendor')
                         ->get();*/
 
-        $penjualan_kredits = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_kredits = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('COUNT(b.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
@@ -3600,7 +3558,7 @@ try {
                         ->where('tb_detail_nota_penjualan.is_cn', 0)
                         ->get();
 
-        $jasa_dokter = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $jasa_dokter = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(biaya_jasa_dokter) AS total_biaya_jasa_dokter'), 
                                 'a.id as id_dokter',
@@ -3623,7 +3581,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_dokter')
                         ->get();
 
-        $paket_wd = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $paket_wd = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_paket'),
                             DB::raw('SUM(harga_wd) AS total_harga_wd'), 
                             'a.id as id_paket_wd',
@@ -3646,7 +3604,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_paket_wd')
                         ->get();
 
-        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $penjualan_debet = TransaksiPenjualan::select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -3673,7 +3631,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 
-        $penjualan_debet2 = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $penjualan_debet2 = TransaksiPenjualan::select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -3698,7 +3656,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 
-        $admin = User::on($this->getConnectionName())->find($id_user);
+        $admin = User::find($id_user);
         $a = str_pad("",40," ", STR_PAD_LEFT)."\n".
              str_pad("APOTEK BWF-".$nama_apotek, 40," ", STR_PAD_BOTH)."\n".
              str_pad($apotek->alamat, 40," ", STR_PAD_BOTH)."\n".
@@ -3924,8 +3882,8 @@ try {
     }
 
     public function list_pencarian_obat(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.nama'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_penjualan.*', 'a.nama'])
         ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_penjualan.id_obat')
         ->join('tb_nota_penjualan as b', 'b.id', 'tb_detail_nota_penjualan.id_nota')
         ->where(function($query) use($request){
@@ -3991,8 +3949,8 @@ try {
     }
 
     public function list_rekap_laboratorium(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.biaya_lab');
@@ -4035,7 +3993,7 @@ try {
 
     public function export_rekap_laboratorium(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.biaya_lab');
@@ -4120,8 +4078,8 @@ try {
     }
 
     public function list_rekap_jasa_dokter(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.biaya_jasa_dokter');
@@ -4157,7 +4115,7 @@ try {
             if(is_null($data->id_dokter)) {
                 $str = 'dokter belum disetting, silakan edit di penjualan sesuai ID nota.';
             } else {
-                $dokter = MasterDokter::on($this->getConnectionName())->find($data->id_dokter);
+                $dokter = MasterDokter::find($data->id_dokter);
                 if(empty($dokter)) {
                     $str = 'dokter tidak ditemukan';
                 } else {
@@ -4182,7 +4140,7 @@ try {
 
     public function export_rekap_jasa_dokter(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.biaya_jasa_dokter');
@@ -4208,7 +4166,7 @@ try {
                     if(is_null($rekap->id_dokter)) {
                         $str = 'dokter belum disetting, silakan edit di penjualan sesuai ID nota.';
                     } else {
-                        $dokter = MasterDokter::on($this->getConnectionName())->find($rekap->id_dokter);
+                        $dokter = MasterDokter::find($rekap->id_dokter);
                         if(empty($dokter)) {
                             $str = 'dokter tidak ditemukan';
                         } else {
@@ -4278,8 +4236,8 @@ try {
     }
 
     public function list_rekap_jasa_resep(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.id_jasa_resep');
@@ -4325,7 +4283,7 @@ try {
 
     public function export_rekap_jasa_resep(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.id_jasa_resep');
@@ -4408,8 +4366,8 @@ try {
     }
 
     public function list_rekap_paket_wt(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.id_paket_wd');
@@ -4455,7 +4413,7 @@ try {
 
     public function export_rekap_paket_wt(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.id_paket_wd');
@@ -4537,8 +4495,8 @@ try {
     }
 
     public function list_rekap_apd(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->whereNotNull('tb_nota_penjualan.biaya_apd');
@@ -4577,7 +4535,7 @@ try {
 
     public function export_rekap_apd(Request $request) 
     {
-        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
                                 ->where(function($query) use($request){
                                     $query->where('tb_nota_penjualan.is_deleted','=','0');
                                     $query->whereNotNull('tb_nota_penjualan.biaya_apd');
@@ -4666,8 +4624,8 @@ try {
         $first = date('Y-m-01', strtotime($query_date));
         $end = date('Y-m-t', strtotime($query_date));
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $penjualans = TransaksiPenjualan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $penjualans = TransaksiPenjualan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_nota_penjualan.*'])
         ->where(function($query) use($request, $first, $end){
             $query->where('tb_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -4690,7 +4648,7 @@ try {
         $i = 0;
         foreach($penjualans as $obj) {
 
-            $omset = TransaksiPenjualanClosing::on($this->getConnectionName())->select(['tb_closing_nota_penjualan.*'])
+            $omset = TransaksiPenjualanClosing::select(['tb_closing_nota_penjualan.*'])
                     ->where(function($query) use($obj){
                         $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
                         $query->where('tb_closing_nota_penjualan.tanggal','>=', $obj->tgl_nota);
@@ -4700,7 +4658,7 @@ try {
                 $tgl_awal_baru = $obj->tgl_nota.' 00:00:00';
                 $tgl_akhir_baru = $obj->tgl_nota.' 23:59:59';
 
-                $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $detail_penjualan = DB::table('tb_detail_nota_penjualan')
                             ->select(
                                     DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                     DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -4716,7 +4674,7 @@ try {
                             ->where('tb_detail_nota_penjualan.is_deleted', 0)
                             ->first();
 
-                $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+                $penjualan2 =  DB::table('tb_nota_penjualan')
                             ->select(
                                     DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                     DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -4735,7 +4693,7 @@ try {
                             ->first();
 
 
-                $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
                             ->select(
                                     DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan'),
                                     DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -4753,7 +4711,7 @@ try {
                             ->where('b.is_kredit', 0)
                             ->first();
 
-                $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -4836,7 +4794,7 @@ try {
        // print_r($data);exit();
 
 
-        /*$data = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        /*$data = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
         ->where(function($query) use($request, $first, $end){
             $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -4896,8 +4854,8 @@ try {
         $first = date('Y-m-01', strtotime($query_date));
         $end = date('Y-m-t', strtotime($query_date));
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
         ->where(function($query) use($request, $first, $end){
             $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -4928,7 +4886,7 @@ try {
             $tgl_awal_baru = $data->tanggal.' 00:00:00';
             $tgl_akhir_baru = $data->tanggal.' 23:59:59';
 
-            $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -4944,7 +4902,7 @@ try {
                         ->where('tb_detail_nota_penjualan.is_deleted', 0)
                         ->first();
 
-            $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan2 =  DB::table('tb_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                                 DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -4963,7 +4921,7 @@ try {
                         ->first();
 
 
-            $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -5029,7 +4987,7 @@ try {
     }
 
     public function cek_last_closing_kasir($tgl) {
-        $cek = TransaksiPenjualanClosing::on($this->getConnectionName())->where('id_apotek_nota', session('id_apotek_active'))->whereDate('tanggal', $tgl)->orderBy('id', 'desc')->first();
+        $cek = TransaksiPenjualanClosing::where('id_apotek_nota', session('id_apotek_active'))->whereDate('tanggal', $tgl)->orderBy('id', 'desc')->first();
 
         $i = 0;
         if(!empty($cek)) {
@@ -5039,18 +4997,15 @@ try {
     }
 
     public function jumlah_closing_kasir($tgl) {
-        $cek = TransaksiPenjualanClosing::on($this->getConnectionName())->where('id_apotek_nota', session('id_apotek_active'))->whereDate('tanggal', $tgl)->count();
+        $cek = TransaksiPenjualanClosing::where('id_apotek_nota', session('id_apotek_active'))->whereDate('tanggal', $tgl)->count();
         return $cek;
     }
 
     public function hapus_closing($id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $close = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
-            $jumlah = TransaksiPenjualanClosing::on($this->getConnectionName())->where('id_apotek_nota', session('id_apotek_active'))
+            $close = TransaksiPenjualanClosing::find($id);
+            $jumlah = TransaksiPenjualanClosing::where('id_apotek_nota', session('id_apotek_active'))
                         ->where('jumlah_penjualan', $close->jumlah_penjualan)
                         ->where('total_penjualan', $close->total_penjualan)
                         ->where('id_user', $close->created_by)
@@ -5059,25 +5014,25 @@ try {
             if($jumlah > 1) {
                 #diijinkan untuk hapus
                 if($close->delete()){
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo 1;
                 }else{
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo 0;
                 }
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo 0;
             }
             
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo 0;
         }
     }
 
     public function detail_closing_kasir($id) {
-        $data = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
+        $data = TransaksiPenjualanClosing::find($id);
 
         return view('rekap.detail_closing_kasir')->with(compact('data'));
     }
@@ -5088,7 +5043,7 @@ try {
         $first = date('Y-m-01', strtotime($query_date));
         $end = date('Y-m-t', strtotime($query_date));
 
-        $rekaps = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
                                 ->where(function($query) use($request, $first, $end){
                                     $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
                                     if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
@@ -5110,7 +5065,7 @@ try {
                 $tanggal = '';
                 $i_tgl = 0;
 
-                $kartus = MasterKartu::on($this->getConnectionName())->where('is_deleted', 0)->get();
+                $kartus = MasterKartu::where('is_deleted', 0)->get();
                 foreach($rekaps as $rekap) {
                     $no++;
                     if($tanggal == '') {
@@ -5149,7 +5104,7 @@ try {
                     $id_user = $rekap->id_user;
                     $id_apotek = $rekap->id_apotek_nota;
 
-                    $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
+                    $penjualan_debet = TransaksiPenjualan::select([
                             'tb_nota_penjualan.id',
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
@@ -5176,7 +5131,7 @@ try {
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 
-                    $penjualan_debet2 = TransaksiPenjualan::on($this->getConnectionName())->select([
+                    $penjualan_debet2 = TransaksiPenjualan::select([
                                         'tb_nota_penjualan.id',
                                         DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                         DB::raw('SUM(debet) AS total_debet'), 
@@ -5201,7 +5156,7 @@ try {
                                     ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                                     ->get();
 
-                    $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                    $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -5533,7 +5488,7 @@ try {
     }
 
     public function list_hpp(Request $request) {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $awal = $request->tgl_awal;
@@ -5541,8 +5496,8 @@ try {
         $tgl_awal_baru = $awal.' 00:00:00';
         $tgl_akhir_baru = $akhir.' 23:59:59';
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanDetail::select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                     'tb_detail_nota_penjualan.*', 
                     'b.diskon_persen', 
@@ -5696,7 +5651,7 @@ try {
     public function export_hpp(Request $request) 
     {
         ini_set('memory_limit','-1');
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
        /* $monthNum = preg_replace('/0/', '', $request->bulan, 1);
         $bulan = date('F', mktime(0, 0, 0, $monthNum, 10));
@@ -5722,7 +5677,7 @@ try {
            /* $num_tgl_ = sprintf("%02d", $i);
             $str_tgl_ = $request->tahun.'-'.$request->bulan.'-'.$num_tgl_;*/
             $tgl_ = date('Y-m-d', strtotime($date));
-            $rekaps = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+            $rekaps = TransaksiPenjualanDetail::select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_detail_nota_penjualan.*', 
                                     'b.diskon_persen', 
@@ -5944,7 +5899,7 @@ try {
     {
        // dd($request->bulan);
         ini_set('memory_limit','-1');
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $monthNum = preg_replace('/0/', '', $request->bulan, 1);
         $bulan = date('F', mktime(0, 0, 0, $monthNum, 10));
@@ -5965,7 +5920,7 @@ try {
             $num_tgl_ = sprintf("%02d", $i);
             $str_tgl_ = $request->tahun.'-'.$request->bulan.'-'.$num_tgl_;
             $tgl_ = date('Y-m-d', strtotime($str_tgl_));
-            $rekaps = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+            $rekaps = TransaksiPenjualanDetail::select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_detail_nota_penjualan.id_obat',
                                     DB::raw('(tb_detail_nota_penjualan.jumlah) as  total_jual'), 
@@ -6143,7 +6098,7 @@ try {
 
     public function export_penjualan_kredit(Request $request) 
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tgl_penjualan = $request->tgl_penjualan;
         $split           = explode(" - ", $tgl_penjualan);
@@ -6152,7 +6107,7 @@ try {
         $date1 = date('Y-m-d', strtotime($date1));
         $date2 = date('Y-m-d', strtotime($date2));
 
-        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $rekaps = TransaksiPenjualan::select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_nota_penjualan.*'
                                 ])
@@ -6322,10 +6277,10 @@ try {
 
     public function export_all(Request $request) 
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = $request->tanggal;
-        $rekaps = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $rekaps = TransaksiPenjualan::select([
                             DB::raw('@rownum  := @rownum  + 1 AS no'),
                             'tb_nota_penjualan.*', 
                     ])
@@ -6531,29 +6486,26 @@ try {
 
 
     public function hapus_detail($id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
+            $detail_penjualan = TransaksiPenjualanDetail::find($id);
             $detail_penjualan->is_deleted = 1;
             $detail_penjualan->deleted_at= date('Y-m-d H:i:s');
             $detail_penjualan->deleted_by = Auth::user()->id;
 
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_nota);
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $penjualan = TransaksiPenjualan::find($detail_penjualan->id_nota);
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
-            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
+            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first();
             $jumlah = $detail_penjualan->jumlah;
             $stok_now = $stok_before->stok_akhir+$jumlah;
 
             # update ke table stok harga
-            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
+            DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->update(['stok_awal'=> $stok_before->stok_akhir, 'stok_akhir'=> $stok_now, 'updated_at' => date('Y-m-d H:i:s'), 'updated_by' => Auth::user()->id]);
 
             # create histori
-            DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)->insert([
+            DB::table('tb_histori_stok_'.$inisial)->insert([
                 'id_obat' => $detail_penjualan->id_obat,
                 'jumlah' => $jumlah,
                 'stok_awal' => $stok_before->stok_akhir,
@@ -6566,7 +6518,7 @@ try {
                 'created_by' => Auth::user()->id
             ]);  
 
-            $total = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+            $total = TransaksiPenjualanDetail::select([
                                 DB::raw('SUM((harga_jual*jumlah)-diskon) as total_all')
                                 ])
                                 ->where('id', '!=', $detail_penjualan->id)
@@ -6589,13 +6541,13 @@ try {
 
             if($detail_penjualan->save()){
                 $penjualan->save();
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo 1;
             }else{
                 echo 0;
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             session()->flash('error', 'Error!');
             return redirect('penjualan/detail/'.$penjualan->id);
         }
@@ -6610,7 +6562,7 @@ try {
         $id_apotek = session('id_apotek_active');
         $id_member_tipe = 7;
         if($data['id_pasien'] != '') {
-            $pasien = MasterMember::on($this->getConnectionName())->find($data['id_pasien']);
+            $pasien = MasterMember::find($data['id_pasien']);
             $id_member_tipe = $pasien->id_tipe_member;
         }
 
@@ -6618,7 +6570,7 @@ try {
             $val = $data['detail_penjualan['.$i];
             $array[] = $val;
             // cari diskon per item
-            $cek = SettingPromoItemBeli::on($this->getConnectionName())->select(['tb_setting_promo_item_beli.*', 'a.id_member_tipe', 'a.id_apotek'])
+            $cek = SettingPromoItemBeli::select(['tb_setting_promo_item_beli.*', 'a.id_member_tipe', 'a.id_apotek'])
                     ->join('tb_setting_promo as a', 'a.id', '=', 'tb_setting_promo_item_beli.id_setting_promo')
                     ->where('tb_setting_promo_item_beli.id_obat', $val['id_obat'])
                     ->whereDate('a.tgl_awal','>=', $date_now)
@@ -6638,7 +6590,7 @@ try {
         }
 
         // cari diskon per kombinasi item
-        $diskon_sub = SettingPromo::on($this->getConnectionName())->select([
+        $diskon_sub = SettingPromo::select([
                             'tb_setting_promo.*'
                     ])
                     ->where(function($query) use($request, $date_now){
@@ -6664,7 +6616,7 @@ try {
         if($request->jumlah == "") {
             $data = array('is_data' => 0);
         } else {
-            $data_ = SettingPromoItemBeli::on($this->getConnectionName())->select(['tb_setting_promo_item_beli.*', 'tb_setting_promo.id_jenis_promo', 'tb_setting_promo.persen_diskon', 'tb_setting_promo.rp_diskon'])
+            $data_ = SettingPromoItemBeli::select(['tb_setting_promo_item_beli.*', 'tb_setting_promo.id_jenis_promo', 'tb_setting_promo.persen_diskon', 'tb_setting_promo.rp_diskon'])
                         ->join('tb_setting_promo', 'tb_setting_promo.id', '=', 'tb_setting_promo_item_beli.id_setting_promo')
                         ->where('tb_setting_promo_item_beli.id_obat', $request->id_obat)
                         ->where('tb_setting_promo_item_beli.jumlah', $request->jumlah)
@@ -6672,7 +6624,7 @@ try {
                         
             if(!empty($data_)) {
                 # cek apotek
-                $cek_ap_ = SettingPromoDetail::on($this->getConnectionName())->where('id_setting_promo', $data_->id_setting_promo)->where('id_apotek', session('id_apotek_active'))->first();
+                $cek_ap_ = SettingPromoDetail::where('id_setting_promo', $data_->id_setting_promo)->where('id_apotek', session('id_apotek_active'))->first();
                 if(!empty($cek_ap_)) {
                     $cek_ = 1;
                     if($data_->id_jenis_promo == 1) {
@@ -6693,14 +6645,14 @@ try {
     }
 
     public function cetak_nota_thermal($id) {
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('id', $id)->first();
+        $penjualan = TransaksiPenjualan::where('id', $id)->first();
         if($penjualan->id_jasa_resep == "" || $penjualan->id_jasa_resep == 0 || $penjualan->id_jasa_resep == null || $penjualan->id_jasa_resep == '0') {
             $penjualan->jasa_resep = 0;
         } else {
-            $jasa_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+            $jasa_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->select(['tb_detail_nota_penjualan.id',
+        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
                                                 'tb_detail_nota_penjualan.id_nota',
                                                 'tb_detail_nota_penjualan.id_obat',
                                                 'tb_detail_nota_penjualan.jumlah',
@@ -6712,7 +6664,7 @@ try {
                                                ->where('tb_detail_nota_penjualan.id_nota', $id)
                                                ->where('tb_detail_nota_penjualan.is_deleted', 0)
                                                ->get();
-        $apotek = MasterApotek::on($this->getConnectionName())->find($penjualan->id_apotek_nota);
+        $apotek = MasterApotek::find($penjualan->id_apotek_nota);
 
         $debet = 0;
         if(!empty($penjualan->id_kartu_debet_credit)) {
@@ -6747,8 +6699,8 @@ printer_close($printer);
             $id_user = $request->id_user;
         }
 
-        $data = TransaksiPenjualanClosing::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($data->id_apotek_nota);
+        $data = TransaksiPenjualanClosing::find($id);
+        $apotek = MasterApotek::find($data->id_apotek_nota);
         $nama_apotek = strtoupper($apotek->nama_panjang);
         $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
 
@@ -6757,7 +6709,7 @@ printer_close($printer);
         $tgl_awal_baru = $data->tanggal.' 00:00:00';
         $tgl_akhir_baru = $data->tanggal.' 23:59:59';
 
-        $jasa_resep = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $jasa_resep = TransaksiPenjualan::select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_resep'),
                                 DB::raw('SUM(biaya_resep) AS total_biaya_resep'), 
                                 'a.id as id_jasa_resep',
@@ -6780,7 +6732,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_jasa_resep')
                         ->get();
 
-        $jasa_dokter = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $jasa_dokter = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(biaya_jasa_dokter) AS total_biaya_jasa_dokter'), 
                                 'a.id as id_dokter',
@@ -6803,7 +6755,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_dokter')
                         ->get();
 
-        /*$penjualan_kredits = TransaksiPenjualan::on($this->getConnectionName())->select([
+        /*$penjualan_kredits = TransaksiPenjualan::select([
                                 DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(total_belanja) AS total'),
                                 'a.nama as nama_vendor'
@@ -6824,7 +6776,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_vendor')
                         ->get();*/
 
-        $penjualan_kredits = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_kredits = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('COUNT(b.id) AS jumlah_transaksi'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
@@ -6854,7 +6806,7 @@ printer_close($printer);
                         ->groupBy('b.id_vendor')
                         ->get();
 
-        $paket_wd = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $paket_wd = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_paket'),
                             DB::raw('SUM(harga_wd) AS total_harga_wd'), 
                             'a.id as id_paket_wd',
@@ -6877,7 +6829,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_paket_wd')
                         ->get();
 
-        $penjualan_debet = TransaksiPenjualan::on($this->getConnectionName())->select([
+        $penjualan_debet = TransaksiPenjualan::select([
                             DB::raw('COUNT(tb_nota_penjualan.id) AS jumlah_transaksi'),
                             DB::raw('SUM(debet) AS total_debet'), 
                             'a.id as id_kartu_debet_credit',
@@ -6901,7 +6853,7 @@ printer_close($printer);
                         ->groupBy('tb_nota_penjualan.id_kartu_debet_credit')
                         ->get();
 
-        $admin = User::on($this->getConnectionName())->find($id_user);
+        $admin = User::find($id_user);
         $a = '
                 <!DOCTYPE html>
                 <html lang="en">
@@ -7328,9 +7280,9 @@ printer_close($printer);
     public function load_page_print_nota($id) {
         $no = 0;
 
-        $nota = TransaksiPenjualan::on($this->getConnectionName())->find($id);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($nota->id_apotek_nota);
-        $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $nota->id)->where('is_deleted', 0)->get();
+        $nota = TransaksiPenjualan::find($id);
+        $apotek = MasterApotek::find($nota->id_apotek_nota);
+        $detail_penjualans = TransaksiPenjualanDetail::where('id_nota', $nota->id)->where('is_deleted', 0)->get();
         $nama_apotek = strtoupper($apotek->nama_panjang);
         $nama_apotek_singkat = strtoupper($apotek->nama_singkat);
 
@@ -7452,7 +7404,7 @@ printer_close($printer);
                 </tr>';
         
         if($nota->is_kredit == 1) {
-            $vendor = MasterVendor::on($this->getConnectionName())->find($nota->id_vendor);
+            $vendor = MasterVendor::find($nota->id_vendor);
             $a .= ' 
                 <tr>
                     <td colspan="2">------------------------------</td>
@@ -7510,7 +7462,7 @@ printer_close($printer);
         }
 
         if(!empty($nota->id_jasa_resep)) {
-            $x = MasterJasaResep::on($this->getConnectionName())->find($nota->id_jasa_resep);
+            $x = MasterJasaResep::find($nota->id_jasa_resep);
             $jasa_resep_biaya = number_format($x->biaya,0,',',',');
             $total_belanja = $total_belanja+$x->biaya;
             $a .= ' <tr>
@@ -7630,7 +7582,7 @@ printer_close($printer);
     }
 
     public function penjualan_margin() {
-        $vendor_kerjamas      = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $vendor_kerjamas      = MasterVendor::where('is_deleted', 0)->pluck('nama', 'id');
         $vendor_kerjamas->prepend('-- Pilih Vendor --','');
 
         return view('histori.penjualan_kredit')->with(compact('vendor_kerjamas'));
@@ -7649,8 +7601,8 @@ printer_close($printer);
         $date1 = date('Y-m-d', strtotime($date1));
         $date2 = date('Y-m-d', strtotime($date2));
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
@@ -7662,8 +7614,8 @@ printer_close($printer);
         }
 
         $tanggal = date('Y-m-d');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualan::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualan::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_penjualan.*', 
         ])
@@ -7759,7 +7711,7 @@ printer_close($printer);
         $tgl_akhir = $request->tgl_akhir;
         $id_apotek = session('id_apotek_active');
 
-        $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan = DB::table('tb_detail_nota_penjualan')
                     ->select(
                             DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                             DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -7773,7 +7725,7 @@ printer_close($printer);
                     ->where('b.is_kredit', 0)
                     ->first();
 
-        $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan2 =  DB::table('tb_nota_penjualan')
                     ->select(
                             DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                             DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -7790,7 +7742,7 @@ printer_close($printer);
                     ->where('tb_nota_penjualan.is_kredit', 0)
                     ->first();
 
-        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
+        $penjualan_closing = TransaksiPenjualanClosing::select([
 
                                     DB::raw('SUM(total_jasa_dokter) as total_jasa_dokter_a'),
                                     DB::raw('SUM(total_jasa_resep) as total_jasa_resep_a'),
@@ -7811,7 +7763,7 @@ printer_close($printer);
                                 ->where('id_apotek_nota','=',$id_apotek)
                                 ->first();
 
-        $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan'),
                                 DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -7827,7 +7779,7 @@ printer_close($printer);
                         ->where('b.is_kredit', 0)
                         ->first();
 
-        $penjualan_cn_cash = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_cn_cash = DB::table('tb_detail_nota_penjualan')
                         ->select(
                                 DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan')
                             )
@@ -7898,7 +7850,7 @@ printer_close($printer);
         $new_total_total_ongkir = 0;
 
         ##  PENJUALAN KREDIT ##
-        $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
                     ->select(
                             DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                             DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -7913,7 +7865,7 @@ printer_close($printer);
                     ->where('tb_detail_nota_penjualan.is_cn', 0)
                     ->first();
 
-        $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan_kredit =  DB::table('tb_nota_penjualan')
                     ->select(
                             DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                             DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -7934,7 +7886,7 @@ printer_close($printer);
         $total_cash_kredit_format = number_format($total_cash_kredit,0,',',',');
 
 
-        $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
                     ->select(
                             DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
                             DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
@@ -7952,7 +7904,7 @@ printer_close($printer);
                     ->where('tb_detail_nota_penjualan.is_cn', 0)
                     ->first();
     
-        $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
                     ->select(
                             DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
                             DB::raw('SUM(a.biaya) AS total_jasa_resep'),
@@ -8032,24 +7984,22 @@ printer_close($printer);
 
     public function create_margin() {
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
         $detail_penjualans = new TransaksiPenjualanDetail;
-        $detail_penjualans->setDynamicConnection();
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = date('Y-m-d');
         $var = 1;
 
-        $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
         $members->prepend('-- Pilih Member --','');
 
         $is_kredit = 0;
         $is_margin = 1;
-        $vendor_kerjama = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $vendor_kerjama = MasterVendor::where('is_deleted', 0)->get();
 
         $hak_akses = 1;
 
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses_margin = 0;
@@ -8066,24 +8016,22 @@ printer_close($printer);
 
     public function create_credit_margin() {
         $penjualan = new TransaksiPenjualan;
-        $penjualan->setDynamicConnection();
         $detail_penjualans = new TransaksiPenjualanDetail;
-        $detail_penjualans->setDynamicConnection();
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = date('Y-m-d');
         $var = 1;
 
-        $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
         $members->prepend('-- Pilih Member --','');
 
         $is_kredit = 1;
         $is_margin = 1;
-        $vendor_kerjama = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $vendor_kerjama = MasterVendor::where('is_deleted', 0)->get();
 
         $hak_akses = 1;
 
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses_margin = 0;
@@ -8102,11 +8050,11 @@ printer_close($printer);
         $date_now = date('Y-m-d');
         $id_ = Crypt::decrypt($id);
 
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id_);
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $penjualan = TransaksiPenjualan::find($id_);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $detail_penjualans = $penjualan->detail_penjualan;
-        $vendor = MasterVendor::on($this->getConnectionName())->find($penjualan->id_vendor);
+        $vendor = MasterVendor::find($penjualan->id_vendor);
 
         return view('penjualan._invoice')->with(compact('date_now', 'penjualan', 'apotek', 'detail_penjualans', 'id', 'vendor'));
     }
@@ -8115,11 +8063,11 @@ printer_close($printer);
         $date_now = date('Y-m-d');
         $id_ = Crypt::decrypt($id);
 
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id_);
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $penjualan = TransaksiPenjualan::find($id_);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $detail_penjualans = $penjualan->detail_penjualan;
-        $vendor = MasterVendor::on($this->getConnectionName())->find($penjualan->id_vendor);
+        $vendor = MasterVendor::find($penjualan->id_vendor);
 
         return view('penjualan._invoiceprint')->with(compact('date_now', 'penjualan', 'apotek', 'detail_penjualans', 'id', 'vendor'));
     }
@@ -8128,11 +8076,11 @@ printer_close($printer);
         $date_now = date('Y-m-d');
         $id_ = Crypt::decrypt($id);
 
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id_);
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $penjualan = TransaksiPenjualan::find($id_);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $detail_penjualans = $penjualan->detail_penjualan;
-        $vendor = MasterVendor::on($this->getConnectionName())->find($penjualan->id_vendor);
+        $vendor = MasterVendor::find($penjualan->id_vendor);
         //dd($vendor);
 
         $nama_file_ = 'pdf_penjualan_'.$inisial.'_'.$date_now;
@@ -8160,7 +8108,7 @@ printer_close($printer);
         if(is_null($id)) {
             
         } else {
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
+            $penjualan = TransaksiPenjualan::find($id);
 
             $total_penjualan = $penjualan->detail_penjualan_total[0]->total;
             if($total_penjualan == "" || $total_penjualan == null) {
@@ -8195,8 +8143,8 @@ printer_close($printer);
             $is_access = 1;
         }
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_detail_nota_penjualan.*', 
         ])
@@ -8278,18 +8226,14 @@ printer_close($printer);
     }
 
     public function AddItem(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $penjualan = new TransaksiPenjualan;
-            $penjualan->setDynamicConnection();
             $penjualan->fill($request->except('_token'));
 
             # set data untuk case khusus
             if($request->is_kredit == 1) {
-                $vendor = MasterVendor::on($this->getConnectionName())->find($request->id_vendor);
+                $vendor = MasterVendor::find($request->id_vendor);
                 $penjualan->id_vendor = $request->id_vendor;
                 $penjualan->diskon_vendor = $vendor->diskon;
                 $penjualan->tgl_jatuh_tempo = $request->tgl_jatuh_tempo;
@@ -8321,37 +8265,34 @@ printer_close($printer);
 
             $tanggal = date('Y-m-d');
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
             $result = $penjualan->save_from_array($detail_penjualans, 1);
             if($result['status']) {
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo json_encode(array('status' => 1, 'id' => $penjualan->id, 'message' => $result['message']));
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Error, silakan cek kembali data yang diinputkan'));
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0, 'message' => $e->getMessage()));
         }
     }
 
     public function UpdateItem(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $id = $request->id;
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
+            $penjualan = TransaksiPenjualan::find($id);
             if($penjualan->is_deleted != 1) {
                 $penjualan->fill($request->except('_token'));
 
                 # set data untuk case khusus
                 if($request->is_kredit == 1) {
-                    $vendor = MasterVendor::on($this->getConnectionName())->find($request->id_vendor);
+                    $vendor = MasterVendor::find($request->id_vendor);
                     $penjualan->id_vendor = $request->id_vendor;
                     $penjualan->diskon_vendor = $vendor->diskon;
                     $penjualan->tgl_jatuh_tempo = $request->tgl_jatuh_tempo;
@@ -8382,44 +8323,41 @@ printer_close($printer);
                 //dd($detail_penjualans);
                 $tanggal = date('Y-m-d');
 
-                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+                $apotek = MasterApotek::find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
                 
                 $result = $penjualan->save_from_array($detail_penjualans, 2);
 
                 if($result['status']) {
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo json_encode(array('status' => 1, 'id' => $penjualan->id, 'message' => $result['message']));
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, silakan cek kembali data yang diinputkan'));
                 }
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0, 'message' => 'Error, nota ini sudah dihapus, silakan tambah nota baru'));
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function DeleteItem(Request $request, $id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         # yang bisa didelete adalah | yang belum dikonfirm
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $detail_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->find($id);
+            $detail_penjualan = TransaksiPenjualanDetail::find($id);
             $detail_penjualan->is_deleted = 1;
             $detail_penjualan->deleted_at = date('Y-m-d H:i:s');
             $detail_penjualan->deleted_by = Auth::user()->id;
            
             # crete histori stok barang
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
+            $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
             $stok_now = $stok_before->stok_akhir+$detail_penjualan->jumlah;
 
             /*$arrayupdate = array(
@@ -8430,14 +8368,14 @@ printer_close($printer);
             );*/
 
             # update ke table stok harga
-            $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->first();
+            $stok_harga = MasterStokHarga::where('id_obat', $detail_penjualan->id_obat)->first();
             $stok_harga->stok_awal = $stok_before->stok_akhir;
             $stok_harga->stok_akhir = $stok_now;
             $stok_harga->updated_at = date('Y-m-d H:i:s'); 
             $stok_harga->updated_by = Auth::user()->id;
             if($stok_harga->save()) {
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }
 
@@ -8457,7 +8395,7 @@ printer_close($printer);
             );*/
 
             # create histori
-            /*$histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
+            /*$histori_stok = HistoriStok::where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
             if(empty($histori_stok)) {*/
                 $histori_stok = new HistoriStok;
             //}
@@ -8475,24 +8413,24 @@ printer_close($printer);
             $histori_stok->created_by = Auth::user()->id;
             if($histori_stok->save()) {
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }
 
             # update stok aktif 
             $histori_stok_details = json_decode($detail_penjualan->id_histori_stok_detail);
             if(count($histori_stok_details) == 0) {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             } else {
                 foreach ($histori_stok_details as $y => $hist) {
-                    $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
+                    $cekHistori = HistoriStok::find($hist->id_histori_stok);
                     $keterangan = $cekHistori->keterangan.', Hapus Penjualan pada IDdet.'.$detail_penjualan->id.' sejumlah '.$hist->jumlah;
                     $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                     $cekHistori->keterangan = $keterangan;
                     if($cekHistori->save()) {
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         echo json_encode(array('status' => 0));
                     }
                 }
@@ -8500,57 +8438,54 @@ printer_close($printer);
             
             if($detail_penjualan->save()) {
                 # cek apakah masih ada item pada nota yang sama
-                $jum_details = TransaksiPenjualanDetail::on($this->getConnectionName())->where('is_deleted', 0)->where('id_nota', $detail_penjualan->id_nota)->count();
+                $jum_details = TransaksiPenjualanDetail::where('is_deleted', 0)->where('id_nota', $detail_penjualan->id_nota)->count();
                 $is_sisa = 1;
                 if($jum_details == 0) {
-                    $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($detail_penjualan->id_nota);
+                    $penjualan = TransaksiPenjualan::find($detail_penjualan->id_nota);
                     $penjualan->is_deleted = 1;
                     $penjualan->deleted_at = date('Y-m-d H:i:s');
                     $penjualan->deleted_by = Auth::user()->id;
                     if($penjualan->save()) {
                     } else {
-                        DB::connection($this->getConnectionName())->rollback();
+                        DB::rollback();
                         echo json_encode(array('status' => 0));
                     }
 
                     $is_sisa = 0;
                 }
 
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
                 echo json_encode(array('status' => 1, 'is_sisa' => $is_sisa));
             } else {
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0));
         }
     }
 
     public function destroy($id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
-            $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
+            $penjualan = TransaksiPenjualan::find($id);
             $penjualan->is_deleted = 1;
             $penjualan->deleted_at = date('Y-m-d H:i:s');
             $penjualan->deleted_by = Auth::user()->id;
 
-            $detail_penjualans = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $penjualan->id)->get();
+            $detail_penjualans = TransaksiPenjualanDetail::where('id_nota', $penjualan->id)->get();
             foreach ($detail_penjualans as $key => $detail_penjualan) {
                 $detail_penjualan->is_deleted = 1;
                 $detail_penjualan->deleted_at = date('Y-m-d H:i:s');
                 $detail_penjualan->deleted_by = Auth::user()->id;
                
                 # crete histori stok barang
-                $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+                $apotek = MasterApotek::find(session('id_apotek_active'));
                 $inisial = strtolower($apotek->nama_singkat);
-                $stok_before = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
+                $stok_before = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_penjualan->id_obat)->first(); 
                 $stok_now = $stok_before->stok_akhir+$detail_penjualan->jumlah;
 
                 /*$arrayupdate = array(
@@ -8561,14 +8496,14 @@ printer_close($printer);
                 );*/
 
                 # update ke table stok harga
-                $stok_harga = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->first();
+                $stok_harga = MasterStokHarga::where('id_obat', $detail_penjualan->id_obat)->first();
                 $stok_harga->stok_awal = $stok_before->stok_akhir;
                 $stok_harga->stok_akhir = $stok_now;
                 $stok_harga->updated_at = date('Y-m-d H:i:s'); 
                 $stok_harga->updated_by = Auth::user()->id;
                 if($stok_harga->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0));
                 }
 
@@ -8588,7 +8523,7 @@ printer_close($printer);
                 );*/
 
                 # create histori
-                /*$histori_stok = HistoriStok::on($this->getConnectionDefault())->where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
+                /*$histori_stok = HistoriStok::where('id_obat', $detail_penjualan->id_obat)->where('jumlah', $detail_penjualan->jumlah)->where('id_jenis_transaksi', 15)->where('id_transaksi', $detail_penjualan->id)->first();
                 if(empty($histori_stok)) {*/
                     $histori_stok = new HistoriStok;
                 //}
@@ -8606,43 +8541,43 @@ printer_close($printer);
                 $histori_stok->created_by = Auth::user()->id;
                 if($histori_stok->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0));
                 }
 
                 # update stok aktif 
                 $histori_stok_details = json_decode($detail_penjualan->id_histori_stok_detail);
                 if(count($histori_stok_details) == 0) {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0));
                 } else {
                     foreach ($histori_stok_details as $y => $hist) {
-                        $cekHistori = HistoriStok::on($this->getConnectionDefault())->find($hist->id_histori_stok);
+                        $cekHistori = HistoriStok::find($hist->id_histori_stok);
                         $keterangan = $cekHistori->keterangan.', Hapus Penjualan pada IDdet.'.$detail_penjualan->id.' sejumlah '.$hist->jumlah;
                         $cekHistori->sisa_stok = $cekHistori->sisa_stok + $hist->jumlah;
                         $cekHistori->keterangan = $keterangan;
                         if($cekHistori->save()) {
                         } else {
-                            DB::connection($this->getConnectionName())->rollback();
+                            DB::rollback();
                         }
                     }
                 }
 
                 if($detail_penjualan->save()) {
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                 }
             }
             
             if($penjualan->save()){
                 echo 1;
-                DB::connection($this->getConnectionName())->commit();
+                DB::commit();
             }else{
                 echo 0;
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             session()->flash('error', 'Error!');
             return redirect('penjualan');
         }
@@ -8653,15 +8588,14 @@ printer_close($printer);
     }
 
     public function UpdateJasaDokter(Request $request) {
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try{
             $is_penjualan_tanpa_item = 1;
             if(is_null($request->id)) {
                 $penjualan = new TransaksiPenjualan;
-                $penjualan->setDynamicConnection();
             } else {
-                $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($request->id_penjualan);
-                $jum = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $penjualan->id)->where('is_deleted', 0)->count();
+                $penjualan = TransaksiPenjualan::find($request->id_penjualan);
+                $jum = TransaksiPenjualanDetail::where('id_nota', $penjualan->id)->where('is_deleted', 0)->count();
                 if($jum > 0) {
                     $is_penjualan_tanpa_item = 0;
                 }
@@ -8669,7 +8603,7 @@ printer_close($printer);
 
             $penjualan->fill($request->except('_token'));
             if($request->is_kredit == 1) {
-                $vendor = MasterVendor::on($this->getConnectionName())->find($request->id_vendor);
+                $vendor = MasterVendor::find($request->id_vendor);
                 $penjualan->id_vendor = $request->id_vendor;
                 $penjualan->diskon_vendor = $vendor->diskon;
                 $penjualan->tgl_jatuh_tempo = $request->tgl_jatuh_tempo;
@@ -8712,7 +8646,7 @@ printer_close($printer);
             $penjualan->is_penjualan_tanpa_item = $is_penjualan_tanpa_item;
 
             if(!empty($penjualan->id_jasa_resep)) {
-                $biaya_resep = MasterJasaResep::on($this->getConnectionName())->find($penjualan->id_jasa_resep);
+                $biaya_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
                 $penjualan->biaya_resep = $biaya_resep->biaya;
             }
 
@@ -8720,29 +8654,29 @@ printer_close($printer);
            
             $tanggal = date('Y-m-d');
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
 
-            $members = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+            $members = MasterMember::where('is_deleted', 0)->pluck('nama', 'id');
             $members->prepend('-- Pilih Member --','');
 
             $validator = $penjualan->validate();
             if($validator->fails()){
                 $var = 0;
-                DB::connection($this->getConnectionName())->rollback();
+                DB::rollback();
                 echo json_encode(array('status' => 0));
             }else{
                 $result = $penjualan->save_from_array($detail_penjualans, 1);
                 if($result['status']) {
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo json_encode(array('status' => 1, 'id' => $penjualan->id, 'message' => $result['message']));
                 } else {
-                    DB::connection($this->getConnectionName())->rollback();
+                    DB::rollback();
                     echo json_encode(array('status' => 0, 'message' => 'Error, silakan cek kembali data yang diinputkan'));
                 }
             }
         }catch(\Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 0));
         }
     }
@@ -8752,8 +8686,8 @@ printer_close($printer);
         $id = $request->id;
         $diskon_persen = $request->diskon_persen;
 
-        $penjualan = TransaksiPenjualan::on($this->getConnectionName())->find($id);
-        $details = TransaksiPenjualanDetail::on($this->getConnectionName())->where('id_nota', $penjualan->id)->where('is_deleted', 0)->get();
+        $penjualan = TransaksiPenjualan::find($id);
+        $details = TransaksiPenjualanDetail::where('id_nota', $penjualan->id)->where('is_deleted', 0)->get();
         $jum = count($details);
 
         $is_check = 0;
@@ -8794,7 +8728,7 @@ printer_close($printer);
 
     public function kurangStok($id_obat, $jumlah) {
         $inisial = strtolower(session('nama_apotek_singkat_active'));
-        $cekHistori = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
+        $cekHistori = DB::table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -8821,7 +8755,7 @@ printer_close($printer);
                 $array_id_histori_stok_tota = array();
                 while($i >= 1) {
                     # cari histori berikutnya yg bisa dikurangi
-                    $cekHistoriLanj = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
+                    $cekHistoriLanj = DB::table('tb_histori_stok_'.$inisial)
                             ->where('id_obat', $id_obat)
                             ->whereIn('id_jenis_transaksi', [2,3,11,9])
                             ->where('sisa_stok', '>', 0)
@@ -8865,18 +8799,17 @@ printer_close($printer);
 
     public function addMember() {
         $data_ = new MasterMember;
-        $data_->setDynamicConnection();
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $group_outlets = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_outlets = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_outlets->prepend('-- Pilih Group Outlet --','');
 
-        $tipe_members = MasterMemberTipe::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $tipe_members = MasterMemberTipe::where('is_deleted', 0)->pluck('nama', 'id');
         $tipe_members->prepend('-- Pilih Tipe Member --','');
 
-        $kabupatens = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
         return view('penjualan.member_create')->with(compact('data_', 'jenis_kelamins', 'group_outlets', 'tipe_members', 'kabupatens'));
@@ -8884,16 +8817,15 @@ printer_close($printer);
 
     public function StoreMember(Request $request) {
         $data_ = new MasterMember;
-        $data_->setDynamicConnection();
         $data_->fill($request->except('_token'));
 
-        $jenis_kelamins = MasterJenisKelamin::on($this->getConnectionName())->where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
+        $jenis_kelamins = MasterJenisKelamin::where('is_deleted', 0)->pluck('jenis_kelamin', 'id');
         $jenis_kelamins->prepend('-- Pilih Jenis Kelamin --','');
 
-        $group_outlets = MasterGroupApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $group_outlets = MasterGroupApotek::where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $group_outlets->prepend('-- Pilih Group Outlet --','');
 
-        $tipe_members = MasterMemberTipe::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $tipe_members = MasterMemberTipe::where('is_deleted', 0)->pluck('nama', 'id');
         $tipe_members->prepend('-- Pilih Tipe Member --','');
 
         $data_->activated = 1;
@@ -8916,7 +8848,7 @@ printer_close($printer);
         $date_now = date('Y-m-d');
         //$date_now = '2024-05-11';
 
-        $jum_penjualan_count = TransaksiPenjualan::on($this->getConnectionName())->where(function($query) use( $date_now){
+        $jum_penjualan_count = TransaksiPenjualan::where(function($query) use( $date_now){
             $query->where('tb_nota_penjualan.is_deleted','=','0');
             $query->where('tb_nota_penjualan.is_kredit','=','0');
             $query->where('tb_nota_penjualan.total_bayar','<=','0');
@@ -8931,10 +8863,10 @@ printer_close($printer);
 
         $tanggal = Carbon::parse($date_now);
         $tanggal = $tanggal->format('d M Y');
-        $jum_penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)->where('tgl_nota', $date_now)->where('created_by', Auth::user()->id)->where('id_apotek_nota','=',session('id_apotek_active'))->count();
-        $jum_penjualan_paid = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)->where('tgl_nota', $date_now)->where('created_by', Auth::user()->id)->where('total_bayar', '>', 0)->where('id_apotek_nota','=',session('id_apotek_active'))->count();
+        $jum_penjualan = TransaksiPenjualan::where('is_deleted', 0)->where('tgl_nota', $date_now)->where('created_by', Auth::user()->id)->where('id_apotek_nota','=',session('id_apotek_active'))->count();
+        $jum_penjualan_paid = TransaksiPenjualan::where('is_deleted', 0)->where('tgl_nota', $date_now)->where('created_by', Auth::user()->id)->where('total_bayar', '>', 0)->where('id_apotek_nota','=',session('id_apotek_active'))->count();
 
-        $jum_penjualan_notpaid = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)->where('tgl_nota', $date_now)->where('created_by', Auth::user()->id)->where('total_bayar', '<=', 0)->where('is_kredit', 0)->where('id_apotek_nota','=',session('id_apotek_active'))->count();
+        $jum_penjualan_notpaid = TransaksiPenjualan::where('is_deleted', 0)->where('tgl_nota', $date_now)->where('created_by', Auth::user()->id)->where('total_bayar', '<=', 0)->where('is_kredit', 0)->where('id_apotek_nota','=',session('id_apotek_active'))->count();
 
         $jum_penjualan_void = TransaksiPenjualanDetail::join('tb_nota_penjualan as a', 'a.id', '=', 'tb_detail_nota_penjualan.id_nota')
                         ->where('a.tgl_nota', $date_now)

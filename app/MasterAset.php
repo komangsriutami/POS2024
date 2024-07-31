@@ -7,10 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
+
 class MasterAset extends Model
 {
-    use DynamicConnectionTrait;
     protected $table = 'tb_m_aset';
     public $primaryKey = 'id';
     protected $fillable = ['id', 'nama', 'kode_aset', 'id_jenis_aset'];

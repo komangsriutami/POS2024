@@ -12,11 +12,9 @@ use App\MasterKewarganegaraan;
 use App\MasterAgama;
 use App\MasterGolonganDarah;
 Use Carbon\Carbon;
-use App\Traits\DynamicConnectionTrait;
 
 class HomePSController extends Controller
 {
-    use DynamicConnectionTrait;
     public function __construct()
     {
         $this->middleware('auth:pasien');
@@ -29,7 +27,7 @@ class HomePSController extends Controller
      */
     public function index()
     {
-        $dataAnggota = MasterPasien::on($this->getConnectionName())->select('tb_m_pasien.id')->orderBy("tb_m_pasien.id")->where('id_reference',session('id'))->pluck('id');
+        $dataAnggota = MasterPasien::select('tb_m_pasien.id')->orderBy("tb_m_pasien.id")->where('id_reference',session('id'))->pluck('id');
         $anggotaKeluargas = MasterPasien::orderBy("id")->where('id_reference',session('id_reference'))->get();
         $appointmentPasiens = AppointmentPasien::orderBy("tb_appointment_pasien.id")->whereIn('id_reg_pasien',
             $dataAnggota
@@ -85,7 +83,7 @@ class HomePSController extends Controller
 
         $golongandarahs = MasterGolonganDarah::orderBy("id")->get();
 
-        $anggotas = MasterPasien::on($this->getConnectionName())->where('id_reference', session('id'))
+        $anggotas = MasterPasien::where('id_reference', session('id'))
         ->where('tb_m_pasien.id', '!=' , session('id'))
         ->join("tb_m_kewarganegaraan", "tb_m_kewarganegaraan.id",'=',"tb_m_pasien.id_kewarganegaraan")
         ->select(
@@ -140,7 +138,7 @@ class HomePSController extends Controller
         $jeniskelamins = MasterJenisKelamin::orderBy("id")->get();
         $golongandarahs = MasterGolonganDarah::orderBy("id")->get();
 
-        $anggotas = MasterPasien::on($this->getConnectionName())->where('tb_m_pasien.id', $id)
+        $anggotas = MasterPasien::where('tb_m_pasien.id', $id)
         ->leftJoin("tb_m_kewarganegaraan", "tb_m_kewarganegaraan.id",'=',"tb_m_pasien.id_kewarganegaraan")
         ->select(
         "tb_m_pasien.id as id",
@@ -169,7 +167,7 @@ class HomePSController extends Controller
     public function EditAkun($parameter,Request $data){
         $parameterDec = Crypt::decrypt($parameter);
         $id = $parameterDec['id'];
-        $user = MasterPasien::on($this->getConnectionName())->find($id);
+        $user = MasterPasien::find($id);
         $user->fill($data->except('_token'));
 
 
@@ -183,7 +181,7 @@ class HomePSController extends Controller
             $jeniskelamins = MasterJenisKelamin::orderBy("id")->get();
             $golongandarahs = MasterGolonganDarah::orderBy("id")->get();
 
-               $anggotas = MasterPasien::on($this->getConnectionName())->where('tb_m_pasien.id', $id)
+               $anggotas = MasterPasien::where('tb_m_pasien.id', $id)
         ->leftJoin("tb_m_kewarganegaraan", "tb_m_kewarganegaraan.id",'=',"tb_m_pasien.id_kewarganegaraan")
         ->select(
         "tb_m_pasien.id as id",
@@ -223,7 +221,7 @@ class HomePSController extends Controller
                 session(['telepon' => $user['telepon']]);
                 session(['alergi_obat' => $user['alergi_obat']]);
 
-                $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->where("id", $user['id_kewarganegaraan'])->orderBy("id")->first();
+                $kewarganegaraan = MasterKewarganegaraan::where("id", $user['id_kewarganegaraan'])->orderBy("id")->first();
                 session(['kewarganegaraan' => $kewarganegaraan->kewarganegaraan]);
 
                 session(['id_kewarganegaraan' => $user['id_kewarganegaraan']]);
@@ -248,10 +246,9 @@ class HomePSController extends Controller
         //dd($data['id']);exit;
         if($data->password != "") $data->password = bcrypt($data->password);
 
-        $user = MasterPasien::on($this->getConnectionName())->find(session('id'));
+        $user = MasterPasien::find(session('id'));
 
         $allData = new MasterPasien;
-        $allData->setDynamicConnection();
         $allData->fill($data->only(
             ['password']
         ));
@@ -291,7 +288,6 @@ class HomePSController extends Controller
 
     public function AddAnggotaKeluarga(Request $data){
         $user = new MasterPasien;
-        $user->setDynamicConnection();
         $user->fill($data->except('_token'));
 
         $validator = $user->validate_isidatadiri();

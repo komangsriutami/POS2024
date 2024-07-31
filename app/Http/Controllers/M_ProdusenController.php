@@ -11,11 +11,9 @@ use App;
 use Datatables;
 use DB;
 use Excel;
-use App\Traits\DynamicConnectionTrait;
 
 class M_ProdusenController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -42,8 +40,8 @@ class M_ProdusenController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterProdusen::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_produsen.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterProdusen::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_produsen.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_produsen.is_deleted','=','0');
            // $query->where('tb_m_suplier.id','LIKE','%'.$request->id_suplier.'%');
@@ -88,12 +86,11 @@ class M_ProdusenController extends Controller
     public function create()
     {
     	$produsen = new MasterProdusen;
-        $produsen->setDynamicConnection();
 
-        $kabupatens = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Provinsi --','');
 
         return view('produsen.create')->with(compact('produsen', 'provinsis', 'kabupatens'));
@@ -108,17 +105,13 @@ class M_ProdusenController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $produsen = new MasterProdusen;
-        $produsen->setDynamicConnection();
         $produsen->fill($request->except('_token'));
 
-        $kabupatens      = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens      = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis      = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis      = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis ->prepend('-- Pilih Provinsi --','');
 
         $validator = $produsen->validate();
@@ -152,12 +145,12 @@ class M_ProdusenController extends Controller
     */
     public function edit($id)
     {
-        $produsen 		= MasterProdusen::on($this->getConnectionName())->find($id);
+        $produsen 		= MasterProdusen::find($id);
 
-        $kabupatens     = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens     = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis     = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis     = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Provinsi --','');
 
         return view('produsen.edit')->with(compact('produsen', 'kabupatens', 'provinsis'));
@@ -172,10 +165,7 @@ class M_ProdusenController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $produsen = MasterProdusen::on($this->getConnectionName())->find($id);
+        $produsen = MasterProdusen::find($id);
         $produsen->fill($request->except('_token'));
 
         $validator = $produsen->validate();
@@ -196,10 +186,7 @@ class M_ProdusenController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $produsen = MasterProdusen::on($this->getConnectionName())->find($id);
+        $produsen = MasterProdusen::find($id);
         $produsen->is_deleted = 1;
         if($produsen->save()){
             echo 1;

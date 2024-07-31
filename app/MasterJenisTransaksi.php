@@ -3,11 +3,9 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\DynamicConnectionTrait;
 
 class MasterJenisTransaksi extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Jenis Transaksi
 		Author 	: Sri U.

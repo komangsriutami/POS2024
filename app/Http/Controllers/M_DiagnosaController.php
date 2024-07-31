@@ -8,11 +8,9 @@ use App\MasterDiagnosa;
 use Auth;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class M_DiagnosaController extends Controller
 {   
-    use DynamicConnectionTrait;
 	# untuk menampilkan halaman awal
     public function index()
     {
@@ -22,8 +20,8 @@ class M_DiagnosaController extends Controller
     # untuk menampilkan mengambil data dari database
     public function get_data(Request $request)
     {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterDiagnosa::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_diagnosa.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterDiagnosa::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_m_diagnosa.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_m_diagnosa.is_deleted', '=', '0');
             });
@@ -53,7 +51,6 @@ class M_DiagnosaController extends Controller
     public function create()
     {
         $data_ = new MasterDiagnosa; //inisialisasi array
-        $data_->setDynamicConnection();
 
         return view('diagnosa.create')->with(compact('data_'));
     }
@@ -61,11 +58,7 @@ class M_DiagnosaController extends Controller
     # untuk menyimpan data dari form store
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $data_ = new MasterDiagnosa;
-        $data_->setDynamicConnection();
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         $validator = $data_->validate();
@@ -89,7 +82,7 @@ class M_DiagnosaController extends Controller
     # untuk menampilakn data detail show
     public function show($id)
     {
-        $data_ = MasterDiagnosa::on($this->getConnectionName())->find($id);
+        $data_ = MasterDiagnosa::find($id);
 
         return view('diagnosa.show')->with(compact('data_'));
     }
@@ -97,17 +90,14 @@ class M_DiagnosaController extends Controller
     # untuk menampilkan form edit
     public function edit($id)
     {
-        $data_ = MasterDiagnosa::on($this->getConnectionName())->find($id);
+        $data_ = MasterDiagnosa::find($id);
         return view('diagnosa.edit')->with(compact('data_'));
     }
 
     # untuk menyimpan data edit
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = MasterDiagnosa::on($this->getConnectionName())->find($id);
+        $data_ = MasterDiagnosa::find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         $validator = $data_->validate();
@@ -130,10 +120,7 @@ class M_DiagnosaController extends Controller
     # untuk menghapus data
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = MasterDiagnosa::on($this->getConnectionName())->find($id);
+        $data_ = MasterDiagnosa::find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');
         $data_->deleted_by = Auth::user()->id;

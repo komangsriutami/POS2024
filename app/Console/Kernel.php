@@ -13,34 +13,34 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        Commands\Histori\HistoriCronBKL::class, #1
+        /*Commands\Histori\HistoriCronBKL::class, #1
         Commands\Histori\HistoriCronLV::class, #2
         Commands\Histori\HistoriCronPJM::class, #3
-        Commands\Histori\HistoriCronPG::class, #4
+        Commands\Histori\HistoriCronPG::class, #4*/
         //Commands\Histori\HistoriCronTL::class, #5
-        Commands\Histori\HistoriCronSG::class, #6
+        /*Commands\Histori\HistoriCronSG::class, #6
         Commands\Histori\HistoriCronHW::class, #7
         Commands\Histori\HistoriCronCK::class, #8
         Commands\Histori\HistoriCronHO::class, #9
         Commands\Histori\HistoriCronSRJ::class, #10
         Commands\Histori\HistoriCronMG::class, #11
         Commands\Histori\HistoriCronPNT::class, #12
-        Commands\Histori\HistoriCronSBG::class, #13
+        Commands\Histori\HistoriCronSBG::class, #13*/
         /*Commands\ReloadHistoriOld::class,*/
 
-        Commands\Defecta\DefectaCronBKL::class, #1
+        /*Commands\Defecta\DefectaCronBKL::class, #1
         Commands\Defecta\DefectaCronLV::class, #2
         Commands\Defecta\DefectaCronPJM::class, #3
-        Commands\Defecta\DefectaCronPG::class, #4
+        Commands\Defecta\DefectaCronPG::class, #4*/
         //Commands\Defecta\DefectaCronTL::class, #5
-        Commands\Defecta\DefectaCronSG::class, #6
+       /* Commands\Defecta\DefectaCronSG::class, #6
         Commands\Defecta\DefectaCronHW::class, #7
         Commands\Defecta\DefectaCronCK::class, #8
         Commands\Defecta\DefectaCronHO::class, #9
         Commands\Defecta\DefectaCronSRJ::class, #10
         Commands\Defecta\DefectaCronMG::class, #11
         Commands\Defecta\DefectaCronPNT::class, #12
-        Commands\Defecta\DefectaCronSBG::class, #13
+        Commands\Defecta\DefectaCronSBG::class, #13*/
     ];
 
     /**
@@ -51,7 +51,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('historibkl:cron')
+       /* $schedule->command('historibkl:cron')
                  ->everyMinute();
 
         $schedule->command('historilv:cron')
@@ -61,12 +61,12 @@ class Kernel extends ConsoleKernel
                  ->everyMinute();
 
         $schedule->command('historipg:cron')
-                 ->everyMinute();
+                 ->everyMinute();*/
 
         /*$schedule->command('historitl:cron')
                  ->everyMinute();*/
 
-        $schedule->command('historisg:cron')
+        /*$schedule->command('historisg:cron')
                  ->everyMinute();
 
         $schedule->command('historihw:cron')
@@ -88,7 +88,7 @@ class Kernel extends ConsoleKernel
                  ->everyMinute();
 
         $schedule->command('historisbg:cron')
-                 ->everyMinute();
+                 ->everyMinute();*/
 
         /*$schedule->command('histori_old:cron')
                  ->everyMinute();*/
@@ -96,7 +96,7 @@ class Kernel extends ConsoleKernel
         /*===============================================*/
 
 
-        $schedule->command('defectabkl:cron')
+        /*$schedule->command('defectabkl:cron')
                  ->everyMinute();
 
         $schedule->command('defectalv:cron')
@@ -106,12 +106,12 @@ class Kernel extends ConsoleKernel
                  ->everyMinute();
 
         $schedule->command('defectapg:cron')
-                 ->everyMinute();
+                 ->everyMinute();*/
 
         /*$schedule->command('defectatl:cron')
                  ->everyMinute();*/
 
-        $schedule->command('defectasg:cron')
+       /* $schedule->command('defectasg:cron')
                  ->everyMinute();
 
         $schedule->command('defectahw:cron')
@@ -133,7 +133,7 @@ class Kernel extends ConsoleKernel
                  ->everyMinute();
 
         $schedule->command('defectasbg:cron')
-                 ->everyMinute();
+                 ->everyMinute();*/
     }
 
     /**

@@ -3,11 +3,9 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\DynamicConnectionTrait;
 
 class ReloadDataStatus extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Reload Data Status
 		Author 	: 

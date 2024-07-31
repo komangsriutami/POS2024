@@ -28,17 +28,15 @@ class BarangImport implements  ToCollection,WithHeadingRow
             foreach ($rows as $key => $value) {
                // dd($value);exit();
                 // cek kalau ada update kalau tidak insert //
-                $cekdetail = MasterObat::on($this->getConnectionName())->whereRaw('id = \''.$value['id'].'\'')
+                $cekdetail = MasterObat::whereRaw('id = \''.$value['id'].'\'')
                             ->first();
 
     
                 if(is_null($cekdetail)){
                     //$detail = new MasterBarang;
-                   // $detail->setDynamicConnection();
-
                     $gagal++;
                 } else {    
-                    $detail = MasterObat::on($this->getConnectionName())->find($cekdetail->id);
+                    $detail = MasterObat::find($cekdetail->id);
                     $detail->sku = $value['sku'];
                     $detail->updated_at = date('Y-m-d H:i:s');
                     $detail->updated_by = Auth::id();

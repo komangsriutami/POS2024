@@ -10,11 +10,9 @@ use Datatables;
 use DB;
 use File;
 use Illuminate\Support\Str;
-use App\Traits\DynamicConnectionTrait;
 
 class TipsController extends Controller
 {
-    use DynamicConnectionTrait;
     # untuk menampilkan halaman awal
     public function index()
     {
@@ -24,8 +22,8 @@ class TipsController extends Controller
     # untuk menampilkan mengambil data dari database
     public function list_tips(Request $request)
     {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = Tips::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_tips.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = Tips::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_tips.*'])
             ->where(function ($query) use ($request) {
                 $query->where('tb_tips.is_deleted', '=', '0');
             });
@@ -68,7 +66,6 @@ class TipsController extends Controller
     public function create()
     {
         $data_ = new Tips; //inisialisasi array
-        $data_->setDynamicConnection();
 
         return view('tips.create')->with(compact('data_'));
     }
@@ -76,11 +73,7 @@ class TipsController extends Controller
     # untuk menyimpan data dari form store
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $data_ = new Tips;
-        $data_->setDynamicConnection();
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         # file image | tambahan sri 14/6/2021
@@ -130,7 +123,7 @@ class TipsController extends Controller
     # untuk menampilakn data detail show
     public function show($id)
     {
-        $data_ = Tips::on($this->getConnectionName())->find($id);
+        $data_ = Tips::find($id);
 
         return view('tips.show')->with(compact('data_'));
     }
@@ -138,17 +131,14 @@ class TipsController extends Controller
     # untuk menampilkan form edit
     public function edit($id)
     {
-        $data_ = Tips::on($this->getConnectionName())->find($id);
+        $data_ = Tips::find($id);
         return view('tips.edit')->with(compact('data_'));
     }
 
     # untuk menyimpan data edit
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = Tips::on($this->getConnectionName())->find($id);
+        $data_ = Tips::find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         # file image | tambahan sri 14/6/2021
@@ -201,10 +191,7 @@ class TipsController extends Controller
     # untuk menghapus data
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = Tips::on($this->getConnectionName())->find($id);
+        $data_ = Tips::find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');
         $data_->deleted_by = Auth::user()->id;

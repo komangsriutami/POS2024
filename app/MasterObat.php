@@ -6,11 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
 use App\Events\ObatCreate;
-use App\Traits\DynamicConnectionTrait;
-
 class MasterObat extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Obat 
 		Author 	: Sri U.

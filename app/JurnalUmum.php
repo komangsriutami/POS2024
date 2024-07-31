@@ -7,11 +7,9 @@ use Validator;
 use Auth;
 
 use App\JurnalUmumDetail;
-use App\Traits\DynamicConnectionTrait;
 
 class JurnalUmum extends Model
 {
-    use DynamicConnectionTrait;
     protected $table = 'tb_jurnal_umum';
     public $primaryKey = 'id';
     // protected $fillable = ['tgl_transaksi', 'no_transaksi', 'id_kode_akun', 'id_sub_kode_akun', 'jumlah', 'keterangan'];
@@ -72,7 +70,7 @@ class JurnalUmum extends Model
         * kalau ada : update. => update juga total di tb_jurnal_umum.
         * 2. kalau tidak ada new jurnal umum.
         */
-        $checkjurnal = JurnalUmum::on($this->getConnectionName())->where("is_reloaded",1)
+        $checkjurnal = JurnalUmum::where("is_reloaded",1)
             ->where("kode_referensi",$param['kode_referensi'])
             ->where("tgl_transaksi",$param['tgl_transaksi'])
             ->whereNull("deleted_by")
@@ -84,7 +82,6 @@ class JurnalUmum extends Model
             ->first();
         if(is_null($checkjurnal)){
             $jurnal = new JurnalUmum;
-            $jurnal->setDynamicConnection();
             $jurnal->kode_referensi = $param['kode_referensi'];
             $jurnal->tgl_transaksi = $param['tgl_transaksi'];
             $jurnal->id_apotek = $param['id_apotek'];
@@ -97,7 +94,7 @@ class JurnalUmum extends Model
 
             $jurnal->save();        
         } else {
-            $jurnal = JurnalUmum::on($this->getConnectionName())->find($checkjurnal->id);
+            $jurnal = JurnalUmum::find($checkjurnal->id);
             $jurnal->updated_by = Auth::user()->id;
         }        
 
@@ -110,7 +107,7 @@ class JurnalUmum extends Model
                 // dd($value);
 
                 # check detail #
-                $cekdetail = JurnalUmumDetail::on($this->getConnectionName())->whereRaw("id_jurnal = '".$jurnal->id."'")
+                $cekdetail = JurnalUmumDetail::whereRaw("id_jurnal = '".$jurnal->id."'")
                             ->whereRaw("id_jenis_transaksi = '".$value['id_jenis_transaksi']."'") 
                             ->whereRaw("id_kode_akun = '".$value['id_kode_akun']."'") 
                             ->whereRaw("is_reloaded = 1")
@@ -123,10 +120,9 @@ class JurnalUmum extends Model
                             ->whereNull("deleted_by")
                             ->first();
                 if(!is_null($cekdetail)){
-                    $detail = JurnalUmumDetail::on($this->getConnectionName())->find($cekdetail->id);
+                    $detail = JurnalUmumDetail::find($cekdetail->id);
                 } else {
                     $detail = new JurnalUmumDetail;
-                    $detail->setDynamicConnection();
                 }
 
                 $detail->id_jurnal = $jurnal->id;

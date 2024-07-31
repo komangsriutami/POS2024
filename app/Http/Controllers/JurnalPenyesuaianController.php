@@ -38,11 +38,9 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use App\Traits\DynamicConnectionTrait;
 
 class JurnalPenyesuaianController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : Halaman utama jurnal penyesuaian
@@ -75,8 +73,8 @@ class JurnalPenyesuaianController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = JurnalUmum::on($this->getConnectionName())->whereRaw('is_penyesuaian = 1')->whereNull("deleted_by");
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = JurnalUmum::whereRaw('is_penyesuaian = 1')->whereNull("deleted_by");
         
         $datatables = Datatables::of($data);
         return $datatables
@@ -123,7 +121,6 @@ class JurnalPenyesuaianController extends Controller
     public function create()
     {
         $jurnal_penyesuaian = new JurnalUmum;
-        $jurnal_penyesuaian->setDynamicConnection();
         $jenistransaksi = MasterJenisTransaksi::get();
         return view('jurnal_penyesuaian.create')->with(compact('jurnal_penyesuaian','jenistransaksi'));
     }
@@ -139,11 +136,10 @@ class JurnalPenyesuaianController extends Controller
     public function addDetail(Request $request)
     {
         // dd($request->input());
-        $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
+        $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
         $kode_akun->prepend('-- Pilih Akun --','');
 
         $detailjurnal = new JurnalUmumDetail;
-        $detailjurnal->setDynamicConnection();
         $count = $request->count;
         $form_detail = View::make('jurnal_penyesuaian._form_detail',compact('kode_akun','detailjurnal','count'))->render();
         $status = 1;
@@ -163,7 +159,6 @@ class JurnalPenyesuaianController extends Controller
     {
         // dd($request->input());
         $filebukti = new JurnalUmumBukti;
-        $filebukti->setDynamicConnection();
         $count = $request->count;
         $form_detail = View::make('jurnal_penyesuaian._form_file',compact('filebukti','count'))->render();
         $status = 1;
@@ -184,15 +179,11 @@ class JurnalPenyesuaianController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         // dd($request->input());
-        DB::connection($this->getConnectionName())->beginTransaction();  
+        DB::beginTransaction(); 
         try {
 
             $jurnal_penyesuaian = new JurnalUmum;
-            $jurnal_penyesuaian->setDynamicConnection();
             $jurnal_penyesuaian->no_transaksi = $request->no_transaksi;
             $jurnal_penyesuaian->tgl_transaksi = $request->tgl_transaksi;
             $jurnal_penyesuaian->memo = $request->memo;
@@ -212,7 +203,6 @@ class JurnalPenyesuaianController extends Controller
                         foreach ($request->id_kode_akun as $key => $kode) {
                             if(!is_null($kode)){
                                 $detail = new JurnalUmumDetail;
-                                $detail->setDynamicConnection();
                                 $detail->id_jurnal = $jurnal_penyesuaian->id;
                                 $detail->id_kode_akun = $kode;
                                 $detail->deskripsi = $request->deskripsi[$key];
@@ -236,7 +226,6 @@ class JurnalPenyesuaianController extends Controller
                                         $mime = $bukti->getMimeType();
 
                                         $buktijurnal = new JurnalUmumBukti;
-                                        $buktijurnal->setDynamicConnection();
                                         $nama_file = $bukti->getClientOriginalName();
                                         $split = explode('.', $nama_file);
                                         $ext = end($split);
@@ -284,7 +273,7 @@ class JurnalPenyesuaianController extends Controller
 
                     if($errorfile > 0){ $errorMessages = "terdapat "+$errorfile+" file bukti dengan ekstensi yang tidak sesuai"; }
 
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo json_encode(array("status" => 1,"errorMessages" => $errorMessages, "url" => url('jurnalpenyesuaian')));
 
 
@@ -298,7 +287,7 @@ class JurnalPenyesuaianController extends Controller
             }
             
         } catch(Exception $e){
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array('status' => 2));
         }
     }
@@ -315,7 +304,7 @@ class JurnalPenyesuaianController extends Controller
     public function show($id)
     {
         $idjurnal = Crypt::decrypt($id);
-        $jurnal_penyesuaian = JurnalUmum::on($this->getConnectionName())->find($idjurnal);
+        $jurnal_penyesuaian = JurnalUmum::find($idjurnal);
         if(!empty($jurnal_penyesuaian)){
             return view('jurnal_penyesuaian.showDetail')->with(compact("jurnal_penyesuaian"));
         } else {
@@ -332,9 +321,9 @@ class JurnalPenyesuaianController extends Controller
     public function edit($id)
     {
         $idjurnal = Crypt::decrypt($id);
-        $jurnal_penyesuaian = JurnalUmum::on($this->getConnectionName())->find($idjurnal);
+        $jurnal_penyesuaian = JurnalUmum::find($idjurnal);
         if(!empty($jurnal_penyesuaian)){
-            $kode_akun= MasterKodeAkun::on($this->getConnectionName())->select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
+            $kode_akun= MasterKodeAkun::select('id',DB::RAW('CONCAT(kode,\' - \',nama) as nama_akun'))->where('is_deleted', 0)->pluck('nama_akun', 'id');
             $kode_akun->prepend('-- Pilih Akun --','');
 
             return view('jurnal_penyesuaian.edit')->with(compact("jurnal_penyesuaian","kode_akun"));
@@ -352,15 +341,12 @@ class JurnalPenyesuaianController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        DB::connection($this->getConnectionName())->beginTransaction(); 
+        DB::beginTransaction();
         try {
             
             // dd($request->input());
             $id = Crypt::decrypt($id);
-            $jurnal_penyesuaian = JurnalUmum::on($this->getConnectionName())->find($id);
+            $jurnal_penyesuaian = JurnalUmum::find($id);
             $jurnal_penyesuaian->no_transaksi = $request->no_transaksi;
             $jurnal_penyesuaian->tgl_transaksi = $request->tgl_transaksi;
             $jurnal_penyesuaian->memo = $request->memo;
@@ -384,11 +370,10 @@ class JurnalPenyesuaianController extends Controller
                             if(!is_null($kode)){
                                 if($request->iddetail[$key] == ""){
                                     $detail = new JurnalUmumDetail;
-                                    $detail->setDynamicConnection();
                                     $detail->created_by = Auth::user()->id;
                                 } else {
                                     $id = Crypt::decrypt($request->iddetail[$key]);
-                                    $detail = JurnalUmumDetail::on($this->getConnectionName())->find($id);
+                                    $detail = JurnalUmumDetail::find($id);
                                     // dd($detail);
                                     $detail->updated_by = Auth::user()->id;
                                 }
@@ -408,7 +393,7 @@ class JurnalPenyesuaianController extends Controller
 
 
                         /* --- Hapus detail yang tidak ada dalam list --- */
-                        $del = JurnalUmumDetail::on($this->getConnectionName())->where(function($query) use ($listakun,$jurnal_penyesuaian){
+                        $del = JurnalUmumDetail::where(function($query) use ($listakun,$jurnal_penyesuaian){
                             if(count($listakun)){
                                 $query->whereNotIn("id",$listakun);
                                 $query->where("id_jurnal",$jurnal_penyesuaian->id); // SRI | sepertinya selain akun yang diupdate kehapus semua kalau tanpa ini
@@ -468,13 +453,12 @@ class JurnalPenyesuaianController extends Controller
 
                                         if($request->idbukti[$key] == ""){
                                             $buktijurnal = new JurnalUmumBukti;
-                                            $buktijurnal->setDynamicConnection();
                                             $buktijurnal->type_file = $mime;
                                             $buktijurnal->file = base64_encode($content);
                                             $buktijurnal->file = $file_name . "." . $ext;
                                             $buktijurnal->created_by = Auth::user()->id;
                                         } else {
-                                            $buktijurnal = JurnalUmumBukti::on($this->getConnectionName())->find(Crypt::decrypt($request->idbukti[$key]));
+                                            $buktijurnal = JurnalUmumBukti::find(Crypt::decrypt($request->idbukti[$key]));
                                             $buktijurnal->updated_by = Auth::user()->id;
                                             $buktijurnal->updated_at = Date("Y-m-d H:i:s");
                                         }
@@ -495,7 +479,7 @@ class JurnalPenyesuaianController extends Controller
                                 
                                 } else {
 
-                                    $buktijurnal = JurnalUmumBukti::on($this->getConnectionName())->find(Crypt::decrypt($request->idbukti[$key]));
+                                    $buktijurnal = JurnalUmumBukti::find(Crypt::decrypt($request->idbukti[$key]));
                                     $buktijurnal->updated_by = Auth::user()->id;
                                     $buktijurnal->updated_at = Date("Y-m-d H:i:s");
                                     $buktijurnal->keterangan = $request->keterangan[$key];
@@ -511,7 +495,7 @@ class JurnalPenyesuaianController extends Controller
                     // dd($listbukti);
 
                     /* --- Hapus detail yang tidak ada dalam list --- */
-                    $del = JurnalUmumBukti::on($this->getConnectionName())->where(function($query) use ($listbukti,$jurnal_penyesuaian){
+                    $del = JurnalUmumBukti::where(function($query) use ($listbukti,$jurnal_penyesuaian){
                         if(count($listbukti)){
                             $query->whereNotIn("id",$listbukti);
                             $query->where("id_jurnal",$jurnal_penyesuaian->id); // SRI | sepertinya selain akun yang diupdate kehapus semua kalau tanpa ini
@@ -526,7 +510,7 @@ class JurnalPenyesuaianController extends Controller
 
                     if($errorfile > 0){ $errorMessages = "terdapat "+$errorfile+" file bukti dengan ekstensi yang tidak sesuai"; }
 
-                    DB::connection($this->getConnectionName())->commit();
+                    DB::commit();
                     echo json_encode(array("status" => 1,"errorMessages" => $errorMessages, "url" => url('jurnalpenyesuaian')));
 
 
@@ -539,7 +523,7 @@ class JurnalPenyesuaianController extends Controller
             }
 
         } catch (Exception $e) {
-            DB::connection($this->getConnectionName())->rollback();
+            DB::rollback();
             echo json_encode(array("status" => 2));
         }
     }
@@ -555,12 +539,9 @@ class JurnalPenyesuaianController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $id = Crypt::decrypt($id);
         // dd($id);
-        $detail = JurnalUmum::on($this->getConnectionName())->find($id);
+        $detail = JurnalUmum::find($id);
         $detail->deleted_at = date('Y-m-d H:i:s');
         $detail->deleted_by = Auth::user()->id;
         if($detail->save()){

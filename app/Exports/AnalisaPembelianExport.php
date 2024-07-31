@@ -54,8 +54,8 @@ class AnalisaPembelianExport implements FromCollection, WithColumnWidths, WithSt
         $tgl_akhir = $akhir.' 23:59:59';
         $tgl_awal = $awal.' 00:00:01';
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $sub2 = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $sub2 = TransaksiPenjualanDetail::select([
             'a.id',
             DB::raw('SUM(tb_detail_nota_penjualan.jumlah) as terjual'),
             DB::raw('(TRUNCATE
@@ -99,7 +99,7 @@ class AnalisaPembelianExport implements FromCollection, WithColumnWidths, WithSt
 
         //$data = $sub2->get();
 
-        $sub3 = DB::connection($this->getConnectionName())->table( 'tb_m_obat as a' )
+        $sub3 = DB::table( 'tb_m_obat as a' )
             ->select([
                 DB::raw('@rownum := @rownum + 1 AS no'),
                 'a.nama as nama_obat',
@@ -128,7 +128,7 @@ class AnalisaPembelianExport implements FromCollection, WithColumnWidths, WithSt
             ->leftjoin(DB::raw("({$sub2->toSql()}) as sub2"), 'sub2.id', '=', 'a.id')
             ->mergeBindings($sub2->getQuery());
 
-         $data = DB::connection($this->getConnectionName())->table( DB::raw("({$sub3->toSql()}) as sub3") )
+         $data = DB::table( DB::raw("({$sub3->toSql()}) as sub3") )
             ->mergeBindings($sub3) 
             ->select(['sub3.*'])
             ->orderByRaw('sub3.id_obat')
@@ -171,7 +171,7 @@ class AnalisaPembelianExport implements FromCollection, WithColumnWidths, WithSt
                 $saran = 'Tidak ada saran yang sesuai dengan kategori';
             };
 
-            $cek = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
+            $cek = DefectaOutlet::where('is_deleted', 0)
                 ->where('id_obat', $obj->id_obat)
                 ->where('id_apotek', $this->id_apotek)
                 ->where('id_status', '!=', 1)

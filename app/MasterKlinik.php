@@ -5,11 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class MasterKlinik extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Untuk Master Klinik 
 		Author 	: Sri U.

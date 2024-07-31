@@ -22,18 +22,15 @@ use DB;
 use Auth;
 use Hash;
 use Crypt;
-use App\Traits\DynamicConnectionTrait;
-
 class T_TransferController extends Controller
 {
-    use DynamicConnectionTrait;
     public function index() {
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
-        $id_apotek_transfer = DefectaOutlet::on($this->getConnectionName())->select(['id_apotek_transfer'])->where('id_process', 0)->where('id_status', 2)->get();
+        $id_apotek_transfer = DefectaOutlet::select(['id_apotek_transfer'])->where('id_process', 0)->where('id_status', 2)->get();
 
-        $apotek_transfers = MasterApotek::on($this->getConnectionName())->whereIn('id', $id_apotek_transfer)->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apotek_transfers = MasterApotek::whereIn('id', $id_apotek_transfer)->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apotek_transfers->prepend('-- Pilih Apotek Tujuan --','');
 
         $cek2_ = session('apotek_transfer_aktif');
@@ -59,13 +56,12 @@ class T_TransferController extends Controller
 
     public function create() {
         $transfer = new TransaksiTransfer;
-        $transfer->setDynamicConnection();
-        $apotek_transfers = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
-        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apotek_transfers = MasterApotek::whereNotIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::whereIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 1;
 
-        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', [1,2,3,4,5])->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::where('is_deleted', 0)->whereIn('id', [1,2,3,4,5])->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
         $detail_transfers = collect();
@@ -76,11 +72,7 @@ class T_TransferController extends Controller
     }
 
     public function store(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $transfer = new TransaksiTransfer;
-        $transfer->setDynamicConnection();
         $transfer->fill($request->except('_token'));
         $transfer->id_apotek_transfer = $request->id_apotek_transfer;
         $transfer->id_apotek = $request->id_apotek;
@@ -102,23 +94,23 @@ class T_TransferController extends Controller
     }
 
     public function edit($id) {
-        $transfer = TransaksiTransfer::on($this->getConnectionName())->find($id);
-        $apotek_transfers = MasterApotek::on($this->getConnectionName())->whereIn('id', [$transfer->id_apotek_transfer])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
-        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', [$transfer->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $transfer = TransaksiTransfer::find($id);
+        $apotek_transfers = MasterApotek::whereIn('id', [$transfer->id_apotek_transfer])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::whereIn('id', [$transfer->id_apotek])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $tanggal = date('Y-m-d');
         $var = 2;
 
-        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', [1,2,3,4,5])->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::where('is_deleted', 0)->whereIn('id', [1,2,3,4,5])->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $detail_transfers = TransaksiTransferDetail::on($this->getConnectionName())->where('id_nota', $transfer->id)->where('is_deleted', 0)->get();
+        $detail_transfers = TransaksiTransferDetail::where('id_nota', $transfer->id)->where('is_deleted', 0)->get();
         $defectas = collect();
 
         return view('transfer.edit')->with(compact('transfer', 'apotek_transfers','apoteks', 'tanggal', 'var', 'satuans', 'detail_transfers', 'defectas'));
     }
 
     public function update(Request $request, $id) {
-        $transfer = TransaksiTransfer::on($this->getConnectionName())->find($id);
+        $transfer = TransaksiTransfer::find($id);
         $transfer->fill($request->except('_token'));
         $detail_transfers = $request->detail_transfer;
         $validator = $transfer->validate();
@@ -133,10 +125,7 @@ class T_TransferController extends Controller
     }
 
     public function destroy($id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $tf = TransaksiTransfer::on($this->getConnectionName())->find($id);
+        $tf = TransaksiTransfer::find($id);
         $tf->is_deleted = 1;
         $tf->deleted_at = date('Y-m-d H:i:s');
         $tf->deleted_by = Auth::user()->id;
@@ -149,7 +138,7 @@ class T_TransferController extends Controller
             $val->deleted_by = Auth::user()->id;
             $val->save();
 
-            $defecta = DefectaOutlet::on($this->getConnectionName())->find($val->id_defecta);
+            $defecta = DefectaOutlet::find($val->id_defecta);
             $defecta->id_process = 0;
             $defecta->updated_at = date('Y-m-d H:i:s');
             $defecta->updated_by = Auth::id();
@@ -184,8 +173,8 @@ class T_TransferController extends Controller
         $id_apotek_transfer = session('apotektrans_transfer_aktif');
         $id_process = session('status_transfer_aktif');
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DefectaOutlet::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = DefectaOutlet::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -277,14 +266,14 @@ class T_TransferController extends Controller
         $id_apotek_transfer = explode(",", $request->input('id_apotek_transfer'));
         $id_defecta = explode(",", $request->input('id_defecta'));
 
-        $apotek_transfers = MasterApotek::on($this->getConnectionName())->whereIn('id', [$request->input('id_apotek_transfer')])->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apotek_transfers = MasterApotek::whereIn('id', [$request->input('id_apotek_transfer')])->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $jum_ = count($apotek_transfers);
         if($jum_ > 1) {
             session()->flash('error', 'Data yang dipilih terdiri dari '.$jum_.' apotek tujuan, pastikan data yang dipilih dari apotek tujuan yang sama!');
             return redirect('transfer');
         }
 
-        $defectas = DefectaOutlet::on($this->getConnectionName())->select([
+        $defectas = DefectaOutlet::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -302,22 +291,20 @@ class T_TransferController extends Controller
             $query->whereIn('tb_defecta_outlet.id', $id_defecta);
         })->get();
 
-        $apoteks = MasterApotek::on($this->getConnectionName())->whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
+        $apoteks = MasterApotek::whereIn('id', $id_apotek)->where('is_deleted', 0)->pluck('nama_singkat', 'id');
         $transfer = new TransaksiTransfer;
-        $transfer->setDynamicConnection();
         $detail_transfers = new TransaksiTransferDetail;
-        $detail_transfers->setDynamicConnection();
         $tanggal = date('Y-m-d');
         $var = 1;
 
-        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', [1,2,3,4,5])->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::where('is_deleted', 0)->whereIn('id', [1,2,3,4,5])->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
         return view('transfer.create')->with(compact('defectas', 'apotek_transfers', 'transfer', 'detail_transfers', 'tanggal', 'var', 'apoteks', 'satuans'));
     }
 
     public function cari_obat(Request $request) {
-        $obat = MasterObat::on($this->getConnectionName())->where('barcode', $request->barcode)->first();
+        $obat = MasterObat::where('barcode', $request->barcode)->first();
 
         $cek_ = 0;
         
@@ -336,11 +323,11 @@ class T_TransferController extends Controller
 
     public function list_data_obat(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find($request->id_apotek);
+        $apotek = MasterApotek::find($request->id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as a')
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = DB::table('tb_m_stok_harga_'.$inisial.' as a')
         ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'a.*',
@@ -375,7 +362,7 @@ class T_TransferController extends Controller
     }
 
     public function cari_obat_dialog(Request $request) {
-        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
+        $obat = MasterObat::find($request->id_obat);
 
         return json_encode($obat);
     }
@@ -383,7 +370,7 @@ class T_TransferController extends Controller
     public function edit_detail(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $defecta = DefectaOutlet::on($this->getConnectionName())->select(['tb_defecta_outlet.*', 'a.nama'])
+        $defecta = DefectaOutlet::select(['tb_defecta_outlet.*', 'a.nama'])
                         ->leftjoin('tb_m_obat as a', 'a.id', 'tb_defecta_outlet.id_obat')
                         ->where('tb_defecta_outlet.id', $id)
                         ->first();
@@ -391,15 +378,12 @@ class T_TransferController extends Controller
             $defecta->jumlah_penjualan = 0;
             $defecta->margin = 0;
         }
-        $apotek = MasterApotek::on($this->getConnectionName())->find($defecta->id_apotek);
+        $apotek = MasterApotek::find($defecta->id_apotek);
         return view('transfer._form_edit_detail')->with(compact('defecta', 'no', 'apotek'));
     }
 
     public function update_defecta(Request $request, $id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $defecta = DefectaOutlet::on($this->getConnectionName())->find($id);
+        $defecta = DefectaOutlet::find($id);
         $defecta->jumlah_order = $request->jumlah_order;
         $defecta->komentar = $request->komentar;
 
@@ -419,18 +403,18 @@ class T_TransferController extends Controller
     }
 
     public function data_transfer() {
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
-        $apoteks_tujuans = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks_tujuans = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks_tujuans->prepend('-- Pilih Apotek Tujuan --','');
 
         return view('transfer.data_transfer')->with(compact('apoteks', 'apoteks_tujuans'));
     }
 
     public function list_data_transfer(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTransfer::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiTransfer::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_transfer.*',
                 'a.nama_panjang as apotek',
@@ -449,7 +433,7 @@ class T_TransferController extends Controller
         });
 
         if($request->notif == true){
-            $notified_menu = RbacMenu::on($this->getConnectionName())->select(
+            $notified_menu = RbacMenu::select(
                 'rbac_menu.id',
                 'rbac_menu.nama_panjang'
             )
@@ -529,18 +513,18 @@ class T_TransferController extends Controller
 
 
     public function konfirmasi() {
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
-        $apoteks_tujuans = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks_tujuans = MasterApotek::whereNotIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks_tujuans->prepend('-- Pilih Apotek Asal Permintaan TF --','');
 
         return view('transfer.konfirmasi')->with(compact('apoteks', 'apoteks_tujuans'));
     }
 
     public function list_konfirmasi(Request $request) {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTransfer::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = TransaksiTransfer::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_nota_transfer.*',
                 'a.nama_panjang as apotek',
@@ -616,20 +600,17 @@ class T_TransferController extends Controller
     public function edit_transfer(Request $request){
         $id = $request->id;
         $no = $request->no;
-        $detail = TransaksiTransferDetail::on($this->getConnectionName())->select(['tb_detail_nota_transfer.*', 'a.nama'])
+        $detail = TransaksiTransferDetail::select(['tb_detail_nota_transfer.*', 'a.nama'])
                         ->leftjoin('tb_m_obat as a', 'a.id', 'tb_detail_nota_transfer.id_obat')
                         ->where('tb_detail_nota_transfer.id', $id)
                         ->first();
-        $transfer = TransaksiTransfer::on($this->getConnectionName())->find($detail->id_nota);
-        $apotek = MasterApotek::on($this->getConnectionName())->find($transfer->id_apotek);
+        $transfer = TransaksiTransfer::find($detail->id_nota);
+        $apotek = MasterApotek::find($transfer->id_apotek);
         return view('transfer._form_edit_transfer')->with(compact('detail', 'no', 'apotek'));
     }
 
     public function update_transfer_detail(Request $request, $id) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $detail = TransaksiTransferDetail::on($this->getConnectionName())->find($id);
+        $detail = TransaksiTransferDetail::find($id);
         $detail->jumlah = $request->jumlah;
         $detail->keterangan = $request->keterangan;
 
@@ -649,18 +630,18 @@ class T_TransferController extends Controller
 
     public function GetExportPdf($id) {
         $id = decrypt($id);
-        $outlet = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($outlet->id_apoteker);
-        $transfer = TransaksiTransfer::on($this->getConnectionName())->find($id);
-        $apotek_tujuan = MasterApotek::on($this->getConnectionName())->find($transfer->id_apotek_transfer);
-        $detail_transfers = TransaksiTransferDetail::on($this->getConnectionName())->where('id_nota', $transfer->id)->where('is_deleted', 0)->get();
+        $outlet = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($outlet->id_apoteker);
+        $transfer = TransaksiTransfer::find($id);
+        $apotek_tujuan = MasterApotek::find($transfer->id_apotek_transfer);
+        $detail_transfers = TransaksiTransferDetail::where('id_nota', $transfer->id)->where('is_deleted', 0)->get();
 
         $fileTTD = '';
         if(!is_null($apoteker->file)) {
             $split_co = explode('.' , $apoteker->file);
             $ext_co = end($split_co);
             $mime = 'image/'.$ext_co;
-            $ttd = DB::connection($this->getConnectionName())->table('tb_users_ttd')->where('id_user', $apoteker->id)->first();
+            $ttd = DB::table('tb_users_ttd')->where('id_user', $apoteker->id)->first();
             $fileTTD = '<img src="data:'.$mime.';base64, '.$ttd->image.'" width="50" height="50">';
             //echo '<img src="data:image/jpg;base64, '.$ttd->image.'" width="50" height="50"></a>';exit();
         }
@@ -799,12 +780,12 @@ class T_TransferController extends Controller
 
     public function send_sign(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $user = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $user = User::find($apotek->id_apoteker);
         if($request->password != 'false' OR $request->password != false) {
             $pass = $request->password;
             if (Hash::check($pass, $user->password)) {
-                $data_ = TransaksiTransfer::on($this->getConnectionName())->find($request->id);
+                $data_ = TransaksiTransfer::find($request->id);
                 $data_->is_sign = 1;
                 $data_->sign_by = Auth::id();
                 $data_->sign_at = date('Y-m-d H:i:s');

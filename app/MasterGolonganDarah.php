@@ -5,7 +5,6 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class MasterGolonganDarah extends Model
 {
@@ -14,7 +13,7 @@ class MasterGolonganDarah extends Model
 		Author 	: Sri U.
 		Date 	: 24/02/2020
 	*/
-	use DynamicConnectionTrait;
+		
     protected $table = 'tb_m_golongan_darah';
     public $primaryKey = 'id';
     protected $fillable = ['id','golongan_darah'];

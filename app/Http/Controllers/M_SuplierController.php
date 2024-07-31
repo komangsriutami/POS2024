@@ -11,11 +11,9 @@ use App;
 use Datatables;
 use DB;
 use Excel;
-use App\Traits\DynamicConnectionTrait;
 
 class M_SuplierController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -42,8 +40,8 @@ class M_SuplierController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterSuplier::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_suplier.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterSuplier::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_suplier.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_suplier.is_deleted','=','0');
            // $query->where('tb_m_suplier.id','LIKE','%'.$request->id_suplier.'%');
@@ -99,12 +97,11 @@ class M_SuplierController extends Controller
     public function create()
     {
     	$suplier = new MasterSuplier;
-        $suplier->setDynamicConnection();
 
-        $kabupatens = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Provinsi --','');
         
         return view('suplier.create')->with(compact('suplier', 'provinsis', 'kabupatens'));
@@ -119,17 +116,13 @@ class M_SuplierController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $suplier = new MasterSuplier;
-        $suplier->setDynamicConnection();
         $suplier->fill($request->except('_token'));
 
-        $kabupatens      = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens      = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis      = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis      = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis ->prepend('-- Pilih Provinsi --','');
 
         $validator = $suplier->validate();
@@ -163,12 +156,12 @@ class M_SuplierController extends Controller
     */
     public function edit($id)
     {
-        $suplier 		= MasterSuplier::on($this->getConnectionName())->find($id);
+        $suplier 		= MasterSuplier::find($id);
 
-        $kabupatens     = MasterKabupaten::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $kabupatens     = MasterKabupaten::where('is_deleted', 0)->pluck('nama', 'id');
         $kabupatens->prepend('-- Pilih Kabupaten --','');
 
-        $provinsis     = MasterProvinsi::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $provinsis     = MasterProvinsi::where('is_deleted', 0)->pluck('nama', 'id');
         $provinsis->prepend('-- Pilih Provinsi --','');
 
         return view('suplier.edit')->with(compact('suplier', 'kabupatens', 'provinsis'));
@@ -183,10 +176,7 @@ class M_SuplierController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $suplier = MasterSuplier::on($this->getConnectionName())->find($id);
+        $suplier = MasterSuplier::find($id);
         $suplier->fill($request->except('_token'));
 
         $validator = $suplier->validate();
@@ -207,10 +197,7 @@ class M_SuplierController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $suplier = MasterSuplier::on($this->getConnectionName())->find($id);
+        $suplier = MasterSuplier::find($id);
         $suplier->is_deleted = 1;
         if($suplier->save()){
             echo 1;

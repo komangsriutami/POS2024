@@ -5,11 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class SettingPaketSistem extends Model
 {
-    use DynamicConnectionTrait;
     /* 
 		Model 	: Model Setting Paket Sistem
 		Author 	: Wiwan Gussanda

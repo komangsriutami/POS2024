@@ -21,11 +21,9 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use App\Traits\DynamicConnectionTrait;
 
 class EditObatController extends Controller
 {
-    use DynamicConnectionTrait;
     public function index(ObatDataTable $dataTable) {
         return $dataTable->render('data_obat.edit_data_obat');
     }

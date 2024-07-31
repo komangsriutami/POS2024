@@ -9,11 +9,9 @@ use App\MasterPaketWDDetail;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class M_PaketWDController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -36,8 +34,8 @@ class M_PaketWDController extends Controller
     */
     public function list_data_paket_wd(Request $request)
     {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterPaketWD::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_paket_wd.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterPaketWD::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_paket_wd.*'])
         ->where(function($query) use($request){
             $query->orwhere('tb_m_paket_wd.is_deleted','=','0');
         });
@@ -71,7 +69,6 @@ class M_PaketWDController extends Controller
     public function create()
     {
     	$paket_wd = new MasterPaketWD;
-        $paket_wd->setDynamicConnection();
 
         return view('paket_wd.create')->with(compact('paket_wd'));
     }
@@ -85,11 +82,7 @@ class M_PaketWDController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $paket_wd = new MasterPaketWD;
-        $paket_wd->setDynamicConnection();
         $paket_wd->fill($request->except('_token'));
 
         $validator = $paket_wd->validate();
@@ -123,7 +116,7 @@ class M_PaketWDController extends Controller
     */
     public function edit($id)
     {
-        $paket_wd = MasterPaketWD::on($this->getConnectionName())->find($id);
+        $paket_wd = MasterPaketWD::find($id);
 
         return view('paket_wd.edit')->with(compact('paket_wd'));
     }
@@ -137,10 +130,7 @@ class M_PaketWDController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $paket_wd = MasterPaketWD::on($this->getConnectionName())->find($id);
+        $paket_wd = MasterPaketWD::find($id);
         $paket_wd->fill($request->except('_token'));
 
         $validator = $paket_wd->validate();
@@ -161,10 +151,7 @@ class M_PaketWDController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $paket_wd = MasterPaketWD::on($this->getConnectionName())->find($id);
+        $paket_wd = MasterPaketWD::find($id);
         $paket_wd->is_deleted = 1;
         if($paket_wd->save()){
             echo 1;

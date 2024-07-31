@@ -1,0 +1,144 @@
+[14-May-2024 08:28:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/cache.php:21
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/cache.php on line 21
+[14-May-2024 08:28:50 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/app.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/app.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/hashing.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/hashing.php on line 32
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/hashing.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/hashing.php on line 32
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/broadcasting.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/broadcasting.php on line 18
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/filesystems.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/filesystems.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/mail.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/mail.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/mail.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/mail.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/logging.php:20
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/logging.php on line 20
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/app.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/app.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/app.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/app.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/logging.php:20
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/logging.php on line 20
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/broadcasting.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/broadcasting.php on line 18
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/logging.php:20
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/logging.php on line 20
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/filesystems.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/filesystems.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/broadcasting.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/broadcasting.php on line 18
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/database.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/database.php on line 18
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/hashing.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/hashing.php on line 32
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/app.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/app.php on line 16
+[14-May-2024 08:28:51 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/broadcasting.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/broadcasting.php on line 18
+[14-May-2024 08:28:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/logging.php:20
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/logging.php on line 20
+[14-May-2024 08:28:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/mail.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/mail.php on line 16
+[14-May-2024 08:28:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/filesystems.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/filesystems.php on line 16
+[14-May-2024 08:28:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/app.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/app.php on line 16
+[14-May-2024 08:28:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/mail.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/mail.php on line 16
+[14-May-2024 08:28:52 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/database.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/database.php on line 18
+[14-May-2024 08:28:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/filesystems.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/filesystems.php on line 16
+[14-May-2024 08:28:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/database.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/database.php on line 18
+[14-May-2024 08:28:54 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/database.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/database.php on line 18
+[14-May-2024 08:29:17 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/mail.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/mail.php on line 16
+[14-May-2024 08:29:18 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/app.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/app.php on line 16
+[14-May-2024 08:29:30 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/hashing.php:32
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/hashing.php on line 32
+[14-May-2024 08:29:36 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/filesystems.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/filesystems.php on line 16
+[14-May-2024 08:29:39 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/broadcasting.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/broadcasting.php on line 18
+[14-May-2024 08:29:40 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/database.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/database.php on line 18
+[14-May-2024 08:29:44 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/posbwfco/public_html/config/logging.php:20
+Stack trace:
+#0 {main}
+  thrown in /home/posbwfco/public_html/config/logging.php on line 20

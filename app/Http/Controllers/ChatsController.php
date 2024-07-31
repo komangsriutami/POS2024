@@ -6,11 +6,9 @@ use Illuminate\Http\Request;
 use App\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class ChatsController extends Controller
 {
-	use DynamicConnectionTrait;
     public function __construct()
 	{
 	  $this->middleware('auth');

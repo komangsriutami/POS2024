@@ -4,11 +4,8 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Validator;
-use App\Traits\DynamicConnectionTrait;
-
 class JurnalUmumDetail extends Model
 {
-    use DynamicConnectionTrait;
     protected $table = 'tb_jurnal_umum_detail';
     public $primaryKey = 'id';
     protected $fillable = ['id_kode_akun', 'deskripsi', 'debet', 'kredit'];

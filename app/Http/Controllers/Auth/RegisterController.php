@@ -22,11 +22,9 @@ use Auth;
 use Mail;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
-use App\Traits\DynamicConnectionTrait;
 
 class RegisterController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
     |--------------------------------------------------------------------------
     | Register Controller
@@ -103,7 +101,6 @@ class RegisterController extends Controller
     public function register_pasien_post(Request $request)
     {
         $pasien = new MasterPasien;
-        $pasien->setDynamicConnection();
         $pasien->nama = $request->nama;
         $pasien->email = $request->email;
         $pasien->activated = 0;
@@ -138,7 +135,6 @@ class RegisterController extends Controller
     // protected function create_pasien(Request $data)
     // {
     //     $allData = new RegPasien;
-    //     $allData->setDynamicConnection();
     //     $allData->fill($data->only(
     //         ['id_kewarganegaraan',
     //         'id_jenis_kelamin',
@@ -157,7 +153,7 @@ class RegisterController extends Controller
     //         'id_reference']
     //     ));
 
-    //     $user = RegPasien::on($this->getConnectionName())->where('email','=',$data->email)->count();
+    //     $user = RegPasien::where('email','=',$data->email)->count();
 
     //     $validator = $allData->validate();
     //     $errorMessage = $validator->messages();
@@ -206,7 +202,7 @@ class RegisterController extends Controller
     //         ]);
     //         session(['id' => $user['id']]);
 
-    //         $kewarganegaraan = MasterKewarganegaraan::on($this->getConnectionName())->select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
+    //         $kewarganegaraan = MasterKewarganegaraan::select("kewarganegaraan")->where("id", $user['id_kewarganegaraan'])->first();
     //         session(['kewarganegaraan' => $kewarganegaraan["kewarganegaraan"]]);
     //         session(['id_kewarganegaraan' => $user["id_kewarganegaraan"]]);
     //         session(['id_jenis_kelamin' => $user['id_jenis_kelamin']]);
@@ -230,7 +226,6 @@ class RegisterController extends Controller
     // protected function create_anggota_pasien(Request $data)
     // {
     //     $allData = new RegPasien;
-    //     $allData->setDynamicConnection();
     //     $allData->fill($data->only(
     //         ['id_kewarganegaraan',
     //         'id_jenis_kelamin',
@@ -292,7 +287,6 @@ class RegisterController extends Controller
     public function register_dokter_post(Request $request)
     {
         $dokter = new MasterDokter;
-        $dokter->setDynamicConnection();
         $dokter->nama = $request->nama;
         $dokter->email = $request->email;
         $dokter->activated = 0;
@@ -318,7 +312,7 @@ class RegisterController extends Controller
     //Register Outlet
     public function register_outlet()
     {
-        $jenispaket = MasterJenisPaketSistem::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $jenispaket = MasterJenisPaketSistem::where('is_deleted', 0)->get();
 
         return view('frontend.register_outlet')->with(compact('jenispaket'));
     }
@@ -326,7 +320,6 @@ class RegisterController extends Controller
     public function register_outlet_post(Request $request)
     {
         $user = new User;
-        $user->setDynamicConnection();
         $user->username = $request->username;
         $user->nama = $request->nama;
         $user->email = $request->email;
@@ -344,7 +337,7 @@ class RegisterController extends Controller
         ]);
 
         if ($validator->fails()) {
-            $jenispaket = MasterJenisPaketSistem::on($this->getConnectionName())->where('is_deleted', 0)->get();
+            $jenispaket = MasterJenisPaketSistem::where('is_deleted', 0)->get();
             return view('frontend.register_outlet')->with(compact('jenispaket'))->withErrors($validator);
         } else {
             $token = $this->getToken();
@@ -353,7 +346,6 @@ class RegisterController extends Controller
             $user->save();
 
             $rbac_role_user = new RbacUserRole();
-            $rbac_role_user->setDynamicConnection();
             $rbac_role_user->id_user = $user->id;
             $rbac_role_user->id_role = 6;
             $rbac_role_user->save();
@@ -374,7 +366,6 @@ class RegisterController extends Controller
     public function register_apoteker_post(Request $request)
     {
         $apoteker = new MasterApoteker;
-        $apoteker->setDynamicConnection();
         $apoteker->nama = $request->nama;
         $apoteker->email = $request->email;
         $apoteker->activated = 0;
@@ -397,12 +388,12 @@ class RegisterController extends Controller
 
     public function activateApoteker($token)
     {
-        $activation = MasterApoteker::on($this->getConnectionName())->where('remember_token', $token)->first();
+        $activation = MasterApoteker::where('remember_token', $token)->first();
         if ($activation === null) {
             return null;
         }
 
-        $user = MasterApoteker::on($this->getConnectionName())->find($activation->id);
+        $user = MasterApoteker::find($activation->id);
         $user->activated = true;
 
         if ($user->save()) {
@@ -413,12 +404,12 @@ class RegisterController extends Controller
 
     public function activateOutlet($token)
     {
-        $activation = User::on($this->getConnectionName())->where('remember_token', $token)->first();
+        $activation = User::where('remember_token', $token)->first();
         if ($activation === null) {
             return null;
         }
 
-        $user = User::on($this->getConnectionName())->find($activation->id);
+        $user = User::find($activation->id);
         $user->activated = true;
 
         if ($user->save()) {
@@ -429,12 +420,12 @@ class RegisterController extends Controller
 
     public function activateDokter($token)
     {
-        $activation = MasterDokter::on($this->getConnectionName())->where('remember_token', $token)->first();
+        $activation = MasterDokter::where('remember_token', $token)->first();
         if ($activation === null) {
             return null;
         }
 
-        $user = MasterDokter::on($this->getConnectionName())->find($activation->id);
+        $user = MasterDokter::find($activation->id);
         $user->activated = true;
 
         if ($user->save()) {
@@ -445,12 +436,12 @@ class RegisterController extends Controller
 
     public function activatePasien($token)
     {
-        $activation = MasterPasien::on($this->getConnectionName())->where('remember_token', $token)->first();
+        $activation = MasterPasien::where('remember_token', $token)->first();
         if ($activation === null) {
             return null;
         }
 
-        $user = MasterPasien::on($this->getConnectionName())->find($activation->id);
+        $user = MasterPasien::find($activation->id);
         $user->activated = true;
 
         if ($user->save()) {

@@ -19,11 +19,9 @@ use App;
 use Datatables;
 use DB;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class T_GajiController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -46,8 +44,8 @@ class T_GajiController extends Controller
     */
     public function list_gaji(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
         $hak_akses = 0;
         if($apoteker->id == $id_user) {
@@ -59,8 +57,8 @@ class T_GajiController extends Controller
         }
 
         $tanggal = date('Y-m-d');
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = User::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = User::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'users.*'
         ])
@@ -143,15 +141,15 @@ class T_GajiController extends Controller
     }
 
     public function detail($id, $tahun, $bulan) {
-        $pegawai = User::on($this->getConnectionName())->find($id);
-        $skema_gaji = SkemaGaji::on($this->getConnectionName())->where('tgl_berlaku_start', '<=', date('Y-m-d'))->where('tgl_berlaku_end', '>=', date('Y-m-d'))->first();
-        $skema_gaji_aktif = SkemaGajiDetail::on($this->getConnectionName())->where('id_skema_gaji', $skema_gaji->id)->where('id_jabatan', $pegawai->id_jabatan)->where('id_posisi', $pegawai->id_posisi)->where('id_status_karyawan', $pegawai->id_status_karyawan)->first();
-        $jumlah_jam = Absensi::on($this->getConnectionName())->select([DB::raw('SUM(jumlah_jam_kerja) as jumlah_jam')])->where('id_user', $id)->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->first();
+        $pegawai = User::find($id);
+        $skema_gaji = SkemaGaji::where('tgl_berlaku_start', '<=', date('Y-m-d'))->where('tgl_berlaku_end', '>=', date('Y-m-d'))->first();
+        $skema_gaji_aktif = SkemaGajiDetail::where('id_skema_gaji', $skema_gaji->id)->where('id_jabatan', $pegawai->id_jabatan)->where('id_posisi', $pegawai->id_posisi)->where('id_status_karyawan', $pegawai->id_status_karyawan)->first();
+        $jumlah_jam = Absensi::select([DB::raw('SUM(jumlah_jam_kerja) as jumlah_jam')])->where('id_user', $id)->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->first();
         $jumlah_hari_libur = 0;
         $jumlah_hari_all = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
         $jumlah_hari_all = $jumlah_hari_all-$jumlah_hari_libur;
         $jumlah_jam_kerja_all = $jumlah_hari_all*8;
-        $jumlah_hari = Absensi::on($this->getConnectionName())->where('id_user', $id)->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->count();
+        $jumlah_hari = Absensi::where('id_user', $id)->where(DB::raw('YEAR(tgl)'), $tahun)->where(DB::raw('MONTH(tgl)'), $bulan)->count();
         $total_omset = $this->get_omset($tahun, $bulan);
         return view('gaji._detail')->with(compact('pegawai', 'jumlah_jam', 'tahun', 'bulan', 'jumlah_hari', 'jumlah_jam_kerja_all', 'jumlah_hari_all', 'skema_gaji_aktif', 'total_omset'));
     }
@@ -163,8 +161,8 @@ class T_GajiController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = Absensi::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = Absensi::select([
                     DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_absensi.*'
                 ])
                 ->where(function($query) use($request){
@@ -208,7 +206,7 @@ class T_GajiController extends Controller
         $id_apotek = session('id_apotek_active');
         $penjualan = array();
        
-        $rekaps = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        $rekaps = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
                             ->where(function($query) use($tahun, $bulan){
                                 $query->where('tb_closing_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
                                 $query->whereYear('tb_closing_nota_penjualan.tanggal', $tahun);
@@ -217,7 +215,7 @@ class T_GajiController extends Controller
                             ->orderBy('tb_closing_nota_penjualan.id', 'asc')
                             ->get();
 
-        $rekap_alls = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+        $rekap_alls = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
                             ->where(function($query) use($tahun, $bulan){
                                 $query->whereYear('tb_closing_nota_penjualan.tanggal', $tahun);
                                 $query->whereMonth('tb_closing_nota_penjualan.tanggal', $bulan);
@@ -227,13 +225,13 @@ class T_GajiController extends Controller
 
        
 
-        $hit_penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+        $hit_penjualan = TransaksiPenjualan::where('is_deleted', 0)
                             ->where('id_apotek_nota', session('id_apotek_active'))
                             ->whereYear('tgl_nota', $tahun)
                             ->whereMonth('tgl_nota', $bulan)
                             ->count();
 
-        $hit_penjualan_all = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+        $hit_penjualan_all = TransaksiPenjualan::where('is_deleted', 0)
                             ->whereYear('tgl_nota', $tahun)
                                 ->whereMonth('tgl_nota', $bulan)
                                 ->count();

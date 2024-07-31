@@ -95,13 +95,13 @@ use App\Support\Collection;
 use Illuminate\Pagination\Paginator;
 
 use Carbon\CarbonImmutable;
-use App\Traits\DynamicConnectionTrait;
+
 
 
 class HomeController extends Controller
 
 {
-    use DynamicConnectionTrait;
+
     protected static $expiredAt = 6 * 60 * 60;
 
     /**
@@ -137,7 +137,8 @@ class HomeController extends Controller
     public function index()
 
     {
-        return view('home2');
+         return view('home2');
+
         $id_apotek = session('id_apotek_active');
 
         $id_role_active = session('id_role_active');
@@ -146,9 +147,9 @@ class HomeController extends Controller
 
         if(!empty($id_apotek)) {
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
 
-            $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+            $apoteker = User::find($apotek->id_apoteker);
 
             $id_user = Auth::user()->id;
 
@@ -218,7 +219,7 @@ class HomeController extends Controller
 
             if($hak_akses == 1) {
 
-                /*$jumlah_kasir = TransaksiPenjualan::on($this->getConnectionName())->whereDate('tb_nota_penjualan.tgl_nota','>=', $tgl_awal_baru)
+                /*$jumlah_kasir = TransaksiPenjualan::whereDate('tb_nota_penjualan.tgl_nota','>=', $tgl_awal_baru)
 
                                 ->whereDate('tb_nota_penjualan.tgl_nota','<=', $tgl_akhir_baru)
 
@@ -232,7 +233,7 @@ class HomeController extends Controller
 
 
 
-                $kasir = TransaksiPenjualan::on($this->getConnectionName())->select(['a.username', 'tb_nota_penjualan.created_by'])
+                $kasir = TransaksiPenjualan::select(['a.username', 'tb_nota_penjualan.created_by'])
 
                                 ->join('users as a', 'a.id', '=', 'tb_nota_penjualan.created_by')
 
@@ -250,7 +251,7 @@ class HomeController extends Controller
 
 
 
-                $closing_kasir = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
+                $closing_kasir = TransaksiPenjualanClosing::whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
 
                                 ->whereDate('tb_closing_nota_penjualan.tanggal','<=', $tgl_akhir_baru)
 
@@ -270,7 +271,7 @@ class HomeController extends Controller
 
                     $i++;
 
-                    $cek = TransaksiPenjualanClosing::on($this->getConnectionName())->whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
+                    $cek = TransaksiPenjualanClosing::whereDate('tb_closing_nota_penjualan.tanggal','>=', $tgl_awal_baru)
 
                                 ->whereDate('tb_closing_nota_penjualan.tanggal','<=', $tgl_akhir_baru)
 
@@ -312,7 +313,7 @@ class HomeController extends Controller
 
 
 
-                $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
 
                             ->select(
 
@@ -344,7 +345,7 @@ class HomeController extends Controller
 
 
 
-                $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+                $penjualan_kredit =  DB::table('tb_nota_penjualan')
 
                             ->select(
 
@@ -372,7 +373,7 @@ class HomeController extends Controller
 
 
 
-                $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $detail_penjualan = DB::table('tb_detail_nota_penjualan')
 
                             ->select(
 
@@ -404,7 +405,7 @@ class HomeController extends Controller
 
 
 
-                $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -442,7 +443,7 @@ class HomeController extends Controller
 
 
 
-                $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+                $penjualan2 =  DB::table('tb_nota_penjualan')
 
                             ->select(
 
@@ -476,7 +477,7 @@ class HomeController extends Controller
 
 
 
-                $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
 
                             ->select(
 
@@ -514,7 +515,7 @@ class HomeController extends Controller
 
             
 
-                $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+                $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
 
                             ->select(
 
@@ -546,7 +547,7 @@ class HomeController extends Controller
 
 
 
-                $detail_tf_masuk = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
+                $detail_tf_masuk = DB::table('tb_detail_nota_transfer_outlet')
 
                             ->select(
 
@@ -568,7 +569,7 @@ class HomeController extends Controller
 
 
 
-                $detail_tf_keluar = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
+                $detail_tf_keluar = DB::table('tb_detail_nota_transfer_outlet')
 
                             ->select(
 
@@ -592,7 +593,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -620,7 +621,7 @@ class HomeController extends Controller
 
 /*
 
-                $detail_pembelian = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -646,7 +647,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -676,7 +677,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_blm_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_blm_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -702,7 +703,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_jatuh_tempo = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_jatuh_tempo = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -734,7 +735,7 @@ class HomeController extends Controller
 
 
 
-            $hit_penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_penjualan = TransaksiPenjualan::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', $apotek->id)
 
@@ -744,7 +745,7 @@ class HomeController extends Controller
 
                                 ->count();
 
-            $hit_pembelian = TransaksiPembelian::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_pembelian = TransaksiPembelian::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', $apotek->id)
 
@@ -754,7 +755,7 @@ class HomeController extends Controller
 
                                 ->count();
 
-            $hit_obat = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_obat = MasterObat::where('is_deleted', 0)
 
                                 ->whereDate('created_at','>=', $tgl_awal_baru)
 
@@ -764,7 +765,7 @@ class HomeController extends Controller
 
 
 
-            $hit_member = MasterMember::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_member = MasterMember::where('is_deleted', 0)
 
                                 ->where('id_group_apotek', $apotek->id_group_apotek)
 
@@ -776,7 +777,7 @@ class HomeController extends Controller
 
 
 
-            $staffs = User::on($this->getConnectionName())->select(['users.*'])
+            $staffs = User::select(['users.*'])
 
                             ->join('rbac_user_apotek as a', 'a.id_user', 'users.id')
 
@@ -790,7 +791,7 @@ class HomeController extends Controller
 
 
 
-            $insvestors = InvestasiModal::on($this->getConnectionName())->select(['a.id', 'a.nama', DB::raw('SUM(tb_investasi_modal.persentase_kepemilikan) as saham_persen')])
+            $insvestors = InvestasiModal::select(['a.id', 'a.nama', DB::raw('SUM(tb_investasi_modal.persentase_kepemilikan) as saham_persen')])
 
                             ->join('tb_m_investor as a', 'a.id', 'tb_investasi_modal.id_investor')
 
@@ -896,7 +897,7 @@ class HomeController extends Controller
 
 
 
-        $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan = DB::table('tb_detail_nota_penjualan')
 
                     ->select(
 
@@ -926,7 +927,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan2 =  DB::table('tb_nota_penjualan')
 
                     ->select(
 
@@ -960,7 +961,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
+        $penjualan_closing = TransaksiPenjualanClosing::select([
 
 
 
@@ -1002,7 +1003,7 @@ class HomeController extends Controller
 
 
 
-        $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -1036,7 +1037,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan_cn_cash = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_cn_cash = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -1208,11 +1209,11 @@ class HomeController extends Controller
 
 
 
-        $vendors = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $vendors = MasterVendor::where('is_deleted', 0)->get();
 
         foreach ($vendors as $key => $val) {
 
-            $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -1246,7 +1247,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -1290,7 +1291,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -1330,7 +1331,7 @@ class HomeController extends Controller
 
         
 
-            $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -1668,11 +1669,11 @@ class HomeController extends Controller
 
 
 
-        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $supliers = MasterSuplier::where('is_deleted', 0)->get();
 
         foreach ($supliers as $key => $val) {
 
-            $detail_pembelian = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+            $detail_pembelian = DB::table('tb_detail_nota_pembelian')
 
                         ->select(
 
@@ -1706,7 +1707,7 @@ class HomeController extends Controller
 
             if($detail_pembelian->total != 0) {
 
-                $detail_pembelian_cash = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_cash = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -1742,7 +1743,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_credit = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_credit = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -1778,7 +1779,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_konsinyasi = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_konsinyasi = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -1814,7 +1815,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_credit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_credit_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -1854,7 +1855,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_konsinyasi_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_konsinyasi_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -1892,7 +1893,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_jatuh_tempo_blm_bayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_jatuh_tempo_blm_bayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -1934,7 +1935,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_jatuh_tempo_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_jatuh_tempo_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -2288,7 +2289,7 @@ class HomeController extends Controller
 
 
 
-        $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan = DB::table('tb_detail_nota_penjualan')
 
                     ->select(
 
@@ -2318,7 +2319,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+        $penjualan2 =  DB::table('tb_nota_penjualan')
 
                     ->select(
 
@@ -2352,7 +2353,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([
+        $penjualan_closing = TransaksiPenjualanClosing::select([
 
 
 
@@ -2394,7 +2395,7 @@ class HomeController extends Controller
 
 
 
-        $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -2428,7 +2429,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan_cn_cash = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+        $penjualan_cn_cash = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -2600,11 +2601,11 @@ class HomeController extends Controller
 
 
 
-        $vendors = MasterVendor::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $vendors = MasterVendor::where('is_deleted', 0)->get();
 
         foreach ($vendors as $key => $val) {
 
-            $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -2638,7 +2639,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -2682,7 +2683,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -2722,7 +2723,7 @@ class HomeController extends Controller
 
         
 
-            $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -3064,11 +3065,11 @@ class HomeController extends Controller
 
 
 
-        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $supliers = MasterSuplier::where('is_deleted', 0)->get();
 
         foreach ($supliers as $key => $val) {
 
-            $detail_pembelian = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+            $detail_pembelian = DB::table('tb_detail_nota_pembelian')
 
                         ->select(
 
@@ -3104,7 +3105,7 @@ class HomeController extends Controller
 
             if($detail_pembelian->total != 0) {
 
-                $detail_pembelian_cash = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_cash = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -3140,7 +3141,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_credit = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_credit = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -3176,7 +3177,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_konsinyasi = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_konsinyasi = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -3212,7 +3213,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_credit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_credit_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -3252,7 +3253,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_konsinyasi_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_konsinyasi_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -3290,7 +3291,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_jatuh_tempo_blm_bayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_jatuh_tempo_blm_bayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -3332,7 +3333,7 @@ class HomeController extends Controller
 
 
 
-                $detail_pembelian_jatuh_tempo_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian')
+                $detail_pembelian_jatuh_tempo_terbayar = DB::table('tb_detail_nota_pembelian')
 
                             ->select(
 
@@ -3610,7 +3611,7 @@ class HomeController extends Controller
 
     public function set_active_apotek($id_apotek){
 
-        $apotek = MasterApotek::on($this->getConnectionName())->where('id', '=', $id_apotek)->first();
+        $apotek = MasterApotek::where('id', '=', $id_apotek)->first();
 
 
 
@@ -3662,11 +3663,11 @@ class HomeController extends Controller
 
 
 
-            $role_permissions = RbacRolePermission::on($this->getConnectionName())->where("id_role", $user_role->id)->get();
+            $role_permissions = RbacRolePermission::where("id_role", $user_role->id)->get();
 
             foreach ($role_permissions as $role_permission) {
 
-                $permission = RbacPermission::on($this->getConnectionName())->find($role_permission->id_permission);
+                $permission = RbacPermission::find($role_permission->id_permission);
 
                 $menus[] = $permission->id_menu;
 
@@ -3676,7 +3677,7 @@ class HomeController extends Controller
 
 
 
-            $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
+            $menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $menus)->orderBy('weight')->get();
 
             $parents = array();
 
@@ -3684,13 +3685,13 @@ class HomeController extends Controller
 
                 if($val->parent == 0) {
 
-                    $data_parent = RbacMenu::on($this->getConnectionName())->find($val->id);
+                    $data_parent = RbacMenu::find($val->id);
 
                     $parents[] = $data_parent->id;
 
                 } else {
 
-                    $data_parent = RbacMenu::on($this->getConnectionName())->find($val->parent);
+                    $data_parent = RbacMenu::find($val->parent);
 
                     $parents[] = $data_parent->id;
 
@@ -3702,7 +3703,7 @@ class HomeController extends Controller
 
 
 
-            $parent_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
+            $parent_menu = RbacMenu::where('is_deleted', 0)->whereIn('id', $parents)->orderBy('weight')->get();
 
 
 
@@ -3764,16 +3765,14 @@ class HomeController extends Controller
 
     public function set_active_tahun($tahun){
 
-        $tahun = MasterTahun::on($this->getConnectionName())->where('tahun', '=', $tahun)->first();
+        $tahun = MasterTahun::where('tahun', '=', $tahun)->first();
 
 
 
         if(!is_null($tahun)){
 
             session(['id_tahun_active'=>$tahun->tahun]);
-            session(['connection_active' => $this->getConnectionName()]);
-            $connection_active = session('connection_active'); 
-            config()->set('database.default', $connection_active);
+
             session()->flash('success', 'Sukses melakukan perubahan tahun menjadi '.$tahun->tahun.'!');
 
         }else{
@@ -3785,6 +3784,8 @@ class HomeController extends Controller
         return redirect()->intended('/home');
 
     }
+
+
 
 
 
@@ -3856,7 +3857,7 @@ class HomeController extends Controller
 
         $values_to_keluar_ = array();
 
-        $total_apotek = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->count();
+        $total_apotek = MasterApotek::where('is_deleted', 0)->count();
 
         $total_apotek = $total_apotek-2;
 
@@ -3870,7 +3871,7 @@ class HomeController extends Controller
 
 
 
-            $rekaps = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+            $rekaps = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
 
                                 ->where(function($query) use($request, $tahun, $i){
 
@@ -3888,7 +3889,7 @@ class HomeController extends Controller
 
 
 
-            $rekap_alls = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
+            $rekap_alls = TransaksiPenjualanClosing::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_closing_nota_penjualan.*'])
 
                                 ->where(function($query) use($request, $tahun, $i){
 
@@ -3904,7 +3905,7 @@ class HomeController extends Controller
 
 
 
-            $rekap_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->select([
+            $rekap_pembelian = TransaksiPembelianDetail::select([
 
                                         DB::raw('@rownum  := @rownum  + 1 AS no'), 
 
@@ -3932,7 +3933,7 @@ class HomeController extends Controller
 
 
 
-            $to_masuk = TransaksiTODetail::on($this->getConnectionName())->select([
+            $to_masuk = TransaksiTODetail::select([
 
                                         DB::raw('@rownum  := @rownum  + 1 AS no'), 
 
@@ -3960,7 +3961,7 @@ class HomeController extends Controller
 
 
 
-            $to_keluar = TransaksiTODetail::on($this->getConnectionName())->select([
+            $to_keluar = TransaksiTODetail::select([
 
                                         DB::raw('@rownum  := @rownum  + 1 AS no'), 
 
@@ -3988,7 +3989,7 @@ class HomeController extends Controller
 
 
 
-            $hit_penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_penjualan = TransaksiPenjualan::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', session('id_apotek_active'))
 
@@ -4000,7 +4001,7 @@ class HomeController extends Controller
 
 
 
-            $hit_penjualan_all = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_penjualan_all = TransaksiPenjualan::where('is_deleted', 0)
 
                                 ->whereYear('tgl_nota', $tahun)
 
@@ -4158,7 +4159,7 @@ class HomeController extends Controller
 
 
 
-        //$penjualan = TransaksiPenjualanClosing::on($this->getConnectionName())->where('')
+        //$penjualan = TransaksiPenjualanClosing::where('')
 
         $penjualan = $app->make('stdClass');
 
@@ -4219,11 +4220,11 @@ class HomeController extends Controller
     public function resume_pareto() {
         //return view('page_not_maintenance');
 
-        $satuans = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
 
         $satuans->prepend('-- all --','');
 
-        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
 
         $produsens->prepend('-- produsen --', '');
 
@@ -4257,7 +4258,7 @@ class HomeController extends Controller
 
         $limit = $request->limit;
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
 
         $inisial = strtolower($apotek->nama_singkat);
 
@@ -4273,7 +4274,7 @@ class HomeController extends Controller
 
 
 
-        $penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->select(
+        $penjualan = TransaksiPenjualanDetail::select(
 
                                 'tb_detail_nota_penjualan.id_obat',
 
@@ -4315,7 +4316,7 @@ class HomeController extends Controller
 
 
 
-        $pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->select(
+        $pembelian = TransaksiPembelianDetail::select(
 
                                 'tb_detail_nota_pembelian.id_obat',
 
@@ -4351,7 +4352,7 @@ class HomeController extends Controller
 
 
 
-        $transfer_masuk = TransaksiTODetail::on($this->getConnectionName())->select(
+        $transfer_masuk = TransaksiTODetail::select(
 
                                 'tb_detail_nota_transfer_outlet.id_obat',
 
@@ -4385,7 +4386,7 @@ class HomeController extends Controller
 
 
 
-        $transfer_keluar = TransaksiTODetail::on($this->getConnectionName())->select(
+        $transfer_keluar = TransaksiTODetail::select(
 
                                 'tb_detail_nota_transfer_outlet.id_obat',
 
@@ -4473,7 +4474,7 @@ class HomeController extends Controller
 
             $i++;
 
-            $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
+            $cek_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->first();
 
             $omzet = $obj->omzet;
 
@@ -4908,7 +4909,7 @@ class HomeController extends Controller
     public function getAmountProduct(Request $request) {
         list($tgl_awal, $tgl_akhir) = HomeController::getDateFilter($request->id_pencarian, $request->tanggal);
         
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         if($request->id_pencarian == 9) {
             $cached_resume = Cache::get('resume_pareto_'.$request->id_pencarian.'_'.$tgl_awal.'_'.$tgl_akhir.'_resume_'.$apotek->id);
         } elseif ($request->id_pencarian != 1) {
@@ -4988,7 +4989,7 @@ class HomeController extends Controller
         
         $limit = $request->limit;
         $id_apotek = $request->id_apotek ?? session('id_apotek_active');
-        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+        $apotek = MasterApotek::find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
 
         if($request->id_pencarian == 9) {
@@ -5022,7 +5023,7 @@ class HomeController extends Controller
             }
 
             foreach ($collection as $item) {
-                $stok_akhir = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)
+                $stok_akhir = DB::table('tb_m_stok_harga_'.$inisial)
                     ->select(
                         'id_obat',
                         'stok_akhir',
@@ -5045,7 +5046,7 @@ class HomeController extends Controller
             $data = $sorted->slice(0, $limit);
         }
         else{
-            $total_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan AS a')
+            $total_penjualan = DB::table('tb_detail_nota_penjualan AS a')
                 ->select(DB::raw('SUM(a.jumlah * a.harga_jual) AS total'))
                 ->join('tb_nota_penjualan AS b', 'b.id', '=', 'a.id_nota')
                 ->where('b.created_at', '>=', $tgl_awal)
@@ -5054,7 +5055,7 @@ class HomeController extends Controller
                 ->where('b.is_deleted', '=', 0)
                 ->where('a.is_deleted', '=', 0);
             
-            $total_keuntungan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan AS a')
+            $total_keuntungan = DB::table('tb_detail_nota_penjualan AS a')
                 ->select(DB::raw('(SUM(a.jumlah * a.harga_jual) - SUM(a.jumlah * a.hb_ppn)) AS total'))
                 ->join('tb_nota_penjualan AS b', 'b.id', '=', 'a.id_nota')
                 ->where('b.created_at', '>=', $tgl_awal)
@@ -5067,7 +5068,7 @@ class HomeController extends Controller
             $sub_penjualan = $sub_penjualan->select('a.id_obat', DB::raw('SUM(a.jumlah * a.harga_jual) AS total'))
                 ->groupBy('a.id_obat');
                 
-            $sub_keuntungan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan AS a')
+            $sub_keuntungan = DB::table('tb_detail_nota_penjualan AS a')
             ->select(
                 'a.id_obat',
                 DB::raw('(sub_penjualan.total - SUM(a.jumlah * a.hb_ppn)) AS sub_keuntungan'),
@@ -5083,7 +5084,7 @@ class HomeController extends Controller
             ->where('a.is_deleted', '=', 0)
             ->groupBy('a.id_obat');
             
-            $subquery = TransaksiPenjualanDetail::on($this->getConnectionName())->select(
+            $subquery = TransaksiPenjualanDetail::select(
                 DB::raw('(@rownum := @rownum + 1) AS no'),
                 'tb_detail_nota_penjualan.id_obat',
                 'c.nama',
@@ -5115,8 +5116,8 @@ class HomeController extends Controller
             ->where('tb_detail_nota_penjualan.is_deleted', '=', 0)
             ->groupBy('tb_detail_nota_penjualan.id_obat');
     
-            DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-            $data =  TransaksiPenjualanDetail::on($this->getConnectionName())->select(
+            DB::statement(DB::raw('set @rownum = 0'));
+            $data =  TransaksiPenjualanDetail::select(
                 DB::raw('*')
             )
             ->from(
@@ -5179,7 +5180,7 @@ class HomeController extends Controller
             return $persentase_format;
         })
         ->editcolumn('sedang_dipesan', function($data) use($request, $apotek){
-            $cek = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
+            $cek = DefectaOutlet::where('is_deleted', 0)
                         ->where('id_obat', $data->id_obat)
                         ->where('id_apotek', session('id_apotek_active'))
                         ->where('is_deleted', 0)
@@ -5230,13 +5231,13 @@ class HomeController extends Controller
 
         $limit = $request->limit;
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
 
         $inisial = strtolower($apotek->nama_singkat);
 
 
 
-        $q1 = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+        $q1 = DB::table('tb_detail_nota_pembelian as a')
 
             ->select(
 
@@ -5264,7 +5265,7 @@ class HomeController extends Controller
 
 
 
-        $q2 = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+        $q2 = DB::table('tb_detail_nota_pembelian as a')
 
             ->select(
 
@@ -5290,9 +5291,9 @@ class HomeController extends Controller
 
 
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        DB::statement(DB::raw('set @rownum = 0'));
 
-        $data = DB::connection($this->getConnectionName())->table(function ($subquery) use ($q1, $q2) {
+        $data = DB::table(function ($subquery) use ($q1, $q2) {
 
             $subquery->select(DB::raw('@rownum  := @rownum  + 1 AS no'), 'a.*', 'b.jumlah_total')
 
@@ -5418,15 +5419,15 @@ class HomeController extends Controller
 
         $limit = $request->limit;
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
 
         $inisial = strtolower($apotek->nama_singkat);
 
 
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        DB::statement(DB::raw('set @rownum = 0'));
 
-        $data =  TransaksiTODetail::on($this->getConnectionName())->select(
+        $data =  TransaksiTODetail::select(
 
                                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 
@@ -5544,15 +5545,15 @@ class HomeController extends Controller
 
         $limit = $request->limit;
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
 
         $inisial = strtolower($apotek->nama_singkat);
 
 
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        DB::statement(DB::raw('set @rownum = 0'));
 
-        $data =  TransaksiTODetail::on($this->getConnectionName())->select(
+        $data =  TransaksiTODetail::select(
 
                                 DB::raw('@rownum  := @rownum  + 1 AS no'),
 
@@ -5649,7 +5650,7 @@ class HomeController extends Controller
     public function clear_cache() {
         ini_set('memory_limit', '-1');
         $super_admin = session('super_admin');
-        $all_apotek = MasterApotek::on($this->getConnectionName())->where(function($query) use($super_admin){
+        $all_apotek = MasterApotek::where(function($query) use($super_admin){
             $query->where('tb_m_apotek.is_deleted', '=', '0');
             if($super_admin == 0) {
                 $query->where('tb_m_apotek.id_group_apotek', Auth::user()->id_group_apotek);
@@ -5682,7 +5683,7 @@ class HomeController extends Controller
         list($tgl_awal, $tgl_akhir) = HomeController::getDateFilter($request->id_pencarian, $request->tanggal);
         
         $id_apotek = session('id_apotek_active');
-        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+        $apotek = MasterApotek::find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
         $now = date('YmdHis');
 
@@ -5706,7 +5707,7 @@ class HomeController extends Controller
         
         $limit = $request->limit;
         $id_apotek = session('id_apotek_active');
-        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+        $apotek = MasterApotek::find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
         $now = date('YmdHis');
         
@@ -5724,7 +5725,7 @@ class HomeController extends Controller
         list($tgl_awal, $tgl_akhir) = HomeController::getDateFilter($request->id_pencarian, $request->tanggal);
         
         $now = date('YmdHis');
-        $apoteks = MasterApotek::on($this->getConnectionName())->select(
+        $apoteks = MasterApotek::select(
             'id',
             'nama_singkat'
         )
@@ -5780,7 +5781,7 @@ class HomeController extends Controller
 
         $id_apotek = session('id_apotek_active');
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+        $apotek = MasterApotek::find($id_apotek);
 
         $inisial = strtolower($apotek->nama_singkat);
 
@@ -5808,7 +5809,7 @@ class HomeController extends Controller
 
         $now = date('YmdHis');
 
-        $apoteks = MasterApotek::on($this->getConnectionName())->select(
+        $apoteks = MasterApotek::select(
 
             'id',
 
@@ -5892,7 +5893,7 @@ class HomeController extends Controller
 
         $limit = $request->limit;
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
 
         $inisial = strtolower($apotek->nama_singkat);
 
@@ -5926,7 +5927,7 @@ class HomeController extends Controller
 
         }
 
-        $awal = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan as a')
+        $awal = DB::table('tb_detail_nota_penjualan as a')
 
                     ->select([
 
@@ -5952,9 +5953,9 @@ class HomeController extends Controller
 
        
 
-       DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+       DB::statement(DB::raw('set @rownum = 0'));
 
-        $all = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.' as c')
+        $all = DB::table('tb_m_stok_harga_'.$inisial.' as c')
 
                     ->select([
 
@@ -5990,7 +5991,7 @@ class HomeController extends Controller
 
 
 
-        $data = DB::connection($this->getConnectionName())->table(DB::raw("({$all->toSql()}) as j"))
+        $data = DB::table(DB::raw("({$all->toSql()}) as j"))
 
             ->select([
 
@@ -6000,7 +6001,7 @@ class HomeController extends Controller
 
 
 
-        /*$data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        /*$data = DB::table('tb_m_stok_harga_'.$inisial.'')
 
                     ->select([
 
@@ -6096,7 +6097,7 @@ class HomeController extends Controller
 
         ->editcolumn('harga_beli_ppn', function($data) {
 
-            $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
+            $histori_stok = HistoriStok::select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
 
                             ->where('id_obat', $data->id_obat)
 
@@ -6151,7 +6152,7 @@ class HomeController extends Controller
 
 
 
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->limit(1)->get();
+        $apoteks = MasterApotek::where('is_deleted', 0)->limit(1)->get();
 
         return view('rekap_all_outlet')->with(compact('apoteks', 'first_day'));
 
@@ -6161,7 +6162,7 @@ class HomeController extends Controller
 
     function cari_info(Request $request) {
 
-        $alls = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $alls = MasterApotek::where('is_deleted', 0)->get();
 
         $awal = $request->tgl_awal;
 
@@ -6209,7 +6210,7 @@ class HomeController extends Controller
 
         foreach ($alls as $x => $xyz) {
 
-            $hit_penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_penjualan = TransaksiPenjualan::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', $xyz->id)
 
@@ -6219,7 +6220,7 @@ class HomeController extends Controller
 
                                 ->count();
 
-            $hit_pembelian = TransaksiPembelian::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_pembelian = TransaksiPembelian::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', $xyz->id)
 
@@ -6231,7 +6232,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
 
                             ->select(
 
@@ -6277,7 +6278,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -6305,7 +6306,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -6335,7 +6336,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan2 =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -6369,7 +6370,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -6407,7 +6408,7 @@ class HomeController extends Controller
 
         
 
-            $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -6439,7 +6440,7 @@ class HomeController extends Controller
 
 
 
-            $detail_tf_masuk = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
+            $detail_tf_masuk = DB::table('tb_detail_nota_transfer_outlet')
 
                         ->select(
 
@@ -6461,7 +6462,7 @@ class HomeController extends Controller
 
 
 
-            $detail_tf_keluar = DB::connection($this->getConnectionName())->table('tb_detail_nota_transfer_outlet')
+            $detail_tf_keluar = DB::table('tb_detail_nota_transfer_outlet')
 
                         ->select(
 
@@ -6483,7 +6484,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6509,7 +6510,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -6567,7 +6568,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians_terbayar = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6621,7 +6622,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_blm_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians_blm_terbayar = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6671,7 +6672,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_jatuh_tempo = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians_jatuh_tempo = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -6723,7 +6724,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('SUM(jumlah_tt) as total')])
+            $penjualan_closing = TransaksiPenjualanClosing::select([DB::raw('SUM(jumlah_tt) as total')])
 
                                         ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
 
@@ -6835,7 +6836,7 @@ class HomeController extends Controller
 
         /*foreach ($alls as $x => $xyz) {
 
-            $apoteks = MasterApotek::on($this->getConnectionName())->where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->whereNotIn('id', [$xyz->id])->get();
+            $apoteks = MasterApotek::where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->whereNotIn('id', [$xyz->id])->get();
 
             $transfer_masuk = '<table class="table m-0">
 
@@ -6855,7 +6856,7 @@ class HomeController extends Controller
 
             foreach ($apoteks as $key => $val) {
 
-                $data = TransaksiTODetail::on($this->getConnectionName())->select([
+                $data = TransaksiTODetail::select([
 
                                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
 
@@ -6933,7 +6934,7 @@ class HomeController extends Controller
 
             foreach ($apoteks as $key => $val) {
 
-                $data = TransaksiTODetail::on($this->getConnectionName())->select([
+                $data = TransaksiTODetail::select([
 
                                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
 
@@ -6967,7 +6968,7 @@ class HomeController extends Controller
 
 
 
-                $data_konfirm = TransaksiTODetail::on($this->getConnectionName())->select([
+                $data_konfirm = TransaksiTODetail::select([
 
                                     DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
 
@@ -7057,7 +7058,7 @@ class HomeController extends Controller
 
 
 
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::where('is_deleted', 0)->get();
 
         return view('rekap_penjualan')->with(compact('apoteks', 'first_day'));
 
@@ -7067,7 +7068,7 @@ class HomeController extends Controller
 
     function cari_info_penjualan(Request $request) {
 
-        $alls = MasterApotek::on($this->getConnectionName())->where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->get();
+        $alls = MasterApotek::where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->get();
 
         $awal = $request->tgl_awal;
 
@@ -7117,7 +7118,7 @@ class HomeController extends Controller
 
         foreach ($alls as $x => $xyz) {
 
-            $hit_penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_penjualan = TransaksiPenjualan::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', $xyz->id)
 
@@ -7127,7 +7128,7 @@ class HomeController extends Controller
 
                                 ->count();
 
-            $detail_penjualan_kredit = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
 
                             ->select(
 
@@ -7173,7 +7174,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_kredit =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -7201,7 +7202,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -7231,7 +7232,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan2 =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan2 =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -7265,7 +7266,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_kredit_terbayar = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -7303,7 +7304,7 @@ class HomeController extends Controller
 
         
 
-            $penjualan_kredit_terbayar =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -7335,7 +7336,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_cn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -7369,7 +7370,7 @@ class HomeController extends Controller
 
 
 
-            $penjualan_closing = TransaksiPenjualanClosing::on($this->getConnectionName())->select([DB::raw('SUM(jumlah_tt) as total')])
+            $penjualan_closing = TransaksiPenjualanClosing::select([DB::raw('SUM(jumlah_tt) as total')])
 
                                         ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
 
@@ -7385,7 +7386,7 @@ class HomeController extends Controller
 
             
 
-            $detail_penjualanAll = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualanAll = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -7419,7 +7420,7 @@ class HomeController extends Controller
 
 
 
-            $penjualanAll =  DB::connection($this->getConnectionName())->table('tb_nota_penjualan')
+            $penjualanAll =  DB::table('tb_nota_penjualan')
 
                         ->select(
 
@@ -7451,7 +7452,7 @@ class HomeController extends Controller
 
 
 
-            $detail_penjualan_Allcn = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+            $detail_penjualan_Allcn = DB::table('tb_detail_nota_penjualan')
 
                         ->select(
 
@@ -7653,7 +7654,7 @@ class HomeController extends Controller
 
 
 
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+        $apoteks = MasterApotek::where('is_deleted', 0)->get();
 
         return view('rekap_pembelian')->with(compact('apoteks', 'first_day'));
 
@@ -7663,7 +7664,7 @@ class HomeController extends Controller
 
     public function cari_info_pembelian(Request $request) {
 
-       $alls = MasterApotek::on($this->getConnectionName())->where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->get();
+       $alls = MasterApotek::where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->get();
 
         $awal = $request->tgl_awal;
 
@@ -7699,7 +7700,7 @@ class HomeController extends Controller
 
         foreach ($alls as $x => $xyz) {
 
-            $hit_pembelian = TransaksiPembelian::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_pembelian = TransaksiPembelian::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', $xyz->id)
 
@@ -7713,7 +7714,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -7763,7 +7764,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians_terbayar = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -7817,7 +7818,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_blm_terbayar = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians_blm_terbayar = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -7867,7 +7868,7 @@ class HomeController extends Controller
 
 
 
-            $pembelians_jatuh_tempo = TransaksiPembelian::on($this->getConnectionName())->select([
+            $pembelians_jatuh_tempo = TransaksiPembelian::select([
 
                             'tb_nota_pembelian.*'])
 
@@ -7973,11 +7974,11 @@ class HomeController extends Controller
 
     public function rekap_pembelian_outlet() {
 
-        $satuans = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
 
         $satuans->prepend('-- all --','');
 
-        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
 
         $produsens->prepend('-- produsen --', '');
 
@@ -8029,9 +8030,9 @@ class HomeController extends Controller
 
         if(!empty($id_apotek)) {
 
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
 
-            $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+            $apoteker = User::find($apotek->id_apoteker);
 
             $id_user = Auth::user()->id;
 
@@ -8141,7 +8142,7 @@ class HomeController extends Controller
 
         $all_kunjungan_ = array();
 
-        $total_apotek = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->count();
+        $total_apotek = MasterApotek::where('is_deleted', 0)->count();
 
         $total_apotek = $total_apotek-2;
 
@@ -8155,7 +8156,7 @@ class HomeController extends Controller
 
 
 
-            $hit_penjualan = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_penjualan = TransaksiPenjualan::where('is_deleted', 0)
 
                                 ->where('id_apotek_nota', session('id_apotek_active'))
 
@@ -8171,7 +8172,7 @@ class HomeController extends Controller
 
 
 
-            $hit_penjualan_all = TransaksiPenjualan::on($this->getConnectionName())->where('is_deleted', 0)
+            $hit_penjualan_all = TransaksiPenjualan::where('is_deleted', 0)
 
                                 ->whereTime('created_at', '>=', \Carbon\Carbon::parse($obj['jam_mulai']))
 
@@ -8233,7 +8234,7 @@ class HomeController extends Controller
 
 
 
-        $get_noid = DB::on($this->getConnectionName())->select('SELECT t2.id_obat,t2.request_id, t2.id_jenis_transaksi, t2.`hb_ppn`, b.`harga_beli_ppn` FROM (
+        $get_noid = DB::select('SELECT t2.id_obat,t2.request_id, t2.id_jenis_transaksi, t2.`hb_ppn`, b.`harga_beli_ppn` FROM (
 
         SELECT t1.id_obat,t1.request_id, a.id_jenis_transaksi, a.`hb_ppn` FROM (SELECT id_obat, request_id
 
@@ -8267,7 +8268,7 @@ class HomeController extends Controller
 
         foreach ($get_noid as $key => $obj) {
 
-           /* $cek = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $obj->id_obat)->first();
+           /* $cek = MasterStokHarga::where('id_obat', $obj->id_obat)->first();
 
             $cek->harga_beli_ppn = $obj->hb_ppn;
 
@@ -8275,7 +8276,7 @@ class HomeController extends Controller
 
 
 
-            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->update(['harga_beli_ppn' => $obj->hb_ppn]);
+            DB::table('tb_m_stok_harga_'.$inisial)->update(['harga_beli_ppn' => $obj->hb_ppn]);
 
             $i++;
 
@@ -8303,12 +8304,11 @@ class HomeController extends Controller
 
 
 
-        $menu = RbacMenu::on($this->getConnectionName())->where('link', '=', $result)->first();
+        $menu = RbacMenu::where('link', '=', $result)->first();
 
         if(is_null($menu)){
 
             $menu = new RbacMenu;
-            $menu->setDynamicConnection();
 
         }
 
@@ -8336,12 +8336,11 @@ class HomeController extends Controller
 
 
 
-        $menu = RbacMenu::on($this->getConnectionName())->where('link', '=', $result)->first();
+        $menu = RbacMenu::where('link', '=', $result)->first();
 
         if(is_null($menu)){
 
             $menu = new RbacMenu;
-            $menu->setDynamicConnection();
 
         }
 
@@ -8367,13 +8366,11 @@ class HomeController extends Controller
 
 
 
-        $menu = RbacMenu::on($this->getConnectionName())->where('link', '=', $result)->first();
+        $menu = RbacMenu::where('link', '=', $result)->first();
 
         if(is_null($menu)){
 
             $menu = new RbacMenu;
-            $menu->setDynamicConnection();
-
 
         }
 
@@ -8493,7 +8490,7 @@ class HomeController extends Controller
 
         $date_now = date('Y-m-d');
 
-        $data_ = DB::connection($this->getConnectionName())->table('tb_pengumuman')
+        $data_ = DB::table('tb_pengumuman')
 
                 ->where(function ($query) use($date_now){
 

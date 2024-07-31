@@ -8,12 +8,11 @@ use Illuminate\Notifications\Notifiable;
 use Validator;
 use DB;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class User extends Authenticatable
 {
     use Notifiable;
-    use DynamicConnectionTrait;   
+    
     /* 
         Model   : Untuk RBAC Data User
         Author  : Sri U.
@@ -105,11 +104,10 @@ class User extends Authenticatable
         $array_id_user_roles = array();
         if(!empty($user_roles)) {
             foreach ($user_roles as $key) {
-                $obj = RbacUserRole::on($this->getConnectionName())->where('id_role', $key['id_role'])->where('id_user', $this->id)->first();
+                $obj = RbacUserRole::where('id_role', $key['id_role'])->where('id_user', $this->id)->first();
 
                 if(empty($obj)) {
                     $obj = new RbacUserRole;
-                    $obj->setDynamicConnection();
                     $obj->id_user = $this->id;
                     $obj->id_role = $key['id_role'];
                     $obj->created_by = Auth::id();
@@ -118,7 +116,7 @@ class User extends Authenticatable
 
                     $obj->save();
                 } else {
-                    RbacUserRole::on($this->getConnectionName())->where('id_role', $key['id_role'])
+                    RbacUserRole::where('id_role', $key['id_role'])
                             ->where('id_user', $this->id)
                             ->update(['updated_by' => Auth::id()]);
                 }
@@ -127,11 +125,11 @@ class User extends Authenticatable
             }
         }
         if(!empty($array_id_user_roles)){
-            DB::connection($this->getConnection())->statement("DELETE FROM rbac_user_role
+            DB::statement("DELETE FROM rbac_user_role
                             WHERE id_user=".$this->id." AND 
                                     id_role NOT IN(".implode(',', $array_id_user_roles).")");
         }else{
-            DB::connection($this->getConnection())->statement("DELETE FROM rbac_user_role 
+            DB::statement("DELETE FROM rbac_user_role 
                             WHERE id_user=".$this->id);
 
         }
@@ -150,11 +148,10 @@ class User extends Authenticatable
         $array_id_user_apoteks = array();
         if(!empty($user_apoteks)) {
             foreach ($user_apoteks as $key) {
-                $obj = RbacUserApotek::on($this->getConnectionName())->where('id_apotek', $key['id_apotek'])->where('id_user', $this->id)->first();
+                $obj = RbacUserApotek::where('id_apotek', $key['id_apotek'])->where('id_user', $this->id)->first();
 
                 if(empty($obj)) {
                     $obj = new RbacUserApotek;
-                    $obj->setDynamicConnection();
                     $obj->id_user = $this->id;
                     $obj->id_apotek = $key['id_apotek'];
                     $obj->created_by = Auth::id();
@@ -163,7 +160,7 @@ class User extends Authenticatable
 
                     $obj->save();
                 } else {
-                    RbacUserApotek::on($this->getConnectionName())->where('id_apotek', $key['id_apotek'])
+                    RbacUserApotek::where('id_apotek', $key['id_apotek'])
                             ->where('id_user', $this->id)
                             ->update(['updated_by' => Auth::id()]);
                 }
@@ -172,11 +169,11 @@ class User extends Authenticatable
             }
         }
         if(!empty($array_id_user_apoteks)){
-            DB::connection($this->getConnection())->statement("DELETE FROM rbac_user_apotek
+            DB::statement("DELETE FROM rbac_user_apotek
                             WHERE id_user=".$this->id." AND 
                                     id_apotek NOT IN(".implode(',', $array_id_user_apoteks).")");
         }else{
-            DB::connection($this->getConnection())->statement("DELETE FROM rbac_user_apotek 
+            DB::statement("DELETE FROM rbac_user_apotek 
                             WHERE id_user=".$this->id);
         }
     }

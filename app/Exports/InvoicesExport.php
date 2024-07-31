@@ -26,13 +26,13 @@ class InvoicesExport implements WithMultipleSheets
     public function sheets(): array
     {
         $sheets = [];
-        $cek_absensi = Absensi::on($this->getConnectionName())->select(['id_user'])
+        $cek_absensi = Absensi::select(['id_user'])
                                 ->where('is_deleted', 0)
                                 ->whereYear('tgl', $this->year)
                                 ->whereMonth('tgl', $this->month)
                                 ->get();
 
-        $cek_tgl_absen = Absensi::on($this->getConnectionName())->select(['tgl'])
+        $cek_tgl_absen = Absensi::select(['tgl'])
                                 ->where('is_deleted', 0)
                                 ->whereYear('tgl', $this->year)
                                 ->whereMonth('tgl', $this->month)
@@ -40,7 +40,7 @@ class InvoicesExport implements WithMultipleSheets
                                 ->orderBy('tgl', 'ASC')
                                 ->get();
 
-        $users = User::on($this->getConnectionName())->whereIn('id', $cek_absensi)->get();
+        $users = User::whereIn('id', $cek_absensi)->get();
         foreach ($users as $key => $user) {
             $sheets[] = new InvoicesPerMonthSheet($this->year, $this->month, $user->id, $user->nama, $cek_tgl_absen);
         }

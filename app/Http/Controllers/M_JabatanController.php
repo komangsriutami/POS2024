@@ -12,11 +12,8 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
-
 class M_JabatanController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -44,8 +41,8 @@ class M_JabatanController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterJabatan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jabatan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterJabatan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_jabatan.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_jabatan.is_deleted','=','0');
         });
@@ -79,7 +76,6 @@ class M_JabatanController extends Controller
     public function create()
     {
         $jabatan = new MasterJabatan;
-        $jabatan->setDynamicConnection();
 
         return view('jabatan.create')->with(compact('jabatan'));
     }
@@ -93,11 +89,7 @@ class M_JabatanController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $jabatan = new MasterJabatan;
-        $jabatan->setDynamicConnection();
         $jabatan->fill($request->except('_token'));
         $jabatan->id_group_apotek = Auth::user()->id_group_apotek;
 
@@ -134,7 +126,7 @@ class M_JabatanController extends Controller
     */
     public function edit($id)
     {
-        $jabatan = MasterJabatan::on($this->getConnectionName())->find($id);
+        $jabatan = MasterJabatan::find($id);
 
         return view('jabatan.edit')->with(compact('jabatan'));
     }
@@ -148,10 +140,7 @@ class M_JabatanController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $jabatan = MasterJabatan::on($this->getConnectionName())->find($id);
+        $jabatan = MasterJabatan::find($id);
         $jabatan->fill($request->except('_token'));
 
         $validator = $jabatan->validate();
@@ -174,10 +163,7 @@ class M_JabatanController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $jabatan = MasterJabatan::on($this->getConnectionName())->find($id);
+        $jabatan = MasterJabatan::find($id);
         $jabatan->is_deleted = 1;
         if($jabatan->save()){
             echo 1;

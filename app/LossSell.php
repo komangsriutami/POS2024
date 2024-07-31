@@ -5,12 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
-use App\Traits\DynamicConnectionTrait;
-
 class LossSell extends Model
 {
     use HasFactory;
-    use DynamicConnectionTrait;
 
     protected $table = 'tb_loss_sell';
     public $primaryKey = 'id';

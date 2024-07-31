@@ -12,11 +12,8 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
-
 class M_StatusKaryawanController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -44,8 +41,8 @@ class M_StatusKaryawanController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterStatusKaryawan::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_status_karyawan.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterStatusKaryawan::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_status_karyawan.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_status_karyawan.is_deleted','=','0');
         });
@@ -79,7 +76,6 @@ class M_StatusKaryawanController extends Controller
     public function create()
     {
         $status_karyawan = new MasterStatusKaryawan;
-        $status_karyawan->setDynamicConnection();
 
         return view('status_karyawan.create')->with(compact('status_karyawan'));
     }
@@ -93,11 +89,7 @@ class M_StatusKaryawanController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $status_karyawan = new MasterStatusKaryawan;
-        $status_karyawan->setDynamicConnection();
         $status_karyawan->fill($request->except('_token'));
         $status_karyawan->id_group_apotek = Auth::user()->id_group_apotek;
 
@@ -134,7 +126,7 @@ class M_StatusKaryawanController extends Controller
     */
     public function edit($id)
     {
-        $status_karyawan = MasterStatusKaryawan::on($this->getConnectionName())->find($id);
+        $status_karyawan = MasterStatusKaryawan::find($id);
 
         return view('status_karyawan.edit')->with(compact('status_karyawan'));
     }
@@ -148,10 +140,7 @@ class M_StatusKaryawanController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $status_karyawan = MasterStatusKaryawan::on($this->getConnectionName())->find($id);
+        $status_karyawan = MasterStatusKaryawan::find($id);
         $status_karyawan->fill($request->except('_token'));
 
         $validator = $status_karyawan->validate();
@@ -174,10 +163,7 @@ class M_StatusKaryawanController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $status_karyawan = MasterStatusKaryawan::on($this->getConnectionName())->find($id);
+        $status_karyawan = MasterStatusKaryawan::find($id);
         $status_karyawan->is_deleted = 1;
         if($status_karyawan->save()){
             echo 1;

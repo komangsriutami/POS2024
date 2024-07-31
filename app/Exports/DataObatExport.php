@@ -35,7 +35,7 @@ class DataObatExport implements FromCollection, WithColumnWidths, WithStyles, Wi
     public function collection()
     {
         $inisial = $this->inisial;
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
                         ->select([
                             DB::raw('@rownum  := @rownum  + 1 AS no'),
                             'tb_m_stok_harga_'.$inisial.'.id_obat',
@@ -43,8 +43,10 @@ class DataObatExport implements FromCollection, WithColumnWidths, WithStyles, Wi
                             'tb_m_stok_harga_'.$inisial.'.nama',
                             'tb_m_stok_harga_'.$inisial.'.harga_beli_ppn',
                             'tb_m_stok_harga_'.$inisial.'.harga_jual',
-                            'tb_m_stok_harga_'.$inisial.'.stok_akhir'
+                            'tb_m_stok_harga_'.$inisial.'.stok_akhir',
+                            'a.sku'
                         ])
+                        ->join('tb_m_obat as a', 'a.id', 'tb_m_stok_harga_'.$inisial.'.id_obat')
                         ->where(function($query) use($inisial){
                             $query->where('tb_m_stok_harga_'.$inisial.'.is_deleted','=','0');
                         })
@@ -53,7 +55,7 @@ class DataObatExport implements FromCollection, WithColumnWidths, WithStyles, Wi
                         ->get();
 
         $collection = collect();
-        $collection[] = array('No', 'ID', 'Barcode', 'Nama', 'Harga Beli PPN', 'Harga Jual', 'Stok Akhir'); //1
+        $collection[] = array('No', 'ID', 'SKU', 'Nama', 'Harga Beli PPN', 'Harga Jual', 'Stok Akhir'); //1
         $no = 0;
         $total = 0;
         foreach ($rekaps as $obj) {
@@ -61,7 +63,7 @@ class DataObatExport implements FromCollection, WithColumnWidths, WithStyles, Wi
             $collection[] = array(
                 $no,
                 $obj->id_obat,
-                $obj->barcode,
+                $obj->sku,
                 $obj->nama,
                 $obj->harga_beli_ppn,
                 $obj->harga_jual,

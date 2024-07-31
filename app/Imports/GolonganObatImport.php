@@ -13,7 +13,7 @@ class GolonganObatImport implements ToCollection
     {
         foreach ($rows as $row) 
         {
-            MasterObat::on($this->getConnectionName())->where('id', $row[0])
+            MasterObat::where('id', $row[0])
             ->update([
                 'id_penandaan_obat' => $row[2], 
                 'id_golongan_obat' => $row[3], 

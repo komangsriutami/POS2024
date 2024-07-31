@@ -10,11 +10,9 @@ use Auth;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class M_KodeAkunController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -42,8 +40,8 @@ class M_KodeAkunController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterKodeAkun::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kode_akun.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterKodeAkun::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_kode_akun.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_kode_akun.is_deleted','=','0');
         });
@@ -80,9 +78,8 @@ class M_KodeAkunController extends Controller
     public function create()
     {
     	$kode_akuntansi = new MasterKodeAkun;
-        $kode_akuntansi->setDynamicConnection();
 
-        $kategori = MasterKategoriAkun::on($this->getConnectionName())->where("is_deleted",0)->orderBy('nama')->get();
+        $kategori = MasterKategoriAkun::where("is_deleted",0)->orderBy('nama')->get();
         // dd($kategori);
 
         return view('kode_akuntansi.create')->with(compact('kode_akuntansi','kategori'));
@@ -97,16 +94,12 @@ class M_KodeAkunController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $kode_akuntansi = new MasterKodeAkun;
-        $kode_akuntansi->setDynamicConnection();
         $kode_akuntansi->fill($request->except('_token'));
 
         $validator = $kode_akuntansi->validate();
         if($validator->fails()){
-            $kategori = MasterKategoriAkun::on($this->getConnectionName())->where("is_deleted",0)->orderBy('nama')->get();
+            $kategori = MasterKategoriAkun::where("is_deleted",0)->orderBy('nama')->get();
             return view('kode_akuntansi.create')->with(compact('kode_akuntansi','kategori'))->withErrors($validator);
         }else{
             $kode_akuntansi->save_plus();
@@ -137,9 +130,9 @@ class M_KodeAkunController extends Controller
     */
     public function edit($id)
     {
-        $kode_akuntansi = MasterKodeAkun::on($this->getConnectionName())->find($id);
+        $kode_akuntansi = MasterKodeAkun::find($id);
 
-        $kategori = MasterKategoriAkun::on($this->getConnectionName())->where("is_deleted",0)->orderBy('nama')->get();
+        $kategori = MasterKategoriAkun::where("is_deleted",0)->orderBy('nama')->get();
 
         return view('kode_akuntansi.edit')->with(compact('kode_akuntansi','kategori'));
     }
@@ -153,10 +146,7 @@ class M_KodeAkunController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $kode_akuntansi = MasterKodeAkun::on($this->getConnectionName())->find($id);
+        $kode_akuntansi = MasterKodeAkun::find($id);
         $kode_akuntansi->fill($request->except('_token'));
 
         $validator = $kode_akuntansi->validate();
@@ -177,10 +167,7 @@ class M_KodeAkunController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $kode_akuntansi = MasterKodeAkun::on($this->getConnectionName())->find($id);
+        $kode_akuntansi = MasterKodeAkun::find($id);
         $kode_akuntansi->is_deleted = 1;
         $kode_akuntansi->deleted_at = date('Y-m-d H:i:s');
         $kode_akuntansi->deleted_by = Auth::user()->id;

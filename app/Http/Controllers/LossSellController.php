@@ -21,11 +21,9 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use App\Traits\DynamicConnectionTrait;
 
 class LossSellController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -36,9 +34,9 @@ class LossSellController extends Controller
     public function index()
     {
         if(Auth::user()->is_admin == 1) {
-            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->get();
+            $apoteks = MasterApotek::where('is_deleted', 0)->get();
         } else {
-            $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
+            $apoteks = MasterApotek::where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
         }
         return view('loss_sell.index')->with(compact('apoteks'));
     }
@@ -58,8 +56,8 @@ class LossSellController extends Controller
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
-        $apoteker = User::on($this->getConnectionName())->find($apotek->id_apoteker);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
         $id_user = Auth::user()->id;
 
         $hak_akses = 0;
@@ -72,8 +70,8 @@ class LossSellController extends Controller
         }
 
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = LossSell::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = LossSell::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
         ->where(function($query) use($request, $hak_akses){
             $query->where('tb_loss_sell.is_deleted','=','0');
             if($hak_akses == 1) {
@@ -143,8 +141,7 @@ class LossSellController extends Controller
     public function create()
     {
         $data_ = new LossSell;
-        $data_->setDynamicConnection();
-        $obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $obats = MasterObat::where('is_deleted', 0)->pluck('nama', 'id');
         $obats->prepend('-- Pilih Obat --','');
         $obats->prepend('-- Data obat tidak ada dalam list --','0');
 
@@ -160,17 +157,13 @@ class LossSellController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $data_ = new LossSell;
-        $data_->setDynamicConnection();
         $data_->fill($request->except('_token'));
         $data_->tanggal = date('Y-m-d');
         $data_->id_apotek = session('id_apotek_active');
 
         if(!empty($data_->id_obat)) {
-            $obat = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $data_->id_obat)->first();
+            $obat = MasterStokHarga::where('id_obat', $data_->id_obat)->first();
             $data_->harga = $obat->harga_jual;
             $data_->total = $data_->jumlah*$data_->harga;
         } else {
@@ -212,8 +205,8 @@ class LossSellController extends Controller
     */
     public function edit($id)
     {
-        $data_ = LossSell::on($this->getConnectionName())->find($id);
-        $obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $data_ = LossSell::find($id);
+        $obats = MasterObat::where('is_deleted', 0)->pluck('nama', 'id');
         $obats->prepend('-- Pilih Obat --','');
         $obats->prepend('-- Data obat tidak ada dalam list --','0');
 
@@ -229,14 +222,11 @@ class LossSellController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = LossSell::on($this->getConnectionName())->find($id);
+        $data_ = LossSell::find($id);
         $data_->fill($request->except('_token'));
 
         if(!empty($data_->id_obat)) {
-            $obat = MasterStokHarga::on($this->getConnectionDefault())->where('id_obat', $data_->id_obat)->first();
+            $obat = MasterStokHarga::where('id_obat', $data_->id_obat)->first();
             $data_->harga = $obat->harga_jual;
             $data_->total = $data_->jumlah*$data_->harga;
         } else {
@@ -265,10 +255,7 @@ class LossSellController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = LossSell::on($this->getConnectionName())->find($id);
+        $data_ = LossSell::find($id);
         $data_->is_deleted = 1;
         $data_->deleted_by = Auth::user()->id;
         $data_->deleted_at = date('Y-m-d H:i:s');
@@ -285,7 +272,7 @@ class LossSellController extends Controller
 
     public function send_sign(Request $request)
     {
-        $data_ = LossSell::on($this->getConnectionName())->find($request->id);
+        $data_ = LossSell::find($request->id);
         $data_->is_sign = 1;
         $data_->sign_by = $request->sign_by;
         $data_->sign_at = date('Y-m-d H:i:s');
@@ -299,7 +286,7 @@ class LossSellController extends Controller
 
     public function batal_sign(Request $request)
     {
-        $data_ = LossSell::on($this->getConnectionName())->find($request->id);
+        $data_ = LossSell::find($request->id);
         $data_->is_sign = 0;
         $data_->sign_by = null;
         $data_->sign_at = null;
@@ -316,14 +303,14 @@ class LossSellController extends Controller
     public function export(Request $request) 
     {
         if($request->id_apotek != '') {
-            $apotek = MasterApotek::on($this->getConnectionName())->find($request->id_apotek);
+            $apotek = MasterApotek::find($request->id_apotek);
             $inisial = strtolower($apotek->nama_singkat);
         } else {
-            $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+            $apotek = MasterApotek::find(session('id_apotek_active'));
             $inisial = strtolower($apotek->nama_singkat);
         }
         $tanggal = $request->tanggal;
-        $rekaps = LossSell::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
+        $rekaps = LossSell::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_loss_sell.*'])
                             ->where(function($query) use($request){
                                 $query->where('tb_loss_sell.is_deleted','=','0');
                                 if($request->id_apotek != '') {

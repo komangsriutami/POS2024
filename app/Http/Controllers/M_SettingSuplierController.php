@@ -20,11 +20,9 @@ use Datatables;
 use DB;
 use Excel;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class M_SettingSuplierController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
         =======================================================================================
         For     : 
@@ -34,13 +32,13 @@ class M_SettingSuplierController extends Controller
     */
     public function index()
     {
-        $golongan_obats = MasterGolonganObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('keterangan', 'id');
+        $golongan_obats = MasterGolonganObat::where('is_deleted', 0)->pluck('keterangan', 'id');
         $golongan_obats->prepend('-- Pilih Golongan Obat --','');
 
-        $penandaan_obats = MasterPenandaanObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $penandaan_obats = MasterPenandaanObat::where('is_deleted', 0)->pluck('nama', 'id');
         $penandaan_obats->prepend('-- Pilih Penandaan Obat --','');
 
-        $produsens = MasterProdusen::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $produsens = MasterProdusen::where('is_deleted', 0)->pluck('nama', 'id');
         $produsens->prepend('-- Pilih Produsen --','');
 
         return view('setting_suplier.index')->with(compact('golongan_obats', 'penandaan_obats', 'produsens'));
@@ -55,15 +53,15 @@ class M_SettingSuplierController extends Controller
     */
     public function listSettingSuplier(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
         $order_dir = $order[0]['dir'];
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MasterObat::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MasterObat::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_m_obat.*'])
         ->where(function($query) use($request){
             $query->where('tb_m_obat.is_deleted','=','0');
             $query->where('id_penandaan_obat','LIKE',($request->id_penandaan_obat > 0 ? $request->id_penandaan_obat : '%'.$request->id_penandaan_obat.'%'));
@@ -107,7 +105,7 @@ class M_SettingSuplierController extends Controller
         }) 
         ->editcolumn('setting', function($data){
             $str = '';
-            $settings = MasterSettingSuplier::on($this->getConnectionName())->where('id_obat', $data->id)->where('is_deleted', 0)->get();
+            $settings = MasterSettingSuplier::where('id_obat', $data->id)->where('is_deleted', 0)->get();
 
             if(count($settings) > 0) {
                 $str .= '<br>';
@@ -163,9 +161,8 @@ class M_SettingSuplierController extends Controller
     public function create()
     {
         $data_ = new MasterSettingSuplier;
-        $data_->setDynamicConnection();
 
-        $supliers = MasterSuplier::on($this->getConnectionName())->pluck('nama', 'id');
+        $supliers = MasterSuplier::pluck('nama', 'id');
         $supliers->prepend('-- Pilih Suplier --','');
 
         return view('setting_suplier.create')->with(compact('data_'));
@@ -180,11 +177,7 @@ class M_SettingSuplierController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $data_ = new MasterSettingSuplier;
-        $data_->setDynamicConnection();
         $data_->fill($request->except('_token'));
 
         $validator = $data_->validate();
@@ -220,7 +213,7 @@ class M_SettingSuplierController extends Controller
     */
     public function edit($id)
     {
-        $data_      = MasterSettingSuplier::on($this->getConnectionName())->find($id);
+        $data_      = MasterSettingSuplier::find($id);
 
         return view('setting_suplier.edit')->with(compact('data_'));
     }
@@ -234,10 +227,7 @@ class M_SettingSuplierController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = MasterSettingSuplier::on($this->getConnectionName())->find($id);
+        $data_ = MasterSettingSuplier::find($id);
         $data_->fill($request->except('_token'));
 
         $validator = $data_->validate();
@@ -260,10 +250,7 @@ class M_SettingSuplierController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = MasterSettingSuplier::on($this->getConnectionName())->find($id);
+        $data_ = MasterSettingSuplier::find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');
         $data_->deleted_by = Auth::user()->id;
@@ -275,11 +262,10 @@ class M_SettingSuplierController extends Controller
     }
 
     public function addDetail($id) {
-        $obat = MasterObat::on($this->getConnectionName())->find($id);
+        $obat = MasterObat::find($id);
         $data_ = new MasterSettingSuplier;
-        $data_->setDynamicConnection();
 
-        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $supliers = MasterSuplier::where('is_deleted', 0)->pluck('nama', 'id');
         $supliers->prepend('-- Pilih Suplier --','');
 
         return view('setting_suplier.add_detail')->with(compact('data_', 'obat', 'supliers'));
@@ -287,11 +273,10 @@ class M_SettingSuplierController extends Controller
 
     public function storeDetail(Request $request) {
         $data_ = new MasterSettingSuplier;
-        $data_->setDynamicConnection();
         $data_->fill($request->except('_token'));
         $data_->status = 1;
 
-        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
+        $obat = MasterObat::find($request->id_obat);
         $validator = $data_->validate();
         if($validator->fails()){
             echo 0;
@@ -304,10 +289,10 @@ class M_SettingSuplierController extends Controller
     }
 
     public function editDetail($id) {
-        $data_ = MasterSettingSuplier::on($this->getConnectionName())->find($id);
-        $obat = MasterObat::on($this->getConnectionName())->find($data_->id_obat);
+        $data_ = MasterSettingSuplier::find($id);
+        $obat = MasterObat::find($data_->id_obat);
 
-        $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $supliers = MasterSuplier::where('is_deleted', 0)->pluck('nama', 'id');
         $supliers->prepend('-- Pilih Suplier --','');
 
         return view('setting_suplier.edit_detail')->with(compact('data_', 'obat', 'supliers'));
@@ -315,10 +300,10 @@ class M_SettingSuplierController extends Controller
 
     public function updateDetail(Request $request, $id)
     {
-        $data_ = MasterSettingSuplier::on($this->getConnectionName())->find($id);
+        $data_ = MasterSettingSuplier::find($id);
         $data_->fill($request->except('_token'));
 
-        $obat = MasterObat::on($this->getConnectionName())->find($data_->id_obat);
+        $obat = MasterObat::find($data_->id_obat);
         $validator = $data_->validate();
 
         if($validator->fails()){
@@ -333,10 +318,7 @@ class M_SettingSuplierController extends Controller
 
     public function deleteDetail($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $data_ = MasterSettingSuplier::on($this->getConnectionName())->find($id);
+        $data_ = MasterSettingSuplier::find($id);
         $data_->is_deleted = 1;
         $data_->deleted_at = date('Y-m-d H:i:s');
         $data_->deleted_by = Auth::user()->id;
@@ -348,29 +330,29 @@ class M_SettingSuplierController extends Controller
     }
 
     public function getReloadData() {
-        $obats = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->where('reload_suplier', 0)->limit(100)->get();
+        $obats = MasterObat::where('is_deleted', 0)->where('reload_suplier', 0)->limit(100)->get();
         $i = 0;
         $id_obat = 0;
         foreach($obats as $obj) {
-            $sub = TransaksiPembelianDetail::on($this->getConnectionName())->select(['tb_detail_nota_pembelian.id_obat', DB::raw('MAX(a.tgl_nota) as tgl'), 'a.id_suplier'])
+            $sub = TransaksiPembelianDetail::select(['tb_detail_nota_pembelian.id_obat', DB::raw('MAX(a.tgl_nota) as tgl'), 'a.id_suplier'])
                             ->join('tb_nota_pembelian as a', 'a.id', 'tb_detail_nota_pembelian.id_nota')
                             ->where('a.is_deleted', 0)
                             ->where('tb_detail_nota_pembelian.is_deleted', 0)
                             ->where('id_obat', $obj->id)
                             ->groupBy('a.id_suplier');
 
-            $pembelians = DB::connection($this->getConnectionName())->table( DB::raw("({$sub->toSql()}) as sub") )
+            $pembelians = DB::table( DB::raw("({$sub->toSql()}) as sub") )
                             ->mergeBindings($sub->getQuery())
                             ->orderBy('tgl', 'DESC')->get();
 
 
             if(count($pembelians) > 0) {
                 foreach($pembelians as $val){
-                    $data_ = MasterSettingSuplier::on($this->getConnectionName())->where('is_deleted', 0)
+                    $data_ = MasterSettingSuplier::where('is_deleted', 0)
                                 ->where('id_obat', $obj->id)
                                 ->where('id_suplier', $val->id_suplier)
                                 ->first();
-                    $jum = MasterSettingSuplier::on($this->getConnectionName())->where('is_deleted', 0)
+                    $jum = MasterSettingSuplier::where('is_deleted', 0)
                                 ->where('id_obat', $obj->id)
                                 ->count();
                     $jumx = $jum+1;
@@ -381,7 +363,6 @@ class M_SettingSuplierController extends Controller
 
                     if(empty($data_)) {
                         $data_ = new MasterSettingSuplier;
-                        $data_->setDynamicConnection();
                         $data_->level = $jumx;
                     } 
 
@@ -396,7 +377,7 @@ class M_SettingSuplierController extends Controller
                 }
             }
 
-            MasterObat::on($this->getConnectionName())->where('id', $obj->id)->update(['reload_suplier' => 1]);
+            MasterObat::where('id', $obj->id)->update(['reload_suplier' => 1]);
 
             $i++;
         }

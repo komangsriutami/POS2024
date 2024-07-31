@@ -27,11 +27,8 @@ use Datatables;
 use DB;
 use Auth;
 use ZipArchive;
-use App\Traits\DynamicConnectionTrait;
-
 class T_DefectaController extends Controller
 {
-    use DynamicConnectionTrait;
     protected static $expiredAt = 6 * 60 * 60;
 
     /*
@@ -57,10 +54,10 @@ class T_DefectaController extends Controller
     */
     public function list_defecta(Request $request)
     {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DefectaOutlet::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = DefectaOutlet::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -109,7 +106,7 @@ class T_DefectaController extends Controller
             return $data->forcasting;
         })
         ->editcolumn('status', function($data) use ($apotek){
-            $statusOrder = MasterStatusOrder::on($this->getConnectionName())->find($data->id_status);
+            $statusOrder = MasterStatusOrder::find($data->id_status);
             $str =  '<span class="badge badge-'.$statusOrder->class.'"><i class="fa '.$statusOrder->icon.'"></i> '.$statusOrder->nama.'</span>';
 
             return $str;
@@ -130,7 +127,7 @@ class T_DefectaController extends Controller
             return 'Rp '.number_format($total,0);
         })
         ->addcolumn('action', function($data) use ($apotek){
-           // $d_ = DefectaOutlet::on($this->getConnectionName())->where('id_stok_harga', $data->id)->where('id_apotek', $apotek->id)->first();
+           // $d_ = DefectaOutlet::where('id_stok_harga', $data->id)->where('id_apotek', $apotek->id)->first();
             $btn = '<div class="btn-group">';
             if ($data->is_kirim == 0){
                 if($data->is_disabled == 1) {
@@ -158,12 +155,9 @@ class T_DefectaController extends Controller
 
     public function send_defecta(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $i = 0;
         foreach ($request->input('id_defecta') as $key => $value) {
-            DB::connection($this->getConnectionName())->table('tb_defecta_outlet')->where('id', $value)->update(['is_kirim'=> $request->input('act')]);
+            DB::table('tb_defecta_outlet')->where('id', $value)->update(['is_kirim'=> $request->input('act')]);
             $i++;
         }
 
@@ -188,20 +182,15 @@ class T_DefectaController extends Controller
     }
 
     public function store(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
-        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
+        $data_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $obat = MasterObat::find($request->id_obat);
         $defecta = new DefectaOutlet;
-        $defecta->setDynamicConnection();
 
         if(!empty($defecta)) {
         } else {
             $defecta = new DefectaOutlet;
-            $defecta->setDynamicConnection();
         }
 
         $defecta->fill($request->except('_token'));
@@ -223,7 +212,7 @@ class T_DefectaController extends Controller
             echo json_encode(array('status' => 0));
         }else{
             if($defecta->save()) {
-                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
+                DB::table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
                 echo json_encode(array('status' => 1));
             } else {
                 echo json_encode(array('status' => 0));
@@ -263,15 +252,11 @@ class T_DefectaController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
-        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
-        $defecta = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
+        $data_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $obat = MasterObat::find($request->id_obat);
+        $defecta = DefectaOutlet::where('is_deleted', 0)
                     ->where('id_obat', $request->id_obat)
                     ->where('id_apotek', $apotek->id)
                     ->where('id_status', '!=', $request->id_status)
@@ -281,7 +266,6 @@ class T_DefectaController extends Controller
         if(!empty($defecta)) {
         } else {
             $defecta = new DefectaOutlet;
-            $defecta->setDynamicConnection();
         }
 
         $defecta->fill($request->except('_token'));
@@ -302,7 +286,7 @@ class T_DefectaController extends Controller
             echo json_encode(array('status' => 0));
         }else{
             if($defecta->save()) {
-                DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
+                DB::table('tb_m_stok_harga_'.$inisial)->where('id', $request->id_stok_harga)->update(['is_defecta'=> 1]);
                 echo json_encode(array('status' => 1));
             } else {
                 echo json_encode(array('status' => 0));
@@ -320,10 +304,7 @@ class T_DefectaController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $defecta = DefectaOutlet::on($this->getConnectionName())->find($id);
+        $defecta = DefectaOutlet::find($id);
         if($defecta->delete()){
             echo 1;
         }else{
@@ -338,9 +319,9 @@ class T_DefectaController extends Controller
             $active_defecta = null;
         }
 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->first();
+        $data_ = DB::table('tb_m_stok_harga_'.$inisial)->first();
         $last_hitung = date('d-m-Y H:i:s'); //, strtotime($data_->last_hitung)
         //echo "asdasdsa";exit();
         return view('defecta.input')->with(compact('last_hitung'));
@@ -348,7 +329,7 @@ class T_DefectaController extends Controller
 
     public function list_defecta_input(Request $request) {
         ini_set('memory_limit', '-1'); 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         if($request->tanggal != "") {
@@ -360,9 +341,9 @@ class T_DefectaController extends Controller
             $tgl_akhir = date('Y-m-d').' 23:59:59';
         }
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
+        DB::statement(DB::raw('set @rownum = 0'));
         if($request->id_order_by == 4 || $request->id_order_by == 5) {
-            $in_penjualan =  TransaksiPenjualanDetail::on($this->getConnectionName())->select([ 'tb_detail_nota_penjualan.id_obat'])
+            $in_penjualan =  TransaksiPenjualanDetail::select([ 'tb_detail_nota_penjualan.id_obat'])
                             ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
                             ->whereDate('b.created_at','>=', $tgl_awal)
                             ->whereDate('b.created_at','<=', $tgl_akhir)
@@ -372,7 +353,7 @@ class T_DefectaController extends Controller
                             
 
             //$data = collect();
-            $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)
+            $data = DB::table('tb_m_stok_harga_'.$inisial)
                                 ->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_m_stok_harga_'.$inisial.'.id',
@@ -403,7 +384,7 @@ class T_DefectaController extends Controller
             /*$x = $data->get();
             dd($x);*/
         } else {
-            $data = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)
+            $data = DB::table('tb_m_stok_harga_'.$inisial)
                                 ->select([
                                     DB::raw('@rownum  := @rownum  + 1 AS no'),
                                     'tb_m_stok_harga_'.$inisial.'.id',
@@ -480,7 +461,7 @@ class T_DefectaController extends Controller
     }
 
     public function getJumlahMargin($data, $apotek, $tgl_awal, $tgl_akhir, $inisial) {
-        $get = TransaksiPenjualanDetail::on($this->getConnectionName())->select(
+        $get = TransaksiPenjualanDetail::select(
                                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                                 'tb_detail_nota_penjualan.id_obat',
                                 DB::raw('SUM(tb_detail_nota_penjualan.jumlah) as jumlah_pemakaian'),
@@ -499,18 +480,18 @@ class T_DefectaController extends Controller
     }
 
     public function hitung() {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $j = 0;
-        $obats = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->limit(50)->get();
+        $obats = DB::table('tb_m_stok_harga_'.$inisial)->limit(50)->get();
         foreach ($obats as $key => $obj) {
             $total_buffer = 0;
             $y1 = 0; 
             $y2 = 0;
             $y3 = 0;
             for ($i=1; $i <=3 ; $i++) { 
-                $data_ = DB::connection($this->getConnectionName())->table('tb_detail_nota_penjualan')
+                $data_ = DB::table('tb_detail_nota_penjualan')
                 ->select([
                             DB::raw('SUM(tb_detail_nota_penjualan.jumlah) AS jumlah')
                             ])
@@ -558,7 +539,7 @@ class T_DefectaController extends Controller
             $y = $a + $b * 4; // a + bx;
             $abc = ceil($y);
 
-            DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
+            DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $obj->id_obat)->update(['total_buffer'=> $total_buffer, 'forcasting'=>$abc, 'last_hitung' => date('Y-m-d H:i:s')]);
             $j++;
         }
 
@@ -567,23 +548,22 @@ class T_DefectaController extends Controller
     }
 
     public function add_defecta(Request $request){
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $id_stok_harga = $request->id_stok_harga;
         $id_defecta = $request->id_defecta;
-        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id', $id_stok_harga)->first();
-        $obat = MasterObat::on($this->getConnectionName())->find($data_->id_obat);
+        $data_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id', $id_stok_harga)->first();
+        $obat = MasterObat::find($data_->id_obat);
         $jumlah_pemakaian = $request->jumlah;
         $margin = $request->margin;
         //dd($jumlah_pemakaian);
         if(!empty($id_defecta)) {
-            $defecta = DefectaOutlet::on($this->getConnectionName())->where('id', $id_keputusan_order)->first();
+            $defecta = DefectaOutlet::where('id', $id_keputusan_order)->first();
         } else {
             $defecta = new DefectaOutlet;
-            $defecta->setDynamicConnection();
         }
 
-        $supliers      = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $supliers      = MasterSuplier::where('is_deleted', 0)->pluck('nama', 'id');
         $supliers->prepend('-- Pilih Suplier --','');
     
         return view('defecta._form_defecta')->with(compact('defecta', 'apotek', 'obat', 'data_', 'supliers', 'jumlah_pemakaian', 'margin'));
@@ -591,10 +571,10 @@ class T_DefectaController extends Controller
 
     // START PURCHASING
     public function data_masuk() {
-        $statuss = MasterStatusOrder::on($this->getConnectionName())->pluck('nama', 'id');
+        $statuss = MasterStatusOrder::pluck('nama', 'id');
         $statuss->prepend('-- Pilih Status --','');
 
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+        $apoteks = MasterApotek::where('is_deleted', 0)->pluck('nama_panjang', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
         $cek_ = session('status_purchasing_aktif');
         $cek2_ = session('apotek_purchasing_aktif');
@@ -629,10 +609,10 @@ class T_DefectaController extends Controller
         $id_apotek = session('apotek_purchasing_aktif');
         $id_status = session('status_purchasing_aktif');
         $id_proses = session('proses_purchasing_aktif');
-        $apoteks = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->whereNotIn('id', [$id_apotek])->get();
+        $apoteks = MasterApotek::where('is_deleted', 0)->whereNotIn('id', [$id_apotek])->get();
 
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DefectaOutlet::on($this->getConnectionName())->select([
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = DefectaOutlet::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -707,7 +687,7 @@ class T_DefectaController extends Controller
             return $data->forcasting;
         })
         ->editcolumn('status', function($data) {
-            $statusOrder = MasterStatusOrder::on($this->getConnectionName())->find($data->id_status);
+            $statusOrder = MasterStatusOrder::find($data->id_status);
             $str =  '<span class="badge badge-'.$statusOrder->class.'"><i class="fa '.$statusOrder->icon.'"></i> '.$statusOrder->nama.'</span>';
 
             return $str;
@@ -755,7 +735,7 @@ class T_DefectaController extends Controller
             foreach($apoteks as $obj) {
                 $i++;
                 $inisial = strtolower($obj->nama_singkat);
-                $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                $cek_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                 $info .= $obj->nama_singkat.' : '.$cek_->stok_akhir;
                 if($i != count($apoteks)) {
                     $info .= ' | ';
@@ -765,7 +745,7 @@ class T_DefectaController extends Controller
             return '<b>'.$data->nama.'</b><br>'.$info;
         })
         ->addcolumn('action', function($data) {
-           // $d_ = DefectaOutlet::on($this->getConnectionName())->where('id_stok_harga', $data->id)->where('id_apotek', $apotek->id)->first();
+           // $d_ = DefectaOutlet::where('id_stok_harga', $data->id)->where('id_apotek', $apotek->id)->first();
             $btn = '<div class="btn-group">';
             if ($data->id_status == 0){
                 $btn .= '<span class="btn btn-info btn-sm" onClick="set_status_defecta('.$data->id.', '.$data->id_apotek.', 1)" data-toggle="tooltip" data-placement="top" title="Order">Order</span>';
@@ -788,7 +768,7 @@ class T_DefectaController extends Controller
             foreach($apoteks as $obj) {
                 $i++;
                 $inisial = strtolower($obj->nama_singkat);
-                $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
+                $cek_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $data->id_obat)->first();
                 if($cek_->stok_akhir > $data->total_stok) {
                     $ada_ = 1;
                 }
@@ -828,7 +808,7 @@ class T_DefectaController extends Controller
         $id_apotek = $request->input('id_apotek');
         $id_defecta = $request->input('id_defecta');
 
-        $defectas = DefectaOutlet::on($this->getConnectionName())->select([
+        $defectas = DefectaOutlet::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
                 'tb_defecta_outlet.*',
                 'b.nama',
@@ -846,18 +826,18 @@ class T_DefectaController extends Controller
             $query->whereIn('tb_defecta_outlet.id', $id_defecta);
         })->get();
 
-        $status = MasterStatusOrder::on($this->getConnectionName())->find($act);
+        $status = MasterStatusOrder::find($act);
 
         if($act == 0) {
             return view('konfirmasi_defecta._form_konfirmasi_draft')->with(compact('defectas', 'status'));
         } else if($act == 1) {
-            $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+            $supliers = MasterSuplier::where('is_deleted', 0)->pluck('nama', 'id');
             $supliers->prepend('-- Pilih Suplier --','');
 
             return view('konfirmasi_defecta._form_konfirmasi_order')->with(compact('defectas', 'status', 'supliers'));
         } else if($act == 2){
 
-            $apoteks = MasterApotek::on($this->getConnectionName())->whereNotIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_panjang', 'id');
+            $apoteks = MasterApotek::whereNotIn('id', [session('id_apotek_active')])->where('is_deleted', 0)->pluck('nama_panjang', 'id');
             $apoteks->prepend('-- Pilih Apotek --','');
             return view('konfirmasi_defecta._form_konfirmasi_transfer')->with(compact('defectas', 'status', 'apoteks'));
         } else if($act == 3) {
@@ -871,7 +851,7 @@ class T_DefectaController extends Controller
     {
         $i = 0;
         foreach ($request->input('id_defecta') as $key => $value) {
-            DB::connection($this->getConnectionName())->table('tb_defecta_outlet')->where('id', $value)->update(['id_status'=> $request->input('act')]);
+            DB::table('tb_defecta_outlet')->where('id', $value)->update(['id_status'=> $request->input('act')]);
             $i++;
         }
 
@@ -899,13 +879,10 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_order(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $defectas = $request->defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {
-            DB::connection($this->getConnectionName())->table('tb_defecta_outlet')->where('id', $val)->update([
+            DB::table('tb_defecta_outlet')->where('id', $val)->update([
                 'id_suplier_order'=> $request->id_suplier_order, 
                 'id_status' => $request->id_status, 
                 'last_update_status' => date('Y-m-d H:i:s')
@@ -926,13 +903,10 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_transfer(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $defectas = $request->defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {
-            DB::connection($this->getConnectionName())->table('tb_defecta_outlet')->where('id', $val)->update([
+            DB::table('tb_defecta_outlet')->where('id', $val)->update([
                 'id_apotek_transfer'=> $request->id_apotek_transfer, 
                 'id_status' => $request->id_status, 
                 'last_update_status' => date('Y-m-d H:i:s')
@@ -953,13 +927,10 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_tolak(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $defectas = $request->defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {
-            DB::connection($this->getConnectionName())->table('tb_defecta_outlet')->where('id', $val)->update([
+            DB::table('tb_defecta_outlet')->where('id', $val)->update([
                 'alasan_tolak'=> $request->alasan_tolak, 
                 'id_status' => $request->id_status, 
                 'last_update_status' => date('Y-m-d H:i:s')
@@ -980,13 +951,10 @@ class T_DefectaController extends Controller
     }
 
     public function konfirmasi_draft(Request $request) {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $defectas = $request->id_defecta;
         $i = 0;
         foreach ($defectas as $key => $val) {
-            DB::connection($this->getConnectionName())->table('tb_defecta_outlet')->where('id', $val)->update([
+            DB::table('tb_defecta_outlet')->where('id', $val)->update([
                 'id_status' => $request->act, 
                 'last_update_status' => date('Y-m-d H:i:s')
             ]);
@@ -1022,7 +990,7 @@ class T_DefectaController extends Controller
     public function getAmountProduct(Request $request) {
         //echo "sementara ditutup, sampai so selesai";exit();
         ini_set('memory_limit', '-1');
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $cached_resume = Cache::get('analisa_pembelian_'.$request->referensi.'_'.Auth::user()->id.'_resume_'.$apotek->id);
         if($cached_resume == null){
             $this->getDataAnalisaPembelian($request);
@@ -1081,7 +1049,7 @@ class T_DefectaController extends Controller
     public function getDataAnalisaPembelian(Request $request) {
         set_time_limit(0);
         ini_set('memory_limit', '-1'); 
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $cached_data = Cache::get('analisa_pembelian_'.$request->referensi.'_'.Auth::user()->id.'_list_data_'.$apotek->id);
         if($cached_data != null){
             $nama = $request->nama;
@@ -1128,8 +1096,8 @@ class T_DefectaController extends Controller
         else{
             $inisial = strtolower($apotek->nama_singkat);
     
-            DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-            $sub2 = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+            DB::statement(DB::raw('set @rownum = 0'));
+            $sub2 = TransaksiPenjualanDetail::select([
                 'a.id',
                 DB::raw('SUM(tb_detail_nota_penjualan.jumlah) as terjual'),
                 DB::raw('(TRUNCATE
@@ -1169,7 +1137,7 @@ class T_DefectaController extends Controller
             })
             ->groupBy('a.id');
     
-            $sub3 = DB::connection($this->getConnectionName())->table( 'tb_m_obat as a' )
+            $sub3 = DB::table( 'tb_m_obat as a' )
                 ->select([
                     DB::raw('@rownum := @rownum + 1 AS no'),
                     'a.nama as nama_obat',
@@ -1193,19 +1161,19 @@ class T_DefectaController extends Controller
                 ->where('c.is_deleted', 0)
                 ->where('d.is_deleted', 0);
     
-            $data = DB::connection($this->getConnectionName())->table( DB::raw("({$sub3->toSql()}) as sub3") )
+            $data = DB::table( DB::raw("({$sub3->toSql()}) as sub3") )
                 ->mergeBindings($sub3) 
                 ->select(['sub3.*']);
     
             // ambil data obat yg di defecta
-            $data_defecta = DefectaOutlet::on($this->getConnectionName())->select('id_obat')
+            $data_defecta = DefectaOutlet::select('id_obat')
                 ->where('is_deleted', 0)
                 ->where('id_apotek', $apotek->id)
                 ->whereNotIn('id_status', [1,2])
                 ->where('id_process', '=', 0);
             
             // ambil data penjualan per bulan
-            $query_histori_penjualan = TransaksiPenjualanDetail::on($this->getConnectionName())->select([
+            $query_histori_penjualan = TransaksiPenjualanDetail::select([
                 'a.id',
                 DB::raw('SUM(tb_detail_nota_penjualan.jumlah) as terjual'),
             ])
@@ -1220,7 +1188,7 @@ class T_DefectaController extends Controller
             ->groupBy('a.id');
     
             // ambil data stok akhir per bulan
-            $query_histori_stok = DB::connection($this->getConnectionDefault())->table('tb_histori_stok_'.$inisial)
+            $query_histori_stok = DB::table('tb_histori_stok_'.$inisial)
                 ->select([
                     'id_obat',
                     DB::raw('cast(stok_awal as SIGNED) as stok_awal'),
@@ -1229,7 +1197,7 @@ class T_DefectaController extends Controller
                 ->groupBy('id_obat');
     
             // ambil data pembelian per bulan
-            $query_histori_pembelian = TransaksiPembelianDetail::on($this->getConnectionName())->select([
+            $query_histori_pembelian = TransaksiPembelianDetail::select([
                 'a.id',
                 DB::raw('SUM(tb_detail_nota_pembelian.jumlah) as pembelian'),
             ])
@@ -1243,7 +1211,7 @@ class T_DefectaController extends Controller
             })
             ->groupBy('a.id');
     
-            $query_histori_transfer_keluar = TransaksiTODetail::on($this->getConnectionName())->select([
+            $query_histori_transfer_keluar = TransaksiTODetail::select([
                 'a.id',
                 DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah) as total_transfer'),
             ])
@@ -1257,7 +1225,7 @@ class T_DefectaController extends Controller
             })
             ->groupBy('a.id');
     
-            $query_histori_transfer_masuk = TransaksiTODetail::on($this->getConnectionName())->select([
+            $query_histori_transfer_masuk = TransaksiTODetail::select([
                 'a.id',
                 DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah) as total_transfer'),
             ])
@@ -1311,7 +1279,7 @@ class T_DefectaController extends Controller
                 });
     
                 // merge dengan tb obat
-                $histori_penjualan[$i] = DB::connection($this->getConnectionName())->table( 'tb_m_obat as a' )
+                $histori_penjualan[$i] = DB::table( 'tb_m_obat as a' )
                 ->select([
                     'a.id as id_obat',
                     'sub2.terjual as terjual'
@@ -1327,7 +1295,7 @@ class T_DefectaController extends Controller
                 ->where('d.is_deleted', 0)
                 ->get();
     
-                $histori_stok[$i] = DB::connection($this->getConnectionName())->table('tb_m_obat as a')
+                $histori_stok[$i] = DB::table('tb_m_obat as a')
                 ->select([
                     'a.id as id_obat',
                     'sub2.stok_awal as stok_akhir',
@@ -1345,7 +1313,7 @@ class T_DefectaController extends Controller
                 ->where('d.is_deleted', 0)
                 ->get();
     
-                $histori_pembelian[$i] = DB::connection($this->getConnectionName())->table('tb_m_obat as a')
+                $histori_pembelian[$i] = DB::table('tb_m_obat as a')
                 ->select([
                     'a.id as id_obat',
                     'sub2.pembelian as pembelian'
@@ -1361,7 +1329,7 @@ class T_DefectaController extends Controller
                 ->where('d.is_deleted', 0)
                 ->get();
     
-                $histori_transfer_keluar[$i] = DB::connection($this->getConnectionName())->table('tb_m_obat as a')
+                $histori_transfer_keluar[$i] = DB::table('tb_m_obat as a')
                 ->select([
                     'a.id as id_obat',
                     'sub2.total_transfer as total_transfer'
@@ -1377,7 +1345,7 @@ class T_DefectaController extends Controller
                 ->where('d.is_deleted', 0)
                 ->get();
     
-                $histori_transfer_masuk[$i] = DB::connection($this->getConnectionName())->table('tb_m_obat as a')
+                $histori_transfer_masuk[$i] = DB::table('tb_m_obat as a')
                 ->select([
                     'a.id as id_obat',
                     'sub2.total_transfer as total_transfer'
@@ -1430,7 +1398,7 @@ class T_DefectaController extends Controller
             return $btn;
         })    
         ->addColumn('sedang_dipesan', function($data) {
-            $cek = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
+            $cek = DefectaOutlet::where('is_deleted', 0)
                         ->where('id_obat', $data->id)
                         ->where('id_apotek', session('id_apotek_active'))
                         ->whereIn('id_status', [1,2])
@@ -1466,7 +1434,7 @@ class T_DefectaController extends Controller
 
     public function clear_cache() {
         ini_set('memory_limit', '-1');
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $value = [null, 1, 2, 3, 4];
         try {
             for($i = 0; $i < count($value); $i++){
@@ -1480,11 +1448,11 @@ class T_DefectaController extends Controller
     }
 
     public function add_keranjang(Request $request){
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
-        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
-        $defecta = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
+        $data_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $obat = MasterObat::find($request->id_obat);
+        $defecta = DefectaOutlet::where('is_deleted', 0)
                     ->where('id_obat', $request->id_obat)
                     ->where('id_apotek', $apotek->id)
                     ->where('id_status', '=', 1)
@@ -1494,44 +1462,41 @@ class T_DefectaController extends Controller
         if(!empty($defecta)) {
         } else {
             $defecta = new DefectaOutlet;
-            $defecta->setDynamicConnection();
         }
 
 
-        $setting_suplier = MasterSettingSuplier::on($this->getConnectionName())->select(['id_suplier'])->where('is_deleted', 0)->where('id_obat', $obat->id)->orderby('level', 'asc')->get();
+        $setting_suplier = MasterSettingSuplier::select(['id_suplier'])->where('is_deleted', 0)->where('id_obat', $obat->id)->orderby('level', 'asc')->get();
       
         if(!empty($setting_suplier)) {
             $suplier = new MasterSuplier;
-            $suplier->setDynamicConnection();
             $setting_suplier->push('155');
-            $supliers      = MasterSuplier::on($this->getConnectionName())->whereIn('id', $setting_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
+            $supliers      = MasterSuplier::whereIn('id', $setting_suplier)->where('is_deleted', 0)->pluck('nama', 'id');
             $supliers->prepend('-- Pilih Suplier --','');
         } else {
             $suplier = new MasterSuplier;
-            $suplier->setDynamicConnection();
-            $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+            $supliers = MasterSuplier::where('is_deleted', 0)->pluck('nama', 'id');
             $supliers->prepend('-- Pilih Suplier --','');
         }
 
-        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
 
-        $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
+        $histori_stok = HistoriStok::select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
                         ->where('id_obat', $obat->id)
                         ->whereIn('id_jenis_transaksi', [2,3,11,9])
                         ->where('sisa_stok', '>', 0)
                         ->orderBy('id', 'ASC')
                         ->first();
 
-        $last = HistoriStok::on($this->getConnectionDefault())->select(['*'])
+        $last = HistoriStok::select(['*'])
                         ->where('id_obat', $obat->id)
                         ->whereIn('id_jenis_transaksi', [2,3,11,9])
                         ->where('sisa_stok', '>', 0)
                         ->orderBy('id', 'DESC')
                         ->first();
 
-        $suplier_ref = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+        $suplier_ref = DB::table('tb_detail_nota_pembelian as a')
         ->select(['a.*', 'b.id_suplier'])
         ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
         ->where('a.is_deleted', 0)
@@ -1545,7 +1510,7 @@ class T_DefectaController extends Controller
         $referensis = [];
         if(count($suplier_ref) > 0) {
             foreach($suplier_ref as $obj) {
-                $getData = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+                $getData = DB::table('tb_detail_nota_pembelian as a')
                 ->select(['a.*', 'c.nama as nama', 'b.tgl_nota'])
                 ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
                 ->join('tb_m_suplier as c', 'c.id','=', 'b.id_suplier')
@@ -1560,7 +1525,7 @@ class T_DefectaController extends Controller
                 array_push($referensi, $getData);
             }
         } else {
-            $suplier_ref = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+            $suplier_ref = DB::table('tb_detail_nota_pembelian as a')
             ->select(['a.*', 'b.id_suplier'])
             ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
             ->where('a.is_deleted', 0)
@@ -1570,7 +1535,7 @@ class T_DefectaController extends Controller
             ->get();
 
             foreach($suplier_ref as $obj) {
-                $getData = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+                $getData = DB::table('tb_detail_nota_pembelian as a')
                 ->select(['a.*', 'c.nama as nama', 'b.tgl_nota'])
                 ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
                 ->join('tb_m_suplier as c', 'c.id','=', 'b.id_suplier')
@@ -1589,44 +1554,40 @@ class T_DefectaController extends Controller
     }
 
     public function add_keranjang_manual(Request $request){
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $defecta = new DefectaOutlet;
-        $defecta->setDynamicConnection();
 
-        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $obats      = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $obats      = MasterObat::where('is_deleted', 0)->pluck('nama', 'id');
         $obats->prepend('-- Pilih Obat --','');
 
         return view('homepage._form_add_defecta_manual')->with(compact('defecta', 'apotek', 'satuans', 'obats'));
     }
 
     public function load_konten(Request $request) {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $id_obat = $request->id_obat;
         $id_defecta = $request->id_defecta;
         if(is_null($id_defecta) OR $id_defecta == "") {
             $defecta = new DefectaOutlet;
-            $defecta->setDynamicConnection();
         } else {
-            $defecta = DefectaOutlet::on($this->getConnectionName())->find($id_defecta);
+            $defecta = DefectaOutlet::find($id_defecta);
         }
 
-        $setting_suplier = MasterSettingSuplier::on($this->getConnectionName())->select(['id_suplier'])->where('is_deleted', 0)->where('id_obat', $id_obat)->orderby('level', 'asc')->get();
+        $setting_suplier = MasterSettingSuplier::select(['id_suplier'])->where('is_deleted', 0)->where('id_obat', $id_obat)->orderby('level', 'asc')->get();
 
         if(count($setting_suplier) > 0) {
             $suplier = new MasterSuplier;
-            $suplier->setDynamicConnection();
             $setting_suplier->push('155');
-            $supliers      = MasterSuplier::on($this->getConnectionName())->whereIn('id', $setting_suplier)->where('is_deleted', 0)->get();
+            $supliers      = MasterSuplier::whereIn('id', $setting_suplier)->where('is_deleted', 0)->get();
         } else {
             $suplier = new MasterSuplier;
-            $suplier->setDynamicConnection();
-            $supliers = MasterSuplier::on($this->getConnectionName())->where('is_deleted', 0)->get();
+            $supliers = MasterSuplier::where('is_deleted', 0)->get();
         }
 
         $html_sup = '<label>Pilih Suplier</label>';
@@ -1637,28 +1598,28 @@ class T_DefectaController extends Controller
         }
         $html_sup .= "</select>";
 
-        $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
+        $histori_stok = HistoriStok::select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
                         ->where('id_obat', $id_obat)
                         ->whereIn('id_jenis_transaksi', [2,3,11,9])
                         ->where('sisa_stok', '>', 0)
                         ->orderBy('id', 'ASC')
                         ->first();
 
-        $last = HistoriStok::on($this->getConnectionDefault())->select(['*'])
+        $last = HistoriStok::select(['*'])
                         ->where('id_obat', $id_obat)
                         ->whereIn('id_jenis_transaksi', [2,3,11,9])
                         ->where('sisa_stok', '>', 0)
                         ->orderBy('id', 'DESC')
                         ->first();
 
-        /*$latestNotes = DB::connection($this->getConnectionName())->table('tb_nota_pembelian as a')
+        /*$latestNotes = DB::table('tb_nota_pembelian as a')
             ->select('a.id', DB::raw('CAST(a.id_suplier as unsigned) as id_suplier'), DB::raw('MAX(a.tgl_nota) as latest_date'))
             ->where('a.id_apotek_nota', $apotek->id)
             ->where('a.is_deleted', 0)
             ->groupBy('a.id_suplier')
             ->orderBy('id_suplier');
         
-        $referensi = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+        $referensi = DB::table('tb_detail_nota_pembelian as a')
             ->select(
                 'd.nama',
                 DB::raw('CAST(b.id as unsigned) as id'),
@@ -1705,7 +1666,7 @@ class T_DefectaController extends Controller
 
         */
         $html_ref = '';
-        $referensis = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+        $referensis = DB::table('tb_detail_nota_pembelian as a')
                         ->select(['a.*', 'b.id_suplier'])
                         ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
                         ->where('a.is_deleted', 0)
@@ -1718,7 +1679,7 @@ class T_DefectaController extends Controller
         if(count($referensis) > 0) {
             $i = 0;
             foreach($referensis as $obj) {
-                $getData = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+                $getData = DB::table('tb_detail_nota_pembelian as a')
                             ->select(['a.*', 'c.nama as suplier'])
                             ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
                             ->join('tb_m_suplier as c', 'c.id','=', 'b.id_suplier')
@@ -1735,7 +1696,7 @@ class T_DefectaController extends Controller
             }
         } else {
             $html_ref .='<span class="text-danger"><b>Belum ada rekaman pembelian</b></span><br>';
-            $referensis = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+            $referensis = DB::table('tb_detail_nota_pembelian as a')
                         ->select(['a.*', 'b.id_suplier'])
                         ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
                         ->where('a.is_deleted', 0)
@@ -1746,7 +1707,7 @@ class T_DefectaController extends Controller
 
             $i = 0;
             foreach($referensis as $obj) {
-                $getData = DB::connection($this->getConnectionName())->table('tb_detail_nota_pembelian as a')
+                $getData = DB::table('tb_detail_nota_pembelian as a')
                             ->select(['a.*', 'c.nama as suplier'])
                             ->join('tb_nota_pembelian as b', 'b.id', '=', 'a.id_nota')
                             ->join('tb_m_suplier as c', 'c.id','=', 'b.id_suplier')
@@ -1771,11 +1732,11 @@ class T_DefectaController extends Controller
     }
 
     public function add_keranjang_transfer(Request $request){
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $data_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
-        $obat = MasterObat::on($this->getConnectionName())->find($request->id_obat);
-        $defecta = DefectaOutlet::on($this->getConnectionName())->where('is_deleted', 0)
+        $data_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+        $obat = MasterObat::find($request->id_obat);
+        $defecta = DefectaOutlet::where('is_deleted', 0)
                     ->where('id_obat', $request->id_obat)
                     ->where('id_apotek', $apotek->id)
                     ->where('id_status', '!=', 2)
@@ -1785,17 +1746,16 @@ class T_DefectaController extends Controller
         if(!empty($defecta)) {
         } else {
             $defecta = new DefectaOutlet;
-            $defecta->setDynamicConnection();
         }
 
-        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->whereNotIn('id',[session('id_apotek_active')])->pluck('nama_singkat', 'id');
+        $apoteks      = MasterApotek::where('is_deleted', 0)->whereNotIn('id',[session('id_apotek_active')])->pluck('nama_singkat', 'id');
 
         $info = '';
         $i = 0;
         foreach($apoteks as $obj) {
             $i++;
             $inisial = strtolower($obj);
-            $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
+            $cek_ = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $request->id_obat)->first();
             $info .= $obj.' : '.$cek_->stok_akhir;
             if($i != count($apoteks)) {
                 $info .= ' | ';
@@ -1803,18 +1763,18 @@ class T_DefectaController extends Controller
         }
         $apoteks->prepend('-- Pilih Apotek --','');
 
-        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
 
-        $histori_stok = HistoriStok::on($this->getConnectionDefault())->select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
+        $histori_stok = HistoriStok::select([DB::raw('SUM(sisa_stok) as jum_sisa_stok'), DB::raw('SUM(sisa_stok*hb_ppn) as total')])
                         ->where('id_obat', $obat->id)
                         ->whereIn('id_jenis_transaksi', [2,3,11,9])
                         ->where('sisa_stok', '>', 0)
                         ->orderBy('id', 'ASC')
                         ->first();
 
-        $last = HistoriStok::on($this->getConnectionDefault())->select(['*'])
+        $last = HistoriStok::select(['*'])
                         ->where('id_obat', $obat->id)
                         ->whereIn('id_jenis_transaksi', [2,3,11,9])
                         ->where('sisa_stok', '>', 0)
@@ -1825,43 +1785,41 @@ class T_DefectaController extends Controller
     }
 
     public function add_keranjang_transfer_manual(Request $request){
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $defecta = new DefectaOutlet;
-        $defecta->setDynamicConnection();
 
-        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->whereNotIn('id',[session('id_apotek_active')])->pluck('nama_singkat', 'id');
+        $apoteks      = MasterApotek::where('is_deleted', 0)->whereNotIn('id',[session('id_apotek_active')])->pluck('nama_singkat', 'id');
         $apoteks->prepend('-- Pilih Apotek --','');
 
-        $satuans      = MasterSatuan::on($this->getConnectionName())->where('is_deleted', 0)->pluck('satuan', 'id');
+        $satuans      = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
         $satuans->prepend('-- Pilih Satuan --','');
 
-        $obats      = MasterObat::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama', 'id');
+        $obats      = MasterObat::where('is_deleted', 0)->pluck('nama', 'id');
         $obats->prepend('-- Pilih Obat --','');
     
         return view('homepage._form_add_defecta_transfer_manual')->with(compact('defecta', 'apotek', 'satuans', 'apoteks', 'obats'));
     }
 
     public function load_konten_transfer(Request $request) {
-        $apotek = MasterApotek::on($this->getConnectionName())->find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $id_obat = $request->id_obat;
         $id_defecta = $request->id_defecta;
         if(is_null($id_defecta) OR $id_defecta == "") {
             $defecta = new DefectaOutlet;
-            $defecta->setDynamicConnection();
         } else {
-            $defecta = DefectaOutlet::on($this->getConnectionName())->find($id_defecta);
+            $defecta = DefectaOutlet::find($id_defecta);
         }
 
-        $apoteks      = MasterApotek::on($this->getConnectionName())->where('is_deleted', 0)->whereNotIn('id',[session('id_apotek_active')])->get();
+        $apoteks      = MasterApotek::where('is_deleted', 0)->whereNotIn('id',[session('id_apotek_active')])->get();
         $info = '';
         $i = 0;
         foreach($apoteks as $obj) {
             $i++;
             $inisialx = strtolower($obj->nama_singkat);
-            $cek_ = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisialx)->where('id_obat', $request->id_obat)->first();
+            $cek_ = DB::table('tb_m_stok_harga_'.$inisialx)->where('id_obat', $request->id_obat)->first();
             $info .= $obj->nama_singkat.' : '.$cek_->stok_akhir;
             if($i != count($apoteks)) {
                 $info .= ' | ';
@@ -1880,7 +1838,7 @@ class T_DefectaController extends Controller
     {
         ini_set('memory_limit', '-1');
         $id_apotek = session('id_apotek_active');
-        $apotek = MasterApotek::on($this->getConnectionName())->find($id_apotek);
+        $apotek = MasterApotek::find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
         $now = date('YmdHis');
         $referensi = $request->referensi;
@@ -1893,7 +1851,7 @@ class T_DefectaController extends Controller
         set_time_limit(0);
         ini_set('memory_limit', '-1');
         $id_apotek = session('id_apotek_active');
-        $apoteks = MasterApotek::on($this->getConnectionName())->select(
+        $apoteks = MasterApotek::select(
             'id',
             'nama_singkat'
         )

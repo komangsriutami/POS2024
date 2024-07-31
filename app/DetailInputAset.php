@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class DetailInputAset extends Model
 {
@@ -17,7 +16,6 @@ class DetailInputAset extends Model
 	*/
 
     use SoftDeletes;
-    use DynamicConnectionTrait;
     public $primaryKey = 'id';
     protected $table = 'tb_detail_transaksi_aset';
     protected $fillable = [

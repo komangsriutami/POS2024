@@ -5,11 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class MasterDiagnosa extends Model
 {
-    use DynamicConnectionTrait;
     /*
 		Model 	: Model Master Diagnosa untuk M_Diagnosa@Controller
 		Author 	: Tangkas.

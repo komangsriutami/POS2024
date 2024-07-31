@@ -97,7 +97,7 @@ class BiayaTemplateExport implements WithHeadings, WithColumnWidths, WithTitle, 
 
         if($this->jenis == 1){
             
-            $data = MasterKodeAkun::on($this->getConnectionName())->whereNull('deleted_by')->get();
+            $data = MasterKodeAkun::whereNull('deleted_by')->get();
             if($data->count()){
                 foreach ($data as $key => $value) {
                     $collection[] = array(($key+1),$value->kode,$value->nama);

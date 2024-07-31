@@ -12,11 +12,9 @@ use App\RbacMenu;
 use DB;
 use URL;
 use Datatables;
-use App\Traits\DynamicConnectionTrait;
 
 class RoleController extends Controller
 {
-    use DynamicConnectionTrait;
     /*
     	========================================================================================================================================
     	For     : Tampilan index role
@@ -27,7 +25,7 @@ class RoleController extends Controller
     public function index()
     {
         //
-        $roles = RbacRole::on($this->getConnectionName())->where('is_deleted', 0)->pluck('nama','id');
+        $roles = RbacRole::where('is_deleted', 0)->pluck('nama','id');
         $roles->prepend('-- Pilih Role --','');
 
         return view('role.index')->with(compact('roles'));
@@ -44,8 +42,8 @@ class RoleController extends Controller
     */
     public function list_role(Request $request)
     {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = DB::connection($this->getConnectionName())->table('rbac_roles')
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = DB::table('rbac_roles')
         ->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 
         		'rbac_roles.*'])
         ->where(function($query) use($request){
@@ -87,22 +85,21 @@ class RoleController extends Controller
     public function create()
     {
         $role = new RbacRole;
-        $role->setDynamicConnection();
 
         # ini untuk mencari menu yang menjadi parent
-        $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', 0)->get();
+        $menu = RbacMenu::where('is_deleted', 0)->where('parent', 0)->get();
 
         foreach ($menu as $key => $val) {
         	#untuk mencari sub parent menu
-        	$sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', $val->id)->get();
+        	$sub_menu = RbacMenu::where('is_deleted', 0)->where('parent', $val->id)->get();
 
             if($val->link != '#') {
-                $permission  = RbacPermission::on($this->getConnectionName())->where('id_menu', $val->id)->get();
+                $permission  = RbacPermission::where('id_menu', $val->id)->get();
                 $val->permission = $permission;
             } else {
                 foreach ($sub_menu as $a => $obj) {
                     # untuk mencari permission dari setiap sub parent
-                    $permission  = RbacPermission::on($this->getConnectionName())->where('id_menu', $obj->id)->get();
+                    $permission  = RbacPermission::where('id_menu', $obj->id)->get();
                     $obj->permission = $permission;
                 }
             }
@@ -110,7 +107,7 @@ class RoleController extends Controller
         	$val->sub_menu = $sub_menu;
         }
 
-        $permission_tanpa_menu  = RbacPermission::on($this->getConnectionName())->where('id_menu', '=', 0)->get();
+        $permission_tanpa_menu  = RbacPermission::where('id_menu', '=', 0)->get();
         return view('role.create')->with(compact('role', 'menu', 'permission_tanpa_menu'));
     }
 
@@ -126,11 +123,7 @@ class RoleController extends Controller
     */
     public function store(Request $request)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
         $role = new RbacRole;
-        $role->setDynamicConnection();
         $role->fill($request->except('_token'));
 
 
@@ -175,23 +168,23 @@ class RoleController extends Controller
     */
     public function edit($id)
     {
-        $role = RbacRole::on($this->getConnectionName())->find($id);
+        $role = RbacRole::find($id);
 
 
         # ini untuk mencari menu yang menjadi parent
-        $menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', 0)->get();
+        $menu = RbacMenu::where('is_deleted', 0)->where('parent', 0)->get();
        /* print_r($menu);
         exit();*/
 
         foreach ($menu as $key => $val) {
         	#untuk mencari sub parent menu
-        	$sub_menu = RbacMenu::on($this->getConnectionName())->where('is_deleted', 0)->where('parent', $val->id)->get();
+        	$sub_menu = RbacMenu::where('is_deleted', 0)->where('parent', $val->id)->get();
 
             if($val->link != '#') {
-                $permission  = RbacPermission::on($this->getConnectionName())->where('id_menu', $val->id)->get();
+                $permission  = RbacPermission::where('id_menu', $val->id)->get();
                 foreach ($permission as $b => $p) {
                     # untuk mengecek apakah ada relasi ke permission
-                    $var_cek = RbacRolePermission::on($this->getConnectionName())->where('id_role', $id)->where('id_permission', $p->id)->first();
+                    $var_cek = RbacRolePermission::where('id_role', $id)->where('id_permission', $p->id)->first();
 
                     if(!empty($var_cek)) {
                         $p->ada_permission = 1;
@@ -204,11 +197,11 @@ class RoleController extends Controller
             } else {
             	foreach ($sub_menu as $a => $obj) {
             		# untuk mencari permission dari setiap sub parent
-            		$permission  = RbacPermission::on($this->getConnectionName())->where('id_menu', $obj->id)->get();
+            		$permission  = RbacPermission::where('id_menu', $obj->id)->get();
 
             		foreach ($permission as $b => $p) {
             			# untuk mengecek apakah ada relasi ke permission
-            			$var_cek = RbacRolePermission::on($this->getConnectionName())->where('id_role', $id)->where('id_permission', $p->id)->first();
+            			$var_cek = RbacRolePermission::where('id_role', $id)->where('id_permission', $p->id)->first();
 
             			if(!empty($var_cek)) {
             				$p->ada_permission = 1;
@@ -223,10 +216,10 @@ class RoleController extends Controller
         	$val->sub_menu = $sub_menu;
         }
 
-        $permission_tanpa_menu  = RbacPermission::on($this->getConnectionName())->where('id_menu', '=', 0)->get();
+        $permission_tanpa_menu  = RbacPermission::where('id_menu', '=', 0)->get();
         foreach ($permission_tanpa_menu as $b => $p) {
             # untuk mengecek apakah ada relasi ke permission
-            $var_cek = RbacRolePermission::on($this->getConnectionName())->where('id_role', $id)->where('id_permission', $p->id)->first();
+            $var_cek = RbacRolePermission::where('id_role', $id)->where('id_permission', $p->id)->first();
 
             if(!empty($var_cek)) {
                 $p->ada_permission = 1;
@@ -249,10 +242,7 @@ class RoleController extends Controller
     */
     public function update(Request $request, $id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $role = RbacRole::on($this->getConnectionName())->find($id);
+        $role = RbacRole::find($id);
         $role->fill($request->except('_token'));
 
         $permission_role = $request->permission_role;
@@ -284,10 +274,7 @@ class RoleController extends Controller
     */
     public function destroy($id)
     {
-        if($this->getAccess() == 0) {
-            return view('page_not_authorized');
-        }
-        $role = RbacRole::on($this->getConnectionName())->find($id);
+        $role = RbacRole::find($id);
         $role->is_deleted = 1;
 
         if($role->save()){

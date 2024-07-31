@@ -5,11 +5,9 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Validator;
 use Auth;
-use App\Traits\DynamicConnectionTrait;
 
 class RevisiPembelian extends Model
 {
-    use DynamicConnectionTrait;
     //tb_revisi_pembelian_obat
     /* 
 		Model 	: Untuk Revisi Pembelian Obat

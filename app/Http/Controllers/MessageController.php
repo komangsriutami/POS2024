@@ -9,11 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Auth;
 
-use App\Traits\DynamicConnectionTrait;
-
 class MessageController extends Controller
 {
-    use DynamicConnectionTrait;
     # untuk menampilkan halaman awal
     public function index()
     {
@@ -23,8 +20,8 @@ class MessageController extends Controller
     # untuk menampilkan mengambil data dari database
     public function get_data(Request $request)
     {
-        DB::connection($this->getConnection())->statement(DB::raw('set @rownum = 0'));
-        $data = MessageFooter::on($this->getConnectionName())->select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_message.*'])
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = MessageFooter::select([DB::raw('@rownum  := @rownum  + 1 AS no'), 'tb_message.*'])
             ->where(function ($query) use ($request) {
                 //$query->where('message.is_deleted','=','0');
             });
@@ -56,7 +53,6 @@ class MessageController extends Controller
     public function store(Request $request)
     {
         $data_ = new MessageFooter;
-        $data_->setDynamicConnection();
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         $validator = $data_->validate();
@@ -80,7 +76,7 @@ class MessageController extends Controller
     # untuk menampilakn data detail show
     public function show($id)
     {
-        $data_ = MessageFooter::on($this->getConnectionName())->find($id);
+        $data_ = MessageFooter::find($id);
 
         return view('message_footer.show')->with(compact('data_'));
     }
@@ -88,7 +84,7 @@ class MessageController extends Controller
     # untuk menampilkan form edit
     public function edit($id)
     {
-        $data_ = MessageFooter::on($this->getConnectionName())->find($id);
+        $data_ = MessageFooter::find($id);
 
         return view('message_footer.edit')->with(compact('data_'));
     }
@@ -96,7 +92,7 @@ class MessageController extends Controller
     # untuk menyimpan data edit
     public function update(Request $request, $id)
     {
-        $data_ = MessageFooter::on($this->getConnectionName())->find($id);
+        $data_ = MessageFooter::find($id);
         $data_->fill($request->except('_token')); // fill untuk menyimpan data dari request
 
         $validator = $data_->validate();
@@ -119,7 +115,7 @@ class MessageController extends Controller
     # untuk menghapus data
     public function destroy($id)
     {
-        $data_ = MessageFooter::on($this->getConnectionName())->find($id);
+        $data_ = MessageFooter::find($id);
         if ($data_->delete()) {
             echo 1;
         } else {

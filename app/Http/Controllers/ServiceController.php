@@ -11,11 +11,9 @@ use Response;
 use App;
 use Datatables;
 use DB;
-use App\Traits\DynamicConnectionTrait;
 
 class ServiceController extends Controller
 {
-    use DynamicConnectionTrait;
     public function download_apotek()
     {
         $date_now = date('Ymd');
@@ -27,7 +25,7 @@ class ServiceController extends Controller
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterApotek::on($this->getConnectionName())->select('id as STORE_NUMBER', 'nama_panjang as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4])->get()->toArray();
+        $list = MasterApotek::select('id as STORE_NUMBER', 'nama_panjang as STORE_NAME', 'alamat as STORE_ADDRESS')->whereIn('id', [1, 2, 3, 4])->get()->toArray();
 
         # add headers for each column in the CSV download
         array_unshift($list, array_keys($list[0]));
@@ -55,7 +53,7 @@ class ServiceController extends Controller
             ,   'Pragma'              => 'public'
         ];
 
-        $list = MasterObat::on($this->getConnectionName())->select('tb_m_obat.id as NO_SKU', 
+        $list = MasterObat::select('tb_m_obat.id as NO_SKU', 
                             'tb_m_obat.nama as PRODUCT_NAME', 
                             DB::raw('a.satuan as UNIT'), 
                             'tb_m_obat.barcode as BAR_CODE', 
@@ -123,10 +121,10 @@ class ServiceController extends Controller
     }
 
     public function hitung_stok_apotek($var) {
-        $apotek = MasterApotek::on($this->getConnectionName())->find($var);
+        $apotek = MasterApotek::find($var);
         $inisial = strtolower($apotek->nama_singkat);
 
-        $list = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        $list = DB::table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                     DB::raw(''.$var.' as STORE_NUMBER'),
                     'tb_m_stok_harga_'.$inisial.'.id_obat as NO_SKU', 
@@ -150,10 +148,10 @@ class ServiceController extends Controller
     public function ef4c2ce3032d8f024c320308d9880a06() {
         $var = 1;
         //$apotek = 'LV';
-        $apotek = MasterApotek::on($this->getConnectionName())->find($var);
+        $apotek = MasterApotek::find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 
@@ -176,10 +174,10 @@ class ServiceController extends Controller
     public function f31d5936f25442ecf43a2e4a9aa911d1() {
         $var = 2;
         //$apotek = 'BKL';
-        $apotek = MasterApotek::on($this->getConnectionName())->find($var);
+        $apotek = MasterApotek::find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 
@@ -203,10 +201,10 @@ class ServiceController extends Controller
     public function f36c008db00e367c7dae1c4a856e55ca() {
         $var = 3;
         //$apotek = 'PJM';
-        $apotek = MasterApotek::on($this->getConnectionName())->find($var);
+        $apotek = MasterApotek::find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 
@@ -230,10 +228,10 @@ class ServiceController extends Controller
     public function ed70a85853284244f63de7fbd08ccea5(){
         $var = 4;
         //$apotek = 'PG';
-        $apotek = MasterApotek::on($this->getConnectionName())->find($var);
+        $apotek = MasterApotek::find($var);
         $inisial = strtolower($apotek->nama_singkat);
         
-        $rekaps = DB::connection($this->getConnectionDefault())->table('tb_m_stok_harga_'.$inisial.'')
+        $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
                 ->select([
                             'tb_m_obat.id',
                             'tb_m_obat.barcode', 

@@ -4,11 +4,9 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use App\RegistrasiPasien;
-use App\Traits\DynamicConnectionTrait;
 
 class RegistrasiPasienCart extends Model
 {
-    use DynamicConnectionTrait;
     protected $table = 'tb_registrasi_pasien_cart';
     protected $fillable = [
         'session_id',
@@ -30,7 +28,7 @@ class RegistrasiPasienCart extends Model
     ];
 
     public static function generateNoUrut($date = null) {
-        $data = RegistrasiPasien::on($this->getConnectionName())->where('tgl_periksa', $date)->orderBy('no_urut','DESC')->first();
+        $data = RegistrasiPasien::where('tgl_periksa', $date)->orderBy('no_urut','DESC')->first();
         if($data){
             return (int)$data->no_urut+1;
         }else{
