@@ -205,7 +205,7 @@ class LoginController extends Controller
         } else {
             $apotek = MasterApotek::on($this->getConnectionDefault())->where('kode_apotek', $request->kode_apotek)->first();
             if (!empty($apotek)) {
-                if(!isset($request->username)) {
+                if(isset($request->username)) {
                     $user = User::on($this->getConnectionDefault())->where('username', '=', $request->username)->first();
                 } else {
                     if(!is_null(session('user'))) {
