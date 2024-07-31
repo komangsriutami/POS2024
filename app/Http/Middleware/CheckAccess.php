@@ -53,7 +53,7 @@ class CheckAccess
                 $user = session('user');
                 Auth::login($user);
                 DB::connection($this->getConnectionDefault())->table('tb_log_login')->insert(['server_name'=> env('SERVER_ID'), 'server_ip' => env('SERVER_IP'), 'client_ip' => request()->ip(), 'id_user' => $user->id, 'id_apotek' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s'), 'from_cache' => 1]);
-                
+
                 /*if ($user->is_admin == 1) {
                     $role_list = array();
                     $actions = array();
@@ -305,6 +305,22 @@ class CheckAccess
                 }*/
                 
             } else {
+                Session::flush();
+                Session::forget('user');
+                Session::forget('super_admin');
+                Session::forget('nama_role_active');
+                Session::forget('id_role_active');
+                Session::forget('actions');
+                Session::forget('apoteks');
+                Session::forget('isLogedIn');
+                Session::forget('role_list');
+                Session::forget('user_roles');
+                Session::forget('nama_apotek_panjang_active');
+                Session::forget('nama_apotek_active');
+                Session::forget('id_apotek_active');
+                Cache::forget('sessionUser_');
+                Cache::forget('sessionApotek_');
+                Auth::logout();
                 session()->flash('error', 'Silakan Login terlebih dahulu sebelum anda mengakses halaman ini!');
                 return redirect()->intended('/');
             }
