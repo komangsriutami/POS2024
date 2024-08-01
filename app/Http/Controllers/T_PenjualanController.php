@@ -5689,8 +5689,8 @@ try {
                     $tanggal = '';
                 }
 
-                $harga_jual = $rekap->total_fix/$rekap->jumlah_fix;
-                $hb_ppn = $rekap->total_hbppn_fix/$rekap->jumlah_fix;
+                $harga_jual = 0;
+                $hb_ppn = 0;
 
 
                 $laba = $this->cek_laba(1, $rekap->jumlah_fix, $rekap->total_hbppn_fix, $rekap->total_fix, $hb_ppn);
