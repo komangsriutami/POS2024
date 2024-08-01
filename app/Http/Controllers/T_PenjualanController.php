@@ -5677,27 +5677,9 @@ try {
            /* $num_tgl_ = sprintf("%02d", $i);
             $str_tgl_ = $request->tahun.'-'.$request->bulan.'-'.$num_tgl_;*/
             $tgl_ = date('Y-m-d', strtotime($date));
-            $rekaps = TransaksiPenjualanDetail::select([
-                                    DB::raw('@rownum  := @rownum  + 1 AS no'),
-                                    'tb_detail_nota_penjualan.*', 
-                                    'b.diskon_persen', 
-                                    'b.tgl_nota',
-                                    'c.harga_beli'
-                                    //'c.harga_beli_ppn'
-                                ])
-                                ->join('tb_nota_penjualan as b', 'b.id', 'tb_detail_nota_penjualan.id_nota')
-                                ->leftjoin('tb_m_stok_harga_'.$inisial.' as c', 'c.id_obat', 'tb_detail_nota_penjualan.id_obat')
-                                ->where(function($query) use($request, $tgl_){
-                                    $query->where('tb_detail_nota_penjualan.is_deleted','=','0');
-                                    $query->where('b.id_apotek_nota', '=', session('id_apotek_active'));
-                                   // $query->where(DB::raw('YEAR(b.tgl_nota)'), $request->tahun);
-                                    //$query->where(DB::raw('MONTH(b.tgl_nota)'), $request->bulan);
-                                    $query->whereDate('b.tgl_nota', $tgl_);
-                                    $query->where('b.is_deleted',0);
-                                })
-                                ->groupBy('tb_detail_nota_penjualan.id')
-                                ->orderBy('tb_detail_nota_penjualan.id', 'ASC')
-                                ->get();
+            
+            $rekaps = DB::select('CALL getHppPerTanggalApotek(?, ?)', [$tgl_, $apotek]);
+
 
             $x = 0;
             foreach($rekaps as $rekap) {
@@ -5920,28 +5902,7 @@ try {
             $num_tgl_ = sprintf("%02d", $i);
             $str_tgl_ = $request->tahun.'-'.$request->bulan.'-'.$num_tgl_;
             $tgl_ = date('Y-m-d', strtotime($str_tgl_));
-            $rekaps = TransaksiPenjualanDetail::select([
-                                    DB::raw('@rownum  := @rownum  + 1 AS no'),
-                                    'tb_detail_nota_penjualan.id_obat',
-                                    DB::raw('(tb_detail_nota_penjualan.jumlah) as  total_jual'), 
-                                    'b.diskon_persen', 
-                                    'b.tgl_nota',
-                                    'c.harga_beli',
-                                    'c.harga_beli_ppn'
-                                ])
-                                ->join('tb_nota_penjualan as b', 'b.id', 'tb_detail_nota_penjualan.id_nota')
-                                ->leftjoin('tb_m_stok_harga_'.$inisial.' as c', 'c.id_obat', 'tb_detail_nota_penjualan.id_obat')
-                                ->where(function($query) use($request, $tgl_){
-                                    $query->where('tb_detail_nota_penjualan.is_deleted','=','0');
-                                    $query->where('b.id_apotek_nota', '=', session('id_apotek_active'));
-                                   // $query->where(DB::raw('YEAR(b.tgl_nota)'), $request->tahun);
-                                    //$query->where(DB::raw('MONTH(b.tgl_nota)'), $request->bulan);
-                                    $query->whereDate('b.tgl_nota', $tgl_);
-                                    $query->where('b.is_deleted',0);
-                                })
-                                ->groupBy('tb_detail_nota_penjualan.id_obat')
-                                ->orderBy('tb_detail_nota_penjualan.id', 'ASC')
-                                ->get();
+            $rekaps = DB::select('CALL getHppPerTanggalApotek(?, ?)', [$tgl_, $apotek->id]);
 
             $x = 0;
             foreach($rekaps as $rekap) {
@@ -5953,62 +5914,75 @@ try {
                     $tanggal = '';
                 }
 
-                $jumlah_cn = $rekap->jumlah_cn;
-                if(empty($jumlah_cn)) {
-                    $jumlah_cn = 0;
-                }
-                
-                $harga_pokok = $rekap->harga_beli_ppn;
-                $jumlah = $rekap->jumlah-$jumlah_cn;
-                $total = $jumlah * $rekap->harga_jual;
-                $total_diskon = ($rekap->diskon_persen/100) * $total;
-                $total_hp = $jumlah*$harga_pokok;
-                $laba = $this->cek_laba(1, $jumlah, $total_hp, $total, $rekap->harga_beli);
-                $persentase_laba = $this->cek_laba(2, $jumlah, $total_hp, $total, $rekap->harga_beli);
+                $laba = $this->cek_laba(1, $rekap->jumlah_fix, $rekap->total_hbppn_fix, $rekap->total_fix, $rekap->hb_ppn);
+                $persentase_laba = $this->cek_laba(2, $rekap->jumlah_fix, $rekap->total_hbppn_fix, $rekap->total_fix, $rekap->hb_ppn);
 
-                if(empty($total_diskon)) {
+                if(empty($rekap->total_diskon_fix)) {
                     $diskon = 0;
                 } else {
-                    $diskon = $total_diskon;
+                    $diskon = $rekap->total_diskon_fix;
                 }
                 $keterangan = 'dihitung dari harga beli + ppn';
 
                 if($laba < 0) {
-                    $total_hp = $jumlah * $rekap->harga_beli;
-                    $harga_pokok = $rekap->harga_beli;
-                    $laba = $this->cek_laba(1, $jumlah, $total_hp, $total, $rekap->harga_beli);
-                    $persentase_laba = $this->cek_laba(2, $jumlah, $total_hp, $total, $rekap->harga_beli);
-                    $keterangan = 'harga beli + ppn tidak sesuai (dihitung dari harga beli)';
+                    $keterangan = 'Cek ulang HBPPN';
                 } 
-                
-                if($jumlah_cn == 0) {
-                    $jumlah_cn = '0';
-                }
 
-                if($jumlah == 0) {
+                if($rekap->jumlah == 0) {
                     $jumlah = '0';
+                } else {
+                    $jumlah = $rekap->jumlah;
                 }
 
-                if($total == 0) {
-                    $total = '0';
+                if($rekap->jumlah_cn == 0) {
+                    $jumlah_cn = '0';
+                } else {
+                    $jumlah_cn = $rekap->jumlah_cn;
                 }
 
-                if($total_hp == 0) {
-                    $total_hp = '0';
+                if($rekap->jumlah_fix == 0) {
+                    $jumlah_fix = '0';
+                } else {
+                    $jumlah_fix = $rekap->jumlah_fix;
+                }
+
+                if($rekap->harga_jual == 0) {
+                    $harga_jual = '0';
+                } else {
+                    $harga_jual = $rekap->harga_jual;
+                }
+
+
+                if($rekap->total_fix == 0) {
+                    $total_fix = '0';
+                } else {
+                    $total_fix = $rekap->total_fix;
+                }
+
+                if($rekap->hb_ppn == 0) {
+                    $hb_ppn = '0';
+                } else {
+                    $hb_ppn = $rekap->hb_ppn;
+                }
+
+                if($rekap->total_hbppn_fix == 0) {
+                    $total_hbppn_fix = '0';
+                } else {
+                    $total_hbppn_fix = $rekap->total_hbppn_fix;
                 }
                 
                 $collection[] = array(
                     $no, //a
                     $tanggal, //b
                     $diskon, //c
-                    $rekap->obat->nama, //d
-                    $rekap->jumlah, //e
+                    $rekap->nama_obat, //d
+                    $jumlah, //e
                     $jumlah_cn, 
-                    $jumlah,
-                    $rekap->harga_jual, //f
-                    $total, //g
-                    $harga_pokok, //h
-                    $total_hp, //i
+                    $jumlah_fix,
+                    $harga_jual, //f
+                    $total_fix, //g
+                    $hb_ppn, //h
+                    $total_hbppn_fix, //i
                     $laba, //j
                     number_format($persentase_laba,2).'%', //k
                     $keterangan

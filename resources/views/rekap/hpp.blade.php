@@ -78,7 +78,7 @@ Harga Pokok Penjualan (HPP)
                         <button type="submit" class="btn btn-primary" id="datatable_filter"><i class="fa fa-search"></i> Cari</button>
                         <span class="btn bg-olive" onClick="export_data()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export</span> 
                         <!-- <span class="btn bg-olive" onClick="export_data_versi1()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export V2</span>  -->
-                        <span class="btn bg-olive" onClick="export_data_versi2()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export V2</span> 
+                        <!-- <span class="btn bg-olive" onClick="export_data_versi2()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export V2</span>  -->
                     </div>
                 </div>
             </form>
