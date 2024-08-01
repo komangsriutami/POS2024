@@ -1648,12 +1648,14 @@ class T_TOController extends Controller
             //dd($detail_transfer_outlets);
         } 
 
+        $cek_harga = TransaksiTODetail::where('id_nota', $transfer_outlet->id)->where('is_deleted', 0)->where('harga_outlet', 0)->count();
+
         $var = 0;
         if($transfer_outlet->id_apotek_tujuan != session('id_apotek_active')) {
             session()->flash('error', 'Anda tidak mempunyai hak akses untuk melakukan konfirmasi pada nota ini!');
             return redirect('transfer_outlet/konfirmasi_barang')->with('message', 'Anda tidak mempunyai hak akses untuk melakukan konfirmasi pada nota ini!');
         }
-        return view('transfer_outlet.konfirm')->with(compact('transfer_outlet', 'apoteks', 'detail_transfer_outlets', 'var', 'apotek', 'inisial', 'apotek_asal', 'inisial_asal'));
+        return view('transfer_outlet.konfirm')->with(compact('transfer_outlet', 'apoteks', 'detail_transfer_outlets', 'var', 'apotek', 'inisial', 'apotek_asal', 'inisial_asal', 'cek_harga'));
     }
 
     public function konfirm_update(Request $request, $id) {

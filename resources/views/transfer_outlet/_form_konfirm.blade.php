@@ -94,6 +94,7 @@
 ?>
 <hr style="border: 1px solid #004d40; padding: 0px; margin-top: 0px; margin-bottom: 10px;">
 <p>Note : centang data yang akan dikonfirmasi dan tekan tombol Simpan untuk menyimpan data.</p>
+<p>Tombol konfirm tidak akan muncul jika ada harga item yang ditransfer 0. Konfirmasi ke outlet pengirim untuk memperbaiki harga terlebih dahulu.</p>
 <hr style="border: 1px solid #004d40; padding: 0px; margin-top: 0px; margin-bottom: 10px;">
 <div class="row">
     <div class="form-group col-md-12">
@@ -121,9 +122,15 @@
                                     ?>
                                     @foreach($detail_transfer_outlets as $detail_transfer_outlet)
                                         <?php 
-
+                                            $class = '';
                                             $obat = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $detail_transfer_outlet->id_obat)->first();
-                                            $margin = ($obat->harga_jual/$detail_transfer_outlet->harga_outlet)*100;
+                                            if($detail_transfer_outlet->harga_outlet == 0) {
+                                                $margin = 100;
+                                                $class = 'bg-secondary';
+                                            } else {
+                                                $margin = ($obat->harga_jual/$detail_transfer_outlet->harga_outlet)*100;
+                                            }
+                                            
                                             $margin = number_format($margin, 0);
                                             $no++; 
                                             $total = $detail_transfer_outlet->total;
@@ -136,7 +143,7 @@
                                             }
                                         ?>
 
-                                        <tr>
+                                        <tr class="{{ $class }}">
                                             <td style="text-align: center;">
                                                 @if($detail_transfer_outlet->is_status != 1)
                                                 <input type="checkbox" name="detail_transfer_outlet[{{ $no }}][record]" id="record_{{$no}}">

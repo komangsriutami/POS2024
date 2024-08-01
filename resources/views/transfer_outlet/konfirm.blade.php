@@ -32,9 +32,11 @@ Konfirmasi Barang Datang
         <div class="col-sm-12">
             <div class="callout callout-success">
                 <a class="btn btn-info text-white" style="text-decoration: none;" type="button" href="{{ url('transfer_outlet/konfirmasi_barang')}}" data-toggle="tooltip" data-placement="top" title="List Data Konfirmasi Barang"><i class="fa fa-home"></i></a> 
-                @if($transfer_outlet->is_status != 1)
-                <button class="btn btn-primary" type="button" onclick="submit_valid_konfirm(1)" data-toggle="tooltip" data-placement="top" title="Konfirmasi barang diterima"><i class="fa fa-check-circle"></i> Diterima</button> 
-                <button class="btn btn-danger" type="button" onclick="submit_valid_konfirm(2)" data-toggle="tooltip" data-placement="top" title="Konfirmasi barang tidak diterima"><i class="fa fa-times-circle"></i> Tidak Diterima</button> 
+                @if($cek_harga <= 0) 
+                    @if($transfer_outlet->is_status != 1)
+                    <button class="btn btn-primary" type="button" onclick="submit_valid_konfirm(1)" data-toggle="tooltip" data-placement="top" title="Konfirmasi barang diterima"><i class="fa fa-check-circle"></i> Diterima</button> 
+                    <button class="btn btn-danger" type="button" onclick="submit_valid_konfirm(2)" data-toggle="tooltip" data-placement="top" title="Konfirmasi barang tidak diterima"><i class="fa fa-times-circle"></i> Tidak Diterima</button> 
+                    @endif
                 @endif
             </div>
         </div>
