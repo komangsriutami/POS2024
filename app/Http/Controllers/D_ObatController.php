@@ -1945,13 +1945,56 @@ class D_ObatController extends Controller
 
     public function export_persediaan(Request $request) 
     {
-        //exit();
-        ini_set('memory_limit', '-1'); 
-        
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
-        $collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
+        $tgl_awal = $request->tgl_awal;
+        $tgl_akhir = $request->tgl_akhir;
+        $rekaps = DB::select('CALL getPersediaanTanggalApotek(?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial]);
+        $x = 0;
+        $collection = collect();
+        foreach($rekaps as $rekap) {
+            $x++;
+            $mHarga = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $rekap->id_obat)->first();
+            $hbppn = $mHarga->harga_beli_ppn;
+            $harga_jual = $mHarga->harga_jual;
+            $getHbAkhir = DB::table('tb_histori_stok_'.$inisial)->where('id', $rekap->id_akhir)->first();
+            if($getHbAkhir->hb_ppn == 0) {
+                $getHbAwal = DB::table('tb_histori_stok_'.$inisial)->where('id', $rekap->id_awal)->first();
+                if($getHbAwal->hb_ppn == 0) {
+                    $hbppn = $mHarga->harga_beli_ppn;
+                } else {
+                    $hbppn = $getHbAwal->hb_ppn;
+                }
+            } else {
+                $hbppn = $getHbAkhir->hb_ppn;
+            }
+
+            if($rekap->stok_awal == 0) {
+                $stok_awal = '0';
+            } else {
+                $stok_awal = $rekap->stok_awal;
+            }
+
+            if($rekap->stok_akhir == 0) {
+                $stok_akhir = '0';
+            } else {
+                $stok_akhir = $rekap->stok_akhir;
+            }
+
+            $collection[] = array(
+                    $x, //a
+                    $rekap->barcode, //b
+                    $rekap->nama, //c
+                    $stok_awal, //d
+                    $stok_akhir,
+                    $hbppn,
+                    $harga_jual
+                );
+        }
+
+
+        //$collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
 
         $now = date('YmdHis'); // WithColumnFormatting
         $tgl_awal = date('Ymd', strtotime($request->tgl_awal));
@@ -1967,7 +2010,19 @@ class D_ObatController extends Controller
 
                     public function headings(): array
                     {
-                        return [
+                         return [
+                                'No', // a
+                                'ID', // b 
+                                'Barcode', // c
+                                'Nama Obat',  //d
+                                'Stok Awal', //e
+                                'Stok Akhir', //f
+                                'HB+PPN', //e
+                                'Harga Jual', //f
+                               
+                            ];
+
+                       /* return [
                                 'No', // a
                                 'ID', // b 
                                 'Barcode', // c
@@ -1986,7 +2041,7 @@ class D_ObatController extends Controller
                                 'Harga Pokok', //p
                                 'Harga Jual', //q
                                 'Keterangan' //r
-                            ];
+                            ];*/
                     } 
 
                     /*public function columnFormats(): array

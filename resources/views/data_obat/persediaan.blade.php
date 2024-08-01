@@ -80,13 +80,13 @@ Persediaan Obat
 				    </div> -->
                     <div class="col-lg-12" style="text-align: center;">
                         <button type="submit" class="btn btn-primary" id="datatable_filter"><i class="fa fa-search"></i> Cari</button>
-                        <span class="btn bg-olive" onClick="export_data()"  data-toggle="modal" data-placement="top" title="Export Data Transfer"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export</span> 
-                        <span class="btn bg-danger" onClick="clear_cache()"  data-toggle="modal" data-placement="top" title="Clear Cache"><i class="fa fa-retweet" aria-hidden="true"></i> Clear Cache</span> 
+                        <span class="btn bg-olive" onClick="export_data_new()"  data-toggle="modal" data-placement="top" title="Export Data Transfer"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export</span> 
+                        <!-- <span class="btn bg-danger" onClick="clear_cache()"  data-toggle="modal" data-placement="top" title="Clear Cache"><i class="fa fa-retweet" aria-hidden="true"></i> Clear Cache</span>  -->
                     </div>
                 </div>
             </form>
 			<hr>
-			<table  id="tb_data_persediaan" class="table table-bordered table-striped table-hover" width="100%">
+			<!-- <table  id="tb_data_persediaan" class="table table-bordered table-striped table-hover" width="100%">
 		    	<thead>
 			        <tr>
 			            <th width="3%" class="text-center">No.</th>
@@ -105,7 +105,7 @@ Persediaan Obat
 		        </thead>
 		        <tbody>
 		        </tbody>
-			</table>
+			</table> -->
         </div>
   	</div>
 @endsection
@@ -370,5 +370,75 @@ Persediaan Obat
     function export_data_back(){
         window.open("{{ url('data_obat/export_persediaan') }}"+ "?tahun="+$('#tahun').val()+"&bulan="+$('#bulan').val(),"_blank");
     }
+
+    function export_data_new() {
+		swal({
+		  	title: "Apakah anda akan melakukan download data persedian?",
+		  	text: 'Proses ini akan memerlukan waktu yang cukup lama, mohon bersabar sampai proses selesai.',
+		  	type: "warning",
+		  	showCancelButton: true,
+		  	confirmButtonColor: "#DD6B55",
+		  	confirmButtonText: "Ya",
+		  	cancelButtonText: "Tidak",
+		  	closeOnConfirm: true
+		},
+		function(){
+			
+				$.ajax({
+				xhrFields: {
+			        responseType: 'blob',
+			    },
+				type: "GET",
+				url: '{{url("data_obat/export_persediaan")}}',
+				async:true,
+				data: {
+					_token:token,
+					tgl_awal : $("#tgl_awal").val(),
+	                tgl_akhir : $("#tgl_akhir").val()
+				},
+				beforeSend: function(data){
+					// replace dengan fungsi loading
+					spinner.show();
+				},
+				success: function(result, status, xhr) {
+					var dateObj = new Date();
+					var month = String(dateObj.getMonth()).padStart(2, '0');
+				    var day = String(dateObj.getDate()).padStart(2, '0');
+				    var year = dateObj.getFullYear();
+				    var today = day+month+year;
+
+					var namafile = "Persediaan_"+$("#nama_apotek").val()+"_"+$("#tgl_awal").val()+"-sd-"+$("#tgl_akhir").val()+"_"+today+".xlsx";
+			        var disposition = xhr.getResponseHeader('content-disposition');
+			        var matches = /"([^"]*)"/.exec(disposition);
+			        var filename = (matches != null && matches[1] ? matches[1] : namafile);
+
+			        // The actual download
+			        var blob = new Blob([result], {
+			            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+			        });
+			        var link = document.createElement('a');
+			        link.href = window.URL.createObjectURL(blob);
+			        link.download = filename;
+
+			        document.body.appendChild(link);
+
+			        link.click();
+			        document.body.removeChild(link);
+
+			        /*clear_cache();*/
+			    },
+				complete: function(data){
+					spinner.hide();
+					tb_data_persediaan.fnDraw(false);
+				},
+				error: function(data) {
+					swal("Error!", "Ajax occured.", "error");
+					/*clear_cache();*/
+					spinner.hide();
+					tb_data_persediaan.fnDraw(false);
+				}
+			});
+		});
+	}
 </script>
 @endsection
