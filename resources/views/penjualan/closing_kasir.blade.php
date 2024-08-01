@@ -400,7 +400,7 @@
     })
 
     function print_closing_kasir_thermal(id) {
-        window.open("https://posbwf.com/penjualan/print_closing_kasir_thermal/"+id, '_blank');
+        window.open("http://apotekeren.id/penjualan/print_closing_kasir_thermal/"+id, '_blank');
         //window.open("print_closing_kasir_thermal/"+id);
     }
 

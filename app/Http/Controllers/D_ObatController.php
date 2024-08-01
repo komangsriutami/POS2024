@@ -514,7 +514,7 @@ class D_ObatController extends Controller
                     }
 
                 })
-                //->whereYear('tb_histori_stok_'.$inisial.'.created_at', 2024)
+                ->whereYear('tb_histori_stok_'.$inisial.'.created_at', session('id_tahun_active'))
                 ->orderBy('tb_histori_stok_'.$inisial.'.id');
         
         $datatables = Datatables::of($data);
@@ -649,10 +649,16 @@ class D_ObatController extends Controller
             $data_ = array(2, 12, 13, 14, 26, 27, 30, 31);
             if (in_array($data->id_jenis_transaksi, $data_))
             {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                if($data->id_jenis_transaksi == 26) {
+                    $retur = ReturPembelian::find($data->id_transaksi);
+                    $check = TransaksiPembelianDetail::find($retur->id_detail_nota);
+                } else {
+                    $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                }
+                
                 //$ed = '('.$data->batch.')<br>';
                 if($check->tgl_batch == '' OR $check->tgl_batch == null OR $check->tgl_batch == '0') {
-                    $ed = '-';
+                    $ed = $data->ed;
                 } else {
                     $ed = $check->tgl_batch;
                 }

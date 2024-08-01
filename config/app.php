@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'https://posbwf.com/'),
+    'url' => env('APP_URL', 'http://apotekeren.id/'),
 
     'asset_url' => env('ASSET_URL', null),
 
