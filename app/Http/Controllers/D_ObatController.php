@@ -1950,40 +1950,39 @@ class D_ObatController extends Controller
 
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
-        $rekaps = DB::select('CALL getPersediaanTanggalApotek(?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial]);
+        $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial]);
         $x = 0;
         $collection = collect();
         foreach($rekaps as $rekap) {
             $x++;
-            $mHarga = DB::table('tb_m_stok_harga_'.$inisial)->where('id_obat', $rekap->id_obat)->first();
-            $hbppn = $mHarga->harga_beli_ppn;
-            $harga_jual = $mHarga->harga_jual;
-            $getHbAkhir = DB::table('tb_histori_stok_'.$inisial)->where('id', $rekap->id_akhir)->first();
-            if($getHbAkhir->hb_ppn == 0) {
-                $getHbAwal = DB::table('tb_histori_stok_'.$inisial)->where('id', $rekap->id_awal)->first();
-                if($getHbAwal->hb_ppn == 0) {
-                    $hbppn = $mHarga->harga_beli_ppn;
-                } else {
-                    $hbppn = $getHbAwal->hb_ppn;
-                }
-            } else {
-                $hbppn = $getHbAkhir->hb_ppn;
-            }
 
-            if($rekap->stok_awal == 0) {
+            if($rekap->stok_awal_ == 0) {
                 $stok_awal = '0';
             } else {
-                $stok_awal = $rekap->stok_awal;
+                $stok_awal = $rekap->stok_awal_;
             }
 
-            if($rekap->stok_akhir == 0) {
+            if($rekap->stok_akhir_ == 0) {
                 $stok_akhir = '0';
             } else {
-                $stok_akhir = $rekap->stok_akhir;
+                $stok_akhir = $rekap->stok_akhir_;
+            }
+
+            if($rekap->hbppn == 0) {
+                $hbppn = '0';
+            } else {
+                $hbppn = $rekap->hbppn;
+            }
+
+            if($rekap->harga_jual == 0) {
+                $harga_jual = '0';
+            } else {
+                $harga_jual = $rekap->harga_jual;
             }
 
             $collection[] = array(
                     $x, //a
+                    $rekap->id_obat, //b
                     $rekap->barcode, //b
                     $rekap->nama, //c
                     $stok_awal, //d
