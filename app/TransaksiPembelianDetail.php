@@ -9,7 +9,8 @@ use KyslikColumnSortableSortable;
 
 class TransaksiPembelianDetail extends Model
 {
-    protected $table = 'tb_detail_nota_pembelian';
+   // protected $table = 'tb_detail_nota_pembelian';
+    protected $table = null;
     public $primaryKey = 'id';
     protected $fillable = ['id_nota',
                             'id_obat',
@@ -27,6 +28,21 @@ class TransaksiPembelianDetail extends Model
     public $sortable = ['id_obat',
                         'harga_beli',
                         'harga_beli_ppn'];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_detail_nota_pembelian');
+        } else {
+            $this->setTable('tb_detail_nota_pembelian_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
+                
 
     public function validate(){
         return Validator::make((array)$this->attributes, [

@@ -10,7 +10,8 @@ use App\Events\PembelianCreate;
 
 class TransaksiPembelian extends Model
 {
-    protected $table = 'tb_nota_pembelian';
+    //protected $table = 'tb_nota_pembelian';
+    protected $table = null;
     public $primaryKey = 'id';
     public $timestamps = false;
     protected $fillable = ['id_apotek_nota',
@@ -28,6 +29,20 @@ class TransaksiPembelian extends Model
                             'is_tanda_terima',
                             'is_from_order'
     						];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_nota_pembelian');
+        } else {
+            $this->setTable('tb_nota_pembelian_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
     						
     public function validate(){
         return Validator::make((array)$this->attributes, [
@@ -249,15 +264,21 @@ class TransaksiPembelian extends Model
     }
 
     public function detail_pembelian_total(){
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_pembelian';
+        } else {
+            $detTable = 'tb_detail_nota_pembelian_histori';
+        }
+
         return $this->hasMany('App\TransaksiPembelianDetail', 'id_nota', 'id')
                     ->select([
-                        DB::raw('SUM(tb_detail_nota_pembelian.diskon) AS total_diskon'),
-                        DB::raw('SUM(tb_detail_nota_pembelian.jumlah_retur * tb_detail_nota_pembelian.harga_beli) AS total_retur'),
-                        DB::raw('SUM((tb_detail_nota_pembelian.jumlah - jumlah_retur) * tb_detail_nota_pembelian.harga_beli) AS total_lunas'),
-                        DB::raw('SUM(tb_detail_nota_pembelian.diskon_persen * tb_detail_nota_pembelian.total_harga/100) AS total_diskon_persen'),
-                        DB::raw('SUM(tb_detail_nota_pembelian.total_harga) AS jumlah')
+                        DB::raw("SUM($detTable.diskon) AS total_diskon"),
+                        DB::raw("SUM($detTable.jumlah_retur * $detTable.harga_beli) AS total_retur"),
+                        DB::raw("SUM(($detTable.jumlah - jumlah_retur) * $detTable.harga_beli) AS total_lunas"),
+                        DB::raw("SUM($detTable.diskon_persen * $detTable.total_harga/100) AS total_diskon_persen"),
+                        DB::raw("SUM($detTable.total_harga) AS jumlah")
                     ])
-                    ->where('tb_detail_nota_pembelian.is_deleted', 0)->limit(1);
+                    ->where("$detTable.is_deleted", 0)->limit(1);
     }
 
     public function created_oleh(){

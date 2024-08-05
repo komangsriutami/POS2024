@@ -87,61 +87,67 @@ class T_PembelianController extends Controller
 
         $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
+        if(session('id_tahun_active') == date('Y')) {
+            $table = 'tb_nota_pembelian';
+        } else {
+            $table = 'tb_nota_pembelian_histori';
+        }
+
         $tanggal = date('Y-m-d');
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelian::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_nota_pembelian.*', 
+                "$table.*"
         ])
-        ->where(function($query) use($request, $tanggal){
-            $query->where('tb_nota_pembelian.is_deleted','=','0');
-            $query->where('tb_nota_pembelian.id_apotek_nota','=',session('id_apotek_active'));
-            $query->where('tb_nota_pembelian.no_faktur','LIKE',($request->no_faktur > 0 ? $request->no_faktur : '%'.$request->no_faktur.'%'));
+        ->where(function($query) use($request, $tanggal, $table){
+            $query->where("$table".'.is_deleted','=','0');
+            $query->where("$table".'.id_apotek_nota','=',session('id_apotek_active'));
+            $query->where("$table".'.no_faktur','LIKE',($request->no_faktur > 0 ? $request->no_faktur : '%'.$request->no_faktur.'%'));
             
             if($request->id_jenis_pembelian > 0) {
-                $query->where('tb_nota_pembelian.id_jenis_pembelian',$request->id_jenis_pembelian);
+                $query->where("$table".'.id_jenis_pembelian',$request->id_jenis_pembelian);
             }
 
             if($request->id_suplier > 0) {
-                $query->where('tb_nota_pembelian.id_suplier',$request->id_suplier);
+                $query->where("$table".'.id_suplier',$request->id_suplier);
             }
 
             if($request->id_apotek > 0) {
-                $query->where('tb_nota_pembelian.id_apotek',$request->id_apotek);
+                $query->where("$table".'.id_apotek',$request->id_apotek);
             }
             
-           // $query->where('tb_nota_pembelian.id_apotek','LIKE',($request->id_apotek > 0 ? $request->id_apotek : '%'.$request->id_apotek.'%'));
-           // $query->where('tb_nota_pembelian.id_supliers','LIKE',($request->id_suplier > 0 ? $request->id_suplier : '%'.$request->id_suplier.'%'));
+           // $query->where("$table".'.id_apotek','LIKE',($request->id_apotek > 0 ? $request->id_apotek : '%'.$request->id_apotek.'%'));
+           // $query->where("$table".'.id_supliers','LIKE',($request->id_suplier > 0 ? $request->id_suplier : '%'.$request->id_suplier.'%'));
             if($request->tgl_awal != "") {
                 $tgl_awal       = date('Y-m-d H:i:s',strtotime($request->tgl_awal));
-                $query->whereDate('tb_nota_pembelian.tgl_jatuh_tempo','>=', $tgl_awal);
+                $query->whereDate("$table".'.tgl_jatuh_tempo','>=', $tgl_awal);
             }
 
             if($request->tgl_akhir != "") {
                 $tgl_akhir      = date('Y-m-d H:i:s',strtotime($request->tgl_akhir));
-                $query->whereDate('tb_nota_pembelian.tgl_jatuh_tempo','<=', $tgl_akhir);
+                $query->whereDate("$table".'.tgl_jatuh_tempo','<=', $tgl_akhir);
             }
 
             if($request->tgl_awal_faktur != "") {
                 $tgl_awal_faktur       = date('Y-m-d H:i:s',strtotime($request->tgl_awal_faktur));
-                $query->whereDate('tb_nota_pembelian.tgl_faktur','>=', $tgl_awal_faktur);
+                $query->whereDate("$table".'.tgl_faktur','>=', $tgl_awal_faktur);
             }
 
             if($request->tgl_akhir_faktur != "") {
                 $tgl_akhir_faktur      = date('Y-m-d H:i:s',strtotime($request->tgl_akhir_faktur));
-                $query->whereDate('tb_nota_pembelian.tgl_faktur','<=', $tgl_akhir_faktur);
+                $query->whereDate("$table".'.tgl_faktur','<=', $tgl_akhir_faktur);
             }
 
             if($request->tgl_awal == "" AND $request->tgl_akhir == "" AND $request->tgl_awal_faktur == "" AND $request->tgl_akhir_faktur == "") {
-                $query->whereYear('tb_nota_pembelian.tgl_nota', '>=', 2022); //session('id_tahun_active')
+                $query->whereYear("$table".'.tgl_nota', '>=', 2022); //session('id_tahun_active')
             }
         });
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_nota_pembelian.no_faktur','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request, $table){
+            $query->where(function($query) use($request, $table){
+                $query->orwhere("$table".'.no_faktur','LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('apotek', function($data){
@@ -304,6 +310,11 @@ class T_PembelianController extends Controller
     }
 
     public function create() {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
+
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $apoteks = MasterApotek::whereIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
@@ -317,6 +328,10 @@ class T_PembelianController extends Controller
     }
 
     public function store(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $pembelian = new TransaksiPembelian;
@@ -1281,12 +1296,21 @@ class T_PembelianController extends Controller
     }
 
     public function list_pencarian_obat(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_pembelian';
+            $table = 'tb_nota_pembelian';
+        } else {
+            $detTable = 'tb_detail_nota_pembelian_histori';
+            $table = 'tb_nota_pembelian_histori';
+            $is_sign = 0;
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama','b.no_faktur'])
-        ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
-        ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_pembelian.is_deleted','=','0');
+        $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),"$detTable.*", 'a.nama','b.no_faktur'])
+        ->join('tb_m_obat as a', 'a.id', "$detTable.id_obat")
+        ->join("$table as b", 'b.id', "$detTable.id_nota")
+        ->where(function($query) use($request, $table, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
             $query->where('b.id_apotek_nota','=',session('id_apotek_active'));
         })
         ->orderBy('b.id', 'DESC');
@@ -1587,12 +1611,21 @@ class T_PembelianController extends Controller
 
     public function pembayaran_konsinyasi($id) 
     {
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_pembelian';
+            $table = 'tb_nota_pembelian';
+        } else {
+            $detTable = 'tb_detail_nota_pembelian_histori';
+            $table = 'tb_nota_pembelian_histori';
+            $is_sign = 0;
+        }
+
         $pembelian = TransaksiPembelian::find($id);
 
         $detail_pembelians = TransaksiPembelianDetail::
-                                select('tb_detail_nota_pembelian.*')
-                                ->where('tb_detail_nota_pembelian.id_nota', $id)
-                                ->where('tb_detail_nota_pembelian.is_deleted', 0)
+                                select("$detTable.*")
+                                ->where("$detTable.id_nota", $id)
+                                ->where("$detTable..is_deleted", 0)
                                 ->get();
 
         return view('pembayaran_faktur._form_pembayaran_konsinyasi')->with(compact('pembelian', 'detail_pembelians'));
@@ -1600,17 +1633,26 @@ class T_PembelianController extends Controller
 
     public function set_pembayaran_kosinyasi($id)
     {
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_pembelian';
+            $table = 'tb_nota_pembelian';
+        } else {
+            $detTable = 'tb_detail_nota_pembelian_histori';
+            $table = 'tb_nota_pembelian_histori';
+            $is_sign = 0;
+        }
+
         $detail_pembelian = TransaksiPembelianDetail::
-                                select('tb_detail_nota_pembelian.id',
-                                    'tb_detail_nota_pembelian.id_nota',
-                                    'tb_detail_nota_pembelian.id_obat',
-                                    'tb_detail_nota_pembelian.jumlah',
-                                    'tb_detail_nota_pembelian.harga_beli',
-                                    'tb_detail_nota_pembelian.diskon',
-                                    'tb_detail_nota_pembelian.is_retur',
+                                select("$detTable.id",
+                                    "$detTable.id_nota",
+                                    "$detTable.id_obat",
+                                    "$detTable.jumlah",
+                                    "$detTable.harga_beli",
+                                    "$detTable.diskon",
+                                    "$detTable.is_retur",
                                     DB::raw("SUM(b.jumlah_bayar) as jumlah_bayar"))
-                                ->leftJoin('tb_pembayaran_konsinyasi as b', 'b.id_detail_nota', '=', 'tb_detail_nota_pembelian.id')
-                                ->where('tb_detail_nota_pembelian.id', $id)
+                                ->leftJoin('tb_pembayaran_konsinyasi as b', 'b.id_detail_nota', '=', "$detTable.id")
+                                ->where("$detTable.id", $id)
                                 ->first();
        // dd($detail_pembelian);
 
@@ -1904,24 +1946,33 @@ class T_PembelianController extends Controller
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_pembelian';
+            $table = 'tb_nota_pembelian';
+        } else {
+            $detTable = 'tb_detail_nota_pembelian_histori';
+            $table = 'tb_nota_pembelian_histori';
+            $is_sign = 0;
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_pembelian.*', 'a.nama', 'b.no_faktur', 'c.stok_akhir'])
-        ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_pembelian.id_obat')
-        ->join('tb_nota_pembelian as b', 'b.id', 'tb_detail_nota_pembelian.id_nota')
-        ->join('tb_m_stok_harga_'.$inisial.' as c', 'c.id_obat', 'tb_detail_nota_pembelian.id_obat')
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_pembelian.is_deleted','=','0');
+        $data = TransaksiPembelianDetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),"$detTable.*", 'a.nama', 'b.no_faktur', 'c.stok_akhir'])
+        ->join('tb_m_obat as a', 'a.id', "$detTable.id_obat")
+        ->join("$table as b", 'b.id', "$detTable.id_nota")
+        ->join('tb_m_stok_harga_'.$inisial.' as c', 'c.id_obat', "$detTable.id_obat")
+        ->where(function($query) use($request, $table, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
             $query->where('b.id_apotek_nota','=',session('id_apotek_active'));
-            $query->where('tb_detail_nota_pembelian.id_batch','LIKE',($request->batch > 0 ? $request->batch : '%'.$request->batch.'%'));
+            $query->where("$detTable.id_batch",'LIKE',($request->batch > 0 ? $request->batch : '%'.$request->batch.'%'));
             $query->where('b.no_faktur','LIKE',($request->no_faktur > 0 ? $request->no_faktur : '%'.$request->no_faktur.'%'));
             
             if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
-                $query->where('tb_detail_nota_pembelian.tgl_batch','>=', $request->tgl_awal);
-                $query->where('tb_detail_nota_pembelian.tgl_batch','<=', $request->tgl_akhir);
+                $query->where("$detTable.tgl_batch",'>=', $request->tgl_awal);
+                $query->where("$detTable.tgl_batch",'<=', $request->tgl_akhir);
             } else {
                 $now = date('Y-m-d');
-                $query->where('tb_detail_nota_pembelian.tgl_batch','>=', $now);
-                $query->where('tb_detail_nota_pembelian.tgl_batch','<=', $now);
+                $query->where("$detTable.tgl_batch",'>=', $now);
+                $query->where("$detTable.tgl_batch",'<=', $now);
             }
 
             $query->where('c.stok_akhir','>',0);
@@ -1962,6 +2013,10 @@ class T_PembelianController extends Controller
     }
 
     public function konfirmasi_ed($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $detail_pembelian = TransaksiPembelianDetail::find($id);
@@ -2095,10 +2150,10 @@ class T_PembelianController extends Controller
             if($status == 1){
                 //DB::commit();
                 session()->flash('success', 'Sukses menyimpan data!');
-                return redirect('pembelian/konfirmasi_ed/'.$detail_pembelian->id_nota);
+                return redirect('pembelian/konfirmasi_ed/'.$detail_pembelian->id);
             }else{
                 session()->flash('error', 'Gagal menyimpan data!');
-                return redirect('pembelian/konfirmasi_ed/'.$detail_pembelian->id_nota);
+                return redirect('pembelian/konfirmasi_ed/'.$detail_pembelian->id);
             }
         /*}catch(\Exception $e){
             DB::rollback();
@@ -2425,39 +2480,45 @@ class T_PembelianController extends Controller
     }
 
     public function cari_info2(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+            $table = 'tb_nota_pembelian';
+        } else {
+            $table = 'tb_nota_pembelian_histori';
+        }
+
         $datas = TransaksiPembelian::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_nota_pembelian.*'])
-                ->where(function($query) use($request){
-                    $query->where('tb_nota_pembelian.is_deleted','=','0');
-                    $query->where('tb_nota_pembelian.is_tanda_terima','=','1');
-                    $query->where('tb_nota_pembelian.id_apotek_nota', session('id_apotek_active'));
-                    $query->where('tb_nota_pembelian.id_suplier','LIKE',($request->id_suplier > 0 ? $request->id_suplier : '%'.$request->id_suplier.'%'));
+                "$table.*"])
+                ->where(function($query) use($request, $table){
+                    $query->where("$table".'.is_deleted','=','0');
+                    $query->where("$table".'.is_tanda_terima','=','1');
+                    $query->where("$table".'.id_apotek_nota', session('id_apotek_active'));
+                    $query->where("$table".'.id_suplier','LIKE',($request->id_suplier > 0 ? $request->id_suplier : '%'.$request->id_suplier.'%'));
                     if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
-                        $query->where('tb_nota_pembelian.tgl_jatuh_tempo','>=', $request->tgl_awal);
-                        $query->where('tb_nota_pembelian.tgl_jatuh_tempo','<=', $request->tgl_akhir);
+                        $query->where("$table".'.tgl_jatuh_tempo','>=', $request->tgl_awal);
+                        $query->where("$table".'.tgl_jatuh_tempo','<=', $request->tgl_akhir);
                     } else {
-                        $query->where('tb_nota_pembelian.tgl_jatuh_tempo','>=', date('Y-m-d'));
-                        $query->where('tb_nota_pembelian.tgl_jatuh_tempo','<=', date('Y-m-d'));
+                        $query->where("$table".'.tgl_jatuh_tempo','>=', date('Y-m-d'));
+                        $query->where("$table".'.tgl_jatuh_tempo','<=', date('Y-m-d'));
                     }
 
                     if($request->id_jenis_pembelian > 0) {
-                        $query->where('tb_nota_pembelian.id_jenis_pembelian',$request->id_jenis_pembelian);
+                        $query->where("$table".'.id_jenis_pembelian',$request->id_jenis_pembelian);
                     }
 
                     if($request->tgl_awal_faktur != "") {
                         $tgl_awal_faktur       = date('Y-m-d H:i:s',strtotime($request->tgl_awal_faktur));
-                        $query->whereDate('tb_nota_pembelian.tgl_faktur','>=', $tgl_awal_faktur);
+                        $query->whereDate("$table".'.tgl_faktur','>=', $tgl_awal_faktur);
                     }
 
                     if($request->tgl_akhir_faktur != "") {
                         $tgl_akhir_faktur      = date('Y-m-d H:i:s',strtotime($request->tgl_akhir_faktur));
-                        $query->whereDate('tb_nota_pembelian.tgl_faktur','<=', $tgl_akhir_faktur);
+                        $query->whereDate("$table".'.tgl_faktur','<=', $tgl_akhir_faktur);
                     }
                 })
                 ->orderBy('tgl_jatuh_tempo','asc')
                 ->orderBy('id_suplier')
-                ->groupBy('tb_nota_pembelian.id')
+                ->groupBy("$table".'.id')
                 ->get();
 
         $no = 0;
@@ -2538,29 +2599,37 @@ class T_PembelianController extends Controller
             $is_sign = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_pembelian';
+            $table = 'tb_nota_pembelian';
+        } else {
+            $detTable = 'tb_detail_nota_pembelian_histori';
+            $table = 'tb_nota_pembelian_histori';
+            $is_sign = 0;
+        }
+
         $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPembelianDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_detail_nota_pembelian.*', 
+                "$detTable.*", 
         ])
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_pembelian.is_deleted','=','0');
+        ->where(function($query) use($request, $table, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
             if(is_null($request->id)) {
-                $query->where('tb_detail_nota_pembelian.id_nota','=',0);
+                $query->where("$detTable.id_nota",'=',0);
             } else {
-                $query->where('tb_detail_nota_pembelian.id_nota','=',$request->id);
+                $query->where("$detTable.id_nota",'=',$request->id);
             }
-            
         })
-        ->orderBy('tb_detail_nota_pembelian.id', 'ASC');
+        ->orderBy("$detTable.id", 'ASC');
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_detail_nota_pembelian.id','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
+                $query->orwhere("$detTable.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('action', function($data) use($request, $is_sign, $last_so){
@@ -2674,6 +2743,10 @@ class T_PembelianController extends Controller
     }
 
     public function AddItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $pembelian = new TransaksiPembelian;
@@ -2736,6 +2809,10 @@ class T_PembelianController extends Controller
     }
 
     public function UpdateItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $id = $request->id;
@@ -2800,6 +2877,10 @@ class T_PembelianController extends Controller
     }
 
     public function DeleteItem(Request $request, $id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::beginTransaction(); 
         try{
@@ -2928,6 +3009,10 @@ class T_PembelianController extends Controller
     }
 
     public function destroy($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $apotek = MasterApotek::find(session('id_apotek_active'));
