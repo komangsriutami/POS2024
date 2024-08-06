@@ -33,7 +33,7 @@ class TransaksiPenjualanDetail extends Model
         if(session('id_tahun_active') == date('Y')) {
             $this->setTable('tb_detail_nota_penjualan');
         } else {
-            $this->setTable('tb_detail_nota_penjualan_histori');
+            $this->setTable('tb_detail_nota_penjualan_09062024');
         }
     }
 
