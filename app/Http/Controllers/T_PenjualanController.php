@@ -95,7 +95,7 @@ class T_PenjualanController extends Controller
         if(session('id_tahun_active') == date('Y')) {
             $table = 'tb_nota_penjualan';
         } else {
-            $table = 'tb_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_09062024';
         }
 
         $tanggal = date('Y-m-d');
@@ -1147,8 +1147,8 @@ try {
             $detTable = 'tb_detail_nota_penjualan';
             $table = 'tb_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
-            $table = 'tb_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
+            $table = 'tb_nota_penjualan_09062024';
         }
 
         $tanggal = date('Y-m-d');
@@ -1497,8 +1497,8 @@ try {
             $detTable = 'tb_detail_nota_penjualan';
             $table = 'tb_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
-            $table = 'tb_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
+            $table = 'tb_nota_penjualan_09062024';
         }
 
         $tanggal = date('Y-m-d');
@@ -1645,8 +1645,8 @@ try {
             $detTable = 'tb_detail_nota_penjualan';
             $table = 'tb_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
-            $table = 'tb_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
+            $table = 'tb_nota_penjualan_09062024';
         }
 
         $detail_penjualans = TransaksiPenjualanDetail::select(["$detTable.id",
@@ -1902,8 +1902,8 @@ try {
             $detTable = 'tb_detail_nota_penjualan';
             $table = 'tb_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
-            $table = 'tb_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
+            $table = 'tb_nota_penjualan_09062024';
         }
 
         DB::statement(DB::raw('set @rownum = 0'));
@@ -2060,8 +2060,8 @@ try {
             $detTable = 'tb_detail_nota_penjualan';
             $table = 'tb_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
-            $table = 'tb_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
+            $table = 'tb_nota_penjualan_09062024';
         }
 
         DB::statement(DB::raw('set @rownum = 0'));
@@ -2184,8 +2184,8 @@ try {
             $detTable = 'tb_detail_nota_penjualan';
             $table = 'tb_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
-            $table = 'tb_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
+            $table = 'tb_nota_penjualan_09062024';
         }
 
         DB::statement(DB::raw('set @rownum = 0'));
@@ -8212,8 +8212,8 @@ printer_close($printer);
             $detTable = 'tb_detail_nota_penjualan';
             $table = 'tb_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
-            $table = 'tb_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
+            $table = 'tb_nota_penjualan_09062024';
             $is_access = 0;
         }
 
