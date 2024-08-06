@@ -25,7 +25,7 @@ class TransaksiPenjualan extends Model
         if(session('id_tahun_active') == date('Y')) {
             $this->setTable('tb_nota_penjualan');
         } else {
-            $this->setTable('tb_nota_penjualan_histori');
+            $this->setTable('tb_nota_penjualan_09062024');
         }
     }
 
@@ -295,7 +295,7 @@ class TransaksiPenjualan extends Model
         if(session('id_tahun_active') == date('Y')) {
             $detTable = 'tb_detail_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
         }
 
         return $this->hasMany('App\TransaksiPenjualanDetail', 'id_nota', 'id')
@@ -310,7 +310,7 @@ class TransaksiPenjualan extends Model
         if(session('id_tahun_active') == date('Y')) {
             $detTable = 'tb_detail_nota_penjualan';
         } else {
-            $detTable = 'tb_detail_nota_penjualan_histori';
+            $detTable = 'tb_detail_nota_penjualan_09062024';
         }
         
         return $this->hasMany('App\TransaksiPenjualanDetail', 'id_nota', 'id')
