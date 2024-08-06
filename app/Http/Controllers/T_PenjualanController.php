@@ -1114,6 +1114,10 @@ try {
     } 
 
     public function histori() {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         $tanggal = date('Y-m-d H:i:s');
         $jam = date('H:i:s');
         if(Auth::user()->is_admin == 1) {
@@ -1462,6 +1466,10 @@ try {
     }
 
     public function kredit() {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         $vendor_kerjamas      = MasterVendor::where('is_deleted', 0)->pluck('nama', 'id');
         $vendor_kerjamas->prepend('-- Pilih Vendor --','');
 
