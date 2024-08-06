@@ -14,7 +14,7 @@ class TransaksiPenjualanClosing extends Model
 		Author 	: Sri Utami
 		Date 	: 7/11/2020
 	*/
-    protected $table = 'tb_closing_nota_penjualan';
+    //protected $table = 'tb_closing_nota_penjualan';
     public $primaryKey = 'id';
     protected $fillable = ['tanggal',
     						'id_user',
@@ -39,6 +39,20 @@ class TransaksiPenjualanClosing extends Model
                             'jumlah_tt',
                             'total_akhir'
     						];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_closing_nota_penjualan');
+        } else {
+            $this->setTable('tb_closing_nota_penjualan_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
 
     public function validate(){
     	return Validator::make((array)$this->attributes, [

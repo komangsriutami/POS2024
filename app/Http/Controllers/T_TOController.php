@@ -80,37 +80,43 @@ class T_TOController extends Controller
 
         $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->where('step', '>', 1)->orderBy('id', 'DESC')->first();
 
+        if(session('id_tahun_active') == date('Y')) {
+            $table = 'tb_nota_transfer_outlet';
+        } else {
+            $table = 'tb_nota_transfer_outlet_histori';
+        }
+
         $tanggal = date('Y-m-d');
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiTO::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-	            'tb_nota_transfer_outlet.*', 
+	            "$table.*", 
         ])
-        ->where(function($query) use($request, $tanggal){
-            $query->where('tb_nota_transfer_outlet.is_deleted','=','0');
-            $query->where('tb_nota_transfer_outlet.id_apotek_nota','=',session('id_apotek_active'));
-            $query->where('tb_nota_transfer_outlet.id','LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
-            $query->where('tb_nota_transfer_outlet.id_apotek_tujuan','LIKE',($request->id_apotek_tujuan > 0 ? $request->id_apotek_tujuan : '%'.$request->id_apotek_tujuan.'%'));
+        ->where(function($query) use($request, $tanggal, $table){
+            $query->where("$table.is_deleted",'=','0');
+            $query->where("$table.id_apotek_nota",'=',session('id_apotek_active'));
+            $query->where("$table.id",'LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
+            $query->where("$table.id_apotek_tujuan",'LIKE',($request->id_apotek_tujuan > 0 ? $request->id_apotek_tujuan : '%'.$request->id_apotek_tujuan.'%'));
             if($request->tgl_awal != "") {
                 $tgl_awal       = date('Y-m-d H:i:s',strtotime($request->tgl_awal));
-                $query->whereDate('tb_nota_transfer_outlet.created_at','>=', $tgl_awal);
+                $query->whereDate("$table.created_at",'>=', $tgl_awal);
             }
 
             if($request->tgl_akhir != "") {
                 $tgl_akhir      = date('Y-m-d H:i:s',strtotime($request->tgl_akhir));
-                $query->whereDate('tb_nota_transfer_outlet.created_at','<=', $tgl_akhir);
+                $query->whereDate("$table.created_at",'<=', $tgl_akhir);
             }
 
             if($request->tgl_akhir == "" AND $request->tgl_awal == "") {
-                $query->whereYear('tb_nota_transfer_outlet.created_at', '>=', 2022); // session('id_tahun_active')
+                $query->whereYear("$table.created_at", '>=', 2022); // session('id_tahun_active')
             }
         });
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                //$query->orwhere('tb_nota_transfer_outlet.no_faktur','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request, $table){
+            $query->where(function($query) use($request, $table){
+                //$query->orwhere("$table.no_faktur",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('id_apotek_asal', function($data){
@@ -238,10 +244,10 @@ class T_TOController extends Controller
     }
 
     public function create() {
-        /*if(Auth::user()->id == 1) {
+        if(session('id_tahun_active') == date('Y')) {
         } else {
-            echo "under maintenance"; exit();
-        }*/
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
     	$apoteks = MasterApotek::whereNotIn('id', [$apotek->id])->where('is_deleted', 0)->pluck('nama_singkat', 'id');
@@ -253,6 +259,10 @@ class T_TOController extends Controller
     }
 
     public function store(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $transfer_outlet = new TransaksiTO;
@@ -440,6 +450,10 @@ class T_TOController extends Controller
     }
 
     public function hapus_detail($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $detail_transfer_outlet = TransaksiTODetail::find($id);
@@ -880,20 +894,29 @@ class T_TOController extends Controller
     }
 
     public function list_pencarian_obat(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_transfer_outlet';
+            $table = 'tb_nota_transfer_outlet';
+        } else {
+            $detTable = 'tb_detail_nota_transfer_outlet_histori';
+            $table = 'tb_nota_transfer_outlet_histori';
+            $is_sign = 0;
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiTODetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_transfer_outlet.*', 'a.nama'])
-        ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_transfer_outlet.id_obat')
-        ->join('tb_nota_transfer_outlet as b', 'b.id', 'tb_detail_nota_transfer_outlet.id_nota')
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_transfer_outlet.is_deleted','=','0');
+        $data = TransaksiTODetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),"$detTable.*", 'a.nama'])
+        ->join('tb_m_obat as a', 'a.id', "$detTable.id_obat")
+        ->join("$table as b", 'b.id', "$detTable.id_nota")
+        ->where(function($query) use($request, $detTable, $table){
+            $query->where("$detTable.is_deleted",'=','0');
             $query->where('b.id_apotek_nota','=',session('id_apotek_active'));
         })
         ->orderBy('b.id', 'DESC');
         
         $datatables = Datatables::of($data);
         return $datatables  
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
+        ->filter(function($query) use($request, $detTable, $table){
+            $query->where(function($query) use($request, $detTable, $table){
                 $query->orwhere('a.nama','LIKE','%'.$request->get('search')['value'].'%');
                 $query->orwhere('a.barcode','LIKE','%'.$request->get('search')['value'].'%');
                 $query->orwhere('a.sku','LIKE','%'.$request->get('search')['value'].'%');
@@ -1261,25 +1284,34 @@ class T_TOController extends Controller
     }
 
     public function list_data_transfer(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_transfer_outlet';
+            $table = 'tb_nota_transfer_outlet';
+        } else {
+            $detTable = 'tb_detail_nota_transfer_outlet_histori';
+            $table = 'tb_nota_transfer_outlet_histori';
+            $is_sign = 0;
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiTransferDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_detail_nota_transfer.*'
+                "$detTable.*"
         ])
-        ->join('tb_nota_transfer', 'tb_nota_transfer.id', '=', 'tb_detail_nota_transfer.id_nota')
-        ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_detail_nota_transfer.id_obat')
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_transfer.is_deleted','=','0');
-            $query->where('tb_detail_nota_transfer.is_status','=','0');
-            $query->where('tb_detail_nota_transfer.id_nota', $request->id_nota);
-            $query->where('tb_nota_transfer.id_apotek_transfer', session('id_apotek_active'));
+        ->join("$table", "$table.id", '=', "$detTable.id_nota")
+        ->join('tb_m_obat', 'tb_m_obat.id', '=', "$detTable.id_obat")
+        ->where(function($query) use($request, $table, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
+            $query->where("$detTable.is_status",'=','0');
+            $query->where("$detTable.id_nota", $request->id_nota);
+            $query->where("$detTable.id_apotek_transfer", session('id_apotek_active'));
         });
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_detail_nota_transfer.id','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
+                $query->orwhere("$detTable.id",'LIKE','%'.$request->get('search')['value'].'%');
                 $query->orwhere('tb_m_obat.nama','LIKE','%'.$request->get('search')['value'].'%');
                 $query->orwhere('tb_m_obat.barcode','LIKE','%'.$request->get('search')['value'].'%');
                 $query->orwhere('tb_m_obat.sku','LIKE','%'.$request->get('search')['value'].'%');
@@ -1316,6 +1348,10 @@ class T_TOController extends Controller
     }
 
     public function konfirmasi_transfer_store(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         $transfer_outlet = new TransaksiTO;
         $transfer_outlet->fill($request->except('_token'));
         $details = explode(",", $request->arr_id_transfer);
@@ -1369,6 +1405,10 @@ class T_TOController extends Controller
 
     public function set_konfirm_barang_tidak_disetujui(Request $request)
     {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $arr_id_transfer = $request->arr_id_transfer;
@@ -1442,13 +1482,22 @@ class T_TOController extends Controller
 
         $details = json_decode($request->id_det_transfer);
         DB::statement(DB::raw('set @rownum = 0'));
+
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_transfer_outlet';
+            $table = 'tb_nota_transfer_outlet';
+        } else {
+            $detTable = 'tb_detail_nota_transfer_outlet_histori';
+            $table = 'tb_nota_transfer_outlet_histori';
+            $is_sign = 0;
+        }
     
         $data = TransaksiTransferDetail::select([
                         DB::raw('@rownum  := @rownum  + 1 AS no'),
                         'tb_detail_nota_transfer.*'
                     ])
-                    ->leftJoin('tb_detail_nota_transfer_outlet as a', 'a.id', 'tb_detail_nota_transfer.id_det_nota_transfer_outlet')
-                    ->where(function($query) use($request, $details){
+                    ->leftJoin("$detTable as a", 'a.id', 'tb_detail_nota_transfer.id_det_nota_transfer_outlet')
+                    ->where(function($query) use($request, $details, $table, $detTable){
                         $query->where('tb_detail_nota_transfer.is_deleted','=','0');
                         //$query->where('tb_detail_nota_transfer.is_status','=','0');
                         $query->whereIn('tb_detail_nota_transfer.id', $details);
@@ -1563,34 +1612,43 @@ class T_TOController extends Controller
             $hak_akses = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_transfer_outlet';
+            $table = 'tb_nota_transfer_outlet';
+        } else {
+            $detTable = 'tb_detail_nota_transfer_outlet_histori';
+            $table = 'tb_nota_transfer_outlet_histori';
+            $hak_akses = 0;
+        }
+
         $tanggal = date('Y-m-d');
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiTO::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_nota_transfer_outlet.*', 
+                "$table.*", 
         ])
-        ->where(function($query) use($request, $tanggal){
-            $query->where('tb_nota_transfer_outlet.is_deleted','=','0');
-            $query->where('tb_nota_transfer_outlet.is_status', 0);
-            $query->where('tb_nota_transfer_outlet.is_sign', 1);
-            $query->where('tb_nota_transfer_outlet.id_apotek_tujuan','=',session('id_apotek_active'));
-            $query->where('tb_nota_transfer_outlet.id','LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
+        ->where(function($query) use($request, $tanggal, $table, $detTable){
+            $query->where("$table.is_deleted",'=','0');
+            $query->where("$table.is_status", 0);
+            $query->where("$table.is_sign", 1);
+            $query->where("$table.id_apotek_tujuan",'=',session('id_apotek_active'));
+            $query->where("$table.id",'LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
             if($request->tgl_awal != "") {
                 $tgl_awal       = date('Y-m-d H:i:s',strtotime($request->tgl_awal));
-                $query->whereDate('tb_nota_transfer_outlet.created_at','>=', $tgl_awal);
+                $query->whereDate("$table.created_at",'>=', $tgl_awal);
             }
 
             if($request->tgl_akhir != "") {
                 $tgl_akhir      = date('Y-m-d H:i:s',strtotime($request->tgl_akhir));
-                $query->whereDate('tb_nota_transfer_outlet.created_at','<=', $tgl_akhir);
+                $query->whereDate("$table.created_at",'<=', $tgl_akhir);
             }
         });
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                //$query->orwhere('tb_nota_transfer_outlet.no_faktur','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
+                //$query->orwhere("$table.no_faktur",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('id_apotek_asal', function($data){
@@ -1659,6 +1717,11 @@ class T_TOController extends Controller
     }
 
     public function konfirm_update(Request $request, $id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
+
         //echo $id; exit();
         ini_set('memory_limit', '-1'); 
         DB::beginTransaction(); 
@@ -1947,21 +2010,31 @@ class T_TOController extends Controller
                                         </tr>
                                     </thead>
                                     <tbody>';
+        
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_transfer_outlet';
+            $table = 'tb_nota_transfer_outlet';
+        } else {
+            $detTable = 'tb_detail_nota_transfer_outlet_histori';
+            $table = 'tb_nota_transfer_outlet_histori';
+            $hak_akses = 0;
+        }
+
         foreach ($apoteks as $key => $val) {
             $data = TransaksiTODetail::select([
-                                DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
+                                DB::raw("SUM($detTable.jumlah * $detTable.harga_outlet) AS total")
                             ])
-                            ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
-                            ->where(function($query) use($request, $val, $tgl_awal, $tgl_akhir){
-                                $query->where('tb_nota_transfer_outlet.is_deleted','=','0');
-                                $query->where('tb_detail_nota_transfer_outlet.is_deleted','=','0');
-                                $query->where('tb_detail_nota_transfer_outlet.is_status','=','1');
-                                $query->where('tb_nota_transfer_outlet.id_apotek_nota','=', $val->id);
-                                $query->where('tb_nota_transfer_outlet.id_apotek_tujuan','=',session('id_apotek_active'));
-                                $query->where('tb_nota_transfer_outlet.id','LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
+                            ->join("$table", "$table.id", '=', "$detTable.id_nota")
+                            ->where(function($query) use($request, $val, $tgl_awal, $tgl_akhir, $table, $detTable){
+                                $query->where("$table.is_deleted",'=','0');
+                                $query->where("$detTable.is_deleted",'=','0');
+                                $query->where("$detTable.is_status",'=','1');
+                                $query->where("$table.id_apotek_nota",'=', $val->id);
+                                $query->where("$table.id_apotek_tujuan",'=',session('id_apotek_active'));
+                                $query->where("$table.id",'LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
                                 if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
-                                    $query->where('tb_nota_transfer_outlet.created_at','>=', $tgl_awal);
-                                    $query->where('tb_nota_transfer_outlet.created_at','<=', $tgl_akhir);
+                                    $query->where("$table.created_at",'>=', $tgl_awal);
+                                    $query->where("$table.created_at",'<=', $tgl_akhir);
                                 }
                             })
                             ->first();
@@ -1990,37 +2063,37 @@ class T_TOController extends Controller
 
         foreach ($apoteks as $key => $val) {
             $data = TransaksiTODetail::select([
-                                DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
+                                DB::raw("SUM($detTable.jumlah * $detTable.harga_outlet) AS total")
                             ])
-                            ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
-                            ->where(function($query) use($request, $val, $tgl_awal, $tgl_akhir){
-                                $query->where('tb_nota_transfer_outlet.is_deleted','=','0');
-                                $query->where('tb_detail_nota_transfer_outlet.is_deleted','=','0');
-                                //$query->where('tb_detail_nota_transfer_outlet.is_status','=','0');
-                                $query->where('tb_nota_transfer_outlet.id_apotek_tujuan','=', $val->id);
-                                $query->where('tb_nota_transfer_outlet.id_apotek_nota','=',session('id_apotek_active'));
-                                $query->where('tb_nota_transfer_outlet.id','LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
+                            ->join("$table", "$table.id", '=', "$detTable.id_nota")
+                            ->where(function($query) use($request, $val, $tgl_awal, $tgl_akhir, $table, $detTable){
+                                $query->where("$table.is_deleted",'=','0');
+                                $query->where("$detTable.is_deleted",'=','0');
+                                //$query->where("$detTable.is_status",'=','0');
+                                $query->where("$table.id_apotek_tujuan",'=', $val->id);
+                                $query->where("$table.id_apotek_nota",'=',session('id_apotek_active'));
+                                $query->where("$table.id",'LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
                                 if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
-                                    $query->where('tb_nota_transfer_outlet.created_at','>=', $tgl_awal);
-                                    $query->where('tb_nota_transfer_outlet.created_at','<=', $tgl_akhir);
+                                    $query->where("$table.created_at",'>=', $tgl_awal);
+                                    $query->where("$table.created_at",'<=', $tgl_akhir);
                                 }
                             })
                             ->first();
 
             $data_konfirm = TransaksiTODetail::select([
-                                DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
+                                DB::raw("SUM($detTable.jumlah * $detTable.harga_outlet) AS total")
                             ])
-                            ->join('tb_nota_transfer_outlet', 'tb_nota_transfer_outlet.id', '=', 'tb_detail_nota_transfer_outlet.id_nota')
-                            ->where(function($query) use($request, $val, $tgl_awal, $tgl_akhir){
-                                $query->where('tb_nota_transfer_outlet.is_deleted','=','0');
-                                $query->where('tb_detail_nota_transfer_outlet.is_deleted','=','0');
-                                $query->where('tb_detail_nota_transfer_outlet.is_status','=','1');
-                                $query->where('tb_nota_transfer_outlet.id_apotek_tujuan','=', $val->id);
-                                $query->where('tb_nota_transfer_outlet.id_apotek_nota','=',session('id_apotek_active'));
-                                $query->where('tb_nota_transfer_outlet.id','LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
+                            ->join("$table", "$table.id", '=', "$detTable.id_nota")
+                            ->where(function($query) use($request, $val, $tgl_awal, $tgl_akhir, $table, $detTable){
+                                $query->where("$table.is_deleted",'=','0');
+                                $query->where("$detTable.is_deleted",'=','0');
+                                $query->where("$detTable.is_status",'=','1');
+                                $query->where("$table.id_apotek_tujuan",'=', $val->id);
+                                $query->where("$table.id_apotek_nota",'=',session('id_apotek_active'));
+                                $query->where("$table.id",'LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
                                 if (!empty($request->tgl_awal) && !empty($request->tgl_akhir)) {
-                                    $query->where('tb_nota_transfer_outlet.created_at','>=', $tgl_awal);
-                                    $query->where('tb_nota_transfer_outlet.created_at','<=', $tgl_akhir);
+                                    $query->where("$table.created_at",'>=', $tgl_awal);
+                                    $query->where("$table.created_at",'<=', $tgl_akhir);
                                 }
                             })
                             ->first();
@@ -2279,6 +2352,10 @@ class T_TOController extends Controller
 
 
     public function AddItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $transfer_outlet = new TransaksiTO;
@@ -2321,6 +2398,10 @@ class T_TOController extends Controller
     }
 
     public function UpdateItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $id = $request->id;
@@ -2363,6 +2444,10 @@ class T_TOController extends Controller
     }
 
     public function DeleteItem(Request $request, $id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::beginTransaction(); 
         try{
@@ -2483,6 +2568,10 @@ class T_TOController extends Controller
     }
 
     public function destroy($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $apotek = MasterApotek::find(session('id_apotek_active'));
@@ -2637,6 +2726,10 @@ class T_TOController extends Controller
 
 
     public function konfirm_ulang($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         //echo $id; exit();
         //ini_set('memory_limit', '-1'); 
         DB::beginTransaction(); 

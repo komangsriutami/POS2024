@@ -15,10 +15,25 @@ class TransaksiPenjualan extends Model
         Author  : Sri Utami
         Date    : 7/11/2020
     */
-    protected $table = 'tb_nota_penjualan';
+    //protected $table = 'tb_nota_penjualan';
     public $primaryKey = 'id';
     public $timestamps = false;
     protected $fillable = ['id_apotek_nota', 'id_pasien', 'tgl_nota', 'keterangan', 'diskon_persen', 'diskon_rp', 'id_karyawan', 'cash', 'kembalian', 'id_kartu_debet_credit', 'debet', 'no_kartu', 'surcharge', 'id_dokter', 'biaya_jasa_dokter', 'id_jasa_resep', 'is_penjualan_tanpa_item', 'is_kredit', 'is_lunas_pembayaran_kredit', 'id_vendor', 'diskon_vendor', 'biaya_resep', 'total_belanja', 'total_bayar', 'id_paket_wd', 'harga_wd', 'nama_lab', 'biaya_lab', 'keterangan_lab', 'biaya_apd', 'is_margin', 'tgl_jatuh_tempo', 'is_margin_kurang'];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_nota_penjualan');
+        } else {
+            $this->setTable('tb_nota_penjualan_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
+                
 
     public function validate(){
         return Validator::make((array)$this->attributes, [
@@ -277,20 +292,32 @@ class TransaksiPenjualan extends Model
     }
 
     public function detail_penjualan_total(){
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+        }
+
         return $this->hasMany('App\TransaksiPenjualanDetail', 'id_nota', 'id')
                     ->select([
-                        DB::raw('SUM(tb_detail_nota_penjualan.jumlah * tb_detail_nota_penjualan.harga_jual) AS total'),
-                        DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon')
+                        DB::raw("SUM($detTable.jumlah * $detTable.harga_jual) AS total"),
+                        DB::raw("SUM($detTable.diskon) AS total_diskon")
                     ])
-                    ->where('tb_detail_nota_penjualan.is_deleted', 0)->limit(1);
+                    ->where("$detTable.is_deleted", 0)->limit(1);
     }
 
     public function cek_retur(){
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+        }
+        
         return $this->hasMany('App\TransaksiPenjualanDetail', 'id_nota', 'id')
                     ->select([
-                        DB::raw('COUNT(tb_detail_nota_penjualan.id) AS total_cn')
+                        DB::raw("COUNT($detTable.id) AS total_cn")
                     ])
-                    ->where('tb_detail_nota_penjualan.is_cn', 1)
+                    ->where("$detTable.is_cn", 1)
                     ->limit(1);
     }
 

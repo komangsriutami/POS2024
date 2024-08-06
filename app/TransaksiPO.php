@@ -9,7 +9,7 @@ use DB;
 class TransaksiPO extends Model
 {
     // ini tabel nota penjualan
-    protected $table = 'tb_nota_po';
+    //protected $table = 'tb_nota_po';
     public $primaryKey = 'id';
     public $timestamps = false;
     protected $fillable = ['id_apotek_nota',
@@ -20,6 +20,21 @@ class TransaksiPO extends Model
                             'deleted_at',
                             'deleted_by'
     						];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_nota_po');
+        } else {
+            $this->setTable('tb_nota_po_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
+
 
     public function validate(){
     	return Validator::make((array)$this->attributes, [
@@ -245,7 +260,13 @@ class TransaksiPO extends Model
     }
 
     public function detail_po(){
-        return $this->hasMany('App\TransaksiPODetail', 'id_nota', 'id')->where('tb_detail_nota_po.is_deleted', 0);
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_po';
+        } else {
+            $detTable = 'tb_detail_nota_po_histori';
+        }
+
+        return $this->hasMany('App\TransaksiPODetail', 'id_nota', 'id')->where("$detTable.is_deleted", 0);
     }
 
     public function apotek_nota(){
@@ -261,10 +282,16 @@ class TransaksiPO extends Model
     }
 
     public function detail_po_total(){
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_po';
+        } else {
+            $detTable = 'tb_detail_nota_po_histori';
+        }
+
         return $this->hasMany('App\TransaksiPODetail', 'id_nota', 'id')
                     ->select([
-                        DB::raw('SUM(tb_detail_nota_po.jumlah * tb_detail_nota_po.harga_jual) AS total')
+                        DB::raw("SUM($detTable.jumlah * $detTable.harga_jual) AS total")
                     ])
-                    ->where('tb_detail_nota_po.is_deleted', 0)->limit(1);
+                    ->where("$detTable.is_deleted", 0)->limit(1);
     }
 }

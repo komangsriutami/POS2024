@@ -92,27 +92,33 @@ class T_PenjualanController extends Controller
             $hak_akses = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $table = 'tb_nota_penjualan';
+        } else {
+            $table = 'tb_nota_penjualan_histori';
+        }
+
         $tanggal = date('Y-m-d');
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPenjualan::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_nota_penjualan.*', 
+                "$table.*" 
         ])
-        ->where(function($query) use($request, $tanggal){
-            $query->where('tb_nota_penjualan.is_deleted','=','0');
-            $query->where('tb_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
+        ->where(function($query) use($request, $tanggal, $table){
+            $query->where("$table.is_deleted",'=','0');
+            $query->where("$table.id_apotek_nota",'=',session('id_apotek_active'));
             if(session('id_role_active') != 1) {
-                $query->where('tb_nota_penjualan.created_by', Auth::user()->id);
+                $query->where("$table.created_by", Auth::user()->id);
             }
-            $query->where('tb_nota_penjualan.created_at', 'LIKE', '%'.$tanggal.'%');
+            $query->where("$table.created_at", 'LIKE', '%'.$tanggal.'%');
         })
-        ->orderBy('tb_nota_penjualan.id', 'DESC');
+        ->orderBy("$table.id", 'DESC');
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_nota_penjualan.id','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request, $table){
+            $query->where(function($query) use($request, $table){
+                $query->orwhere("$table.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('created_at', function($data) use($request){
@@ -259,6 +265,11 @@ class T_PenjualanController extends Controller
     */
     public function create()
     {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
+
         $penjualan = new TransaksiPenjualan;
         $detail_penjualans = new TransaksiPenjualanDetail;
         $apotek = MasterApotek::find(session('id_apotek_active'));
@@ -297,6 +308,10 @@ class T_PenjualanController extends Controller
     */
     public function store(Request $request)
     {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $penjualan = new TransaksiPenjualan;
@@ -1128,45 +1143,57 @@ try {
 
         $last_so = SettingStokOpnam::where('id_apotek', session('id_apotek_active'))->orderBy('id', 'DESC')->first();
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+            $table = 'tb_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_histori';
+        }
+
         $tanggal = date('Y-m-d');
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPenjualan::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_nota_penjualan.*', 
+                "$table.*", 
         ])
-        ->where(function($query) use($request, $tanggal){
-            $query->where('tb_nota_penjualan.is_deleted','=','0');
+        ->where(function($query) use($request, $tanggal, $table, $detTable){
+            $query->where("$table.is_deleted",'=','0');
             if($request->id_apotek != '') {
-                $query->where('tb_nota_penjualan.id_apotek_nota', $request->id_apotek);
+                $query->where("$table.id_apotek_nota", $request->id_apotek);
             } else {
-                $query->where('tb_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
+                $query->where("$table.id_apotek_nota",'=',session('id_apotek_active'));
             }
 
             if(empty($request->tanggal)) {
-                $query->where('tb_nota_penjualan.created_at', 'LIKE', '%'.$tanggal.'%');
+                $query->where("$table.created_at", 'LIKE', '%'.$tanggal.'%');
             } else {
-                $query->where('tb_nota_penjualan.id','LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
-                //$query->where('tb_nota_penjualan.id_pasien','LIKE',($request->id_pasien > 0 ? $request->id_pasien : '%'.$request->id_pasien.'%'));
+                $query->where("$table.id",'LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
+                //$query->where("$table.id_pasien",'LIKE',($request->id_pasien > 0 ? $request->id_pasien : '%'.$request->id_pasien.'%'));
                 if($request->tanggal != "") {
                     $split                      = explode("-", $request->tanggal);
                     $tgl_awal       = date('Y-m-d H:i:s',strtotime($split[0]));
                     $tgl_akhir      = date('Y-m-d H:i:s',strtotime($split[1]));
-                    $query->whereDate('tb_nota_penjualan.created_at','>=', $tgl_awal);
-                    $query->whereDate('tb_nota_penjualan.created_at','<=', $tgl_akhir);
+                    $query->whereDate("$table.created_at",'>=', $tgl_awal);
+                    $query->whereDate("$table.created_at",'<=', $tgl_akhir);
                 }
             }
 
             if($request->id_user != '') {
-                $query->where('tb_nota_penjualan.created_by', $request->id_user);
+                $query->where("$table.created_by", $request->id_user);
+            }
+
+            if(session('id_tahun_active') != date('Y')) {
+                $query->whereYear("$table.tgl_nota", '!=', date('Y'));
             }
         })
-        ->orderBy('tb_nota_penjualan.id', 'DESC');
+        ->orderBy("$table.id", 'DESC');
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_nota_penjualan.id','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
+                $query->orwhere("$table.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('created_at', function($data) use($request){
@@ -1466,35 +1493,47 @@ try {
             $hak_akses = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+            $table = 'tb_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_histori';
+        }
+
         $tanggal = date('Y-m-d');
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPenjualan::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_nota_penjualan.*', 
+                "$table.*", 
         ])
-        ->where(function($query) use($request, $date1, $date2){
-            $query->where('tb_nota_penjualan.is_deleted','=','0');
-            $query->where('tb_nota_penjualan.is_kredit','=','1');
-            $query->where('tb_nota_penjualan.id_apotek_nota','=',session('id_apotek_active'));
+        ->where(function($query) use($request, $date1, $date2, $table, $detTable){
+            $query->where("$table.is_deleted",'=','0');
+            $query->where("$table.is_kredit",'=','1');
+            $query->where("$table.id_apotek_nota",'=',session('id_apotek_active'));
             if($request->id_vendor != '') {
-                $query->where('tb_nota_penjualan.id_vendor', $request->id_vendor);
+                $query->where("$table.id_vendor", $request->id_vendor);
             }
-            $query->where('tb_nota_penjualan.tgl_nota', '>=', $date1);
-            $query->where('tb_nota_penjualan.tgl_nota', '<=', $date2);
+            $query->where("$table.tgl_nota", '>=', $date1);
+            $query->where("$table.tgl_nota", '<=', $date2);
             if($request->keterangan != '') {
-                $query->where('tb_nota_penjualan.keterangan','LIKE','%'.$request->keterangan.'%');
+                $query->where("$table.keterangan",'LIKE','%'.$request->keterangan.'%');
             }
             if($request->is_lunas_pembayaran_kredit != '') {
-                $query->where('tb_nota_penjualan.is_lunas_pembayaran_kredit','=',$request->is_lunas_pembayaran_kredit);
+                $query->where("$table.is_lunas_pembayaran_kredit",'=',$request->is_lunas_pembayaran_kredit);
+            }
+
+            if(session('id_tahun_active') != date('Y')) {
+                $query->whereYear("$table.tgl_nota", '!=', date('Y'));
             }
         })
-        ->groupBy('tb_nota_penjualan.id');
+        ->groupBy("$table.id");
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request,$order_column,$order_dir){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_nota_penjualan.id','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request,$order_column,$order_dir, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
+                $query->orwhere("$table.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('created_at', function($data) use($request){
@@ -1601,18 +1640,27 @@ try {
             $jasa_resep = MasterJasaResep::find($penjualan->id_jasa_resep);
             $penjualan->jasa_resep = $jasa_resep->biaya;
         }
-        $detail_penjualans = TransaksiPenjualanDetail::select(['tb_detail_nota_penjualan.id',
-                                                'tb_detail_nota_penjualan.id_nota',
-                                                'tb_detail_nota_penjualan.id_obat',
-                                                'tb_detail_nota_penjualan.jumlah',
-                                                'tb_detail_nota_penjualan.jumlah_cn',
-                                                'tb_detail_nota_penjualan.harga_jual',
-                                                'tb_detail_nota_penjualan.diskon',
+
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+            $table = 'tb_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_histori';
+        }
+
+        $detail_penjualans = TransaksiPenjualanDetail::select(["$detTable.id",
+                                                "$detTable.id_nota",
+                                                "$detTable.id_obat",
+                                                "$detTable.jumlah",
+                                                "$detTable.jumlah_cn",
+                                                "$detTable.harga_jual",
+                                                "$detTable.diskon",
                                                 'tb_m_obat.nama',
-                                                 DB::raw('(tb_detail_nota_penjualan.jumlah * tb_detail_nota_penjualan.harga_jual) - tb_detail_nota_penjualan.diskon  as total')])
-                                               ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_detail_nota_penjualan.id_obat')
-                                               ->where('tb_detail_nota_penjualan.id_nota', $id)
-                                               ->where('tb_detail_nota_penjualan.is_deleted', 0)
+                                                 DB::raw("($detTable.jumlah * $detTable.harga_jual) - $detTable.diskon  as total")])
+                                               ->join('tb_m_obat', 'tb_m_obat.id', '=', "$detTable.id_obat")
+                                               ->where("$detTable.id_nota", $id)
+                                               ->where("$detTable.is_deleted", 0)
                                                ->get();
 
         $kartu_debets = MasterKartu::where('is_deleted', 0)->get();
@@ -1678,6 +1726,10 @@ try {
     }
 
     public function retur_save(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         $details = $request->id_detail;
         $i = 0;
 
@@ -1752,6 +1804,10 @@ try {
     }
 
     public function update_retur(Request $request, $id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             if($request->jumlah_cn > 0) {
@@ -1842,22 +1898,30 @@ try {
             $hak_akses = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+            $table = 'tb_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_histori';
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_detail_nota_penjualan.*', 
+                "$detTable.*", 
         ])
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_penjualan.is_deleted','=','0');
-            $query->where('tb_detail_nota_penjualan.is_cn','=','1');
-            $query->where('tb_detail_nota_penjualan.id_nota','=',$request->id);
+        ->where(function($query) use($request, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
+            $query->where("$detTable.is_cn",'=','1');
+            $query->where("$detTable.id_nota",'=',$request->id);
         });
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request,$order_column,$order_dir){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_detail_nota_penjualan.id','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request,$order_column,$order_dir, $detTable){
+            $query->where(function($query) use($request, $detTable){
+                $query->orwhere("$detTable.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('tanggal', function($data) use($request){
@@ -1934,6 +1998,10 @@ try {
     }
 
     public function batal_retur(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         $detail_penjualan = TransaksiPenjualanDetail::find($request->id);
         $retur_penjulan = ReturPenjualan::find($detail_penjualan->id_retur_penjualan);
         $retur_penjulan->is_deleted = 1;
@@ -1988,34 +2056,42 @@ try {
             $hak_akses = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+            $table = 'tb_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_histori';
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_detail_nota_penjualan.*', 
+                "$detTable.*", 
                 //DB::Raw('IFNULL(a.is_approved, 0) as is_approved'),
                // 'a.id_alasan_retur',
                 //'a.alasan_lain',
                 'b.alasan',
                 'c.nama as aprove_oleh'
         ])
-        ->join('tb_nota_penjualan as x', 'x.id', '=', 'tb_detail_nota_penjualan.id_nota')
-        //->leftjoin('tb_return_penjualan_obat as a', 'a.id_detail_nota', '=', 'tb_detail_nota_penjualan.id')
-        ->leftjoin('tb_m_alasan_retur as b', 'b.id', '=', 'tb_detail_nota_penjualan.id_alasan_retur')
-        ->leftjoin('users as c', 'c.id', '=', 'tb_detail_nota_penjualan.approved_by')
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_penjualan.is_deleted','=','0');
-            $query->where('tb_detail_nota_penjualan.is_cn','=','1');
+        ->join("$table as x", 'x.id', '=', "$detTable.id_nota")
+        //->leftjoin('tb_return_penjualan_obat as a', 'a.id_detail_nota', '=', "$detTable.id")
+        ->leftjoin('tb_m_alasan_retur as b', 'b.id', '=', "$detTable.id_alasan_retur")
+        ->leftjoin('users as c', 'c.id', '=', "$detTable.approved_by")
+        ->where(function($query) use($request, $table, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
+            $query->where("$detTable.is_cn",'=','1');
             $query->where(DB::raw('YEAR(x.created_at)'),'!=','2020');
             $query->where('x.id_apotek_nota', session('id_apotek_active'));
-            $query->where('tb_detail_nota_penjualan.is_approved', $request->is_status);
+            $query->where("$detTable.is_approved", $request->is_status);
         })
-        ->orderBy('tb_detail_nota_penjualan.id', 'DESC');
+        ->orderBy("$detTable.id", 'DESC');
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request,$order_column,$order_dir){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_detail_nota_penjualan.id','LIKE','%'.$request->get('search')['value'].'%');
+        ->filter(function($query) use($request,$order_column,$order_dir, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
+                $query->orwhere("$detTable.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  
         ->editcolumn('tanggal', function($data) use($request){
@@ -2104,10 +2180,18 @@ try {
             $hak_akses = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+            $table = 'tb_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_histori';
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_detail_nota_penjualan.*', 
+                "$detTable.*", 
                 DB::Raw('IFNULL(a.is_approved, 0) as is_approved'),
                 'a.id_alasan_retur',
                 'a.alasan_lain',
@@ -2118,7 +2202,7 @@ try {
         ->leftjoin('tb_return_penjualan_obat as a', 'a.id_detail_nota', '=', 'tb_detail_nota_penjualan.id')
         ->join('tb_m_alasan_retur as b', 'b.id', '=', 'a.id_alasan_retur')
         ->leftjoin('users as c', 'c.id', '=', 'a.approved_by')
-        ->where(function($query) use($request){
+        ->where(function($query) use($request, $table, $detTable){
             $query->where('tb_detail_nota_penjualan.is_deleted','=','0');
             $query->where('tb_detail_nota_penjualan.is_cn','=','1');
             $query->where(DB::raw('YEAR(x.created_at)'),'!=','2020');
@@ -2211,6 +2295,10 @@ try {
     }
 
     public function retur_aprove_update(Request $request, $id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $act = $request->act; //1 = setuju, 2 = tidak setuju
@@ -2418,6 +2506,11 @@ try {
     }
 
     public function closing_kasir(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
+        
         if(empty($request->tanggal)) {
             $tanggal = date('Y-m-d');
         } else {
@@ -8115,27 +8208,36 @@ printer_close($printer);
             $is_access = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_penjualan';
+            $table = 'tb_nota_penjualan';
+        } else {
+            $detTable = 'tb_detail_nota_penjualan_histori';
+            $table = 'tb_nota_penjualan_histori';
+            $is_access = 0;
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPenjualanDetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_detail_nota_penjualan.*', 
+                 "$detTable.*", 
         ])
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_penjualan.is_deleted','=','0');
+        ->where(function($query) use($request, $table, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
             if(is_null($request->id)) {
-                $query->where('tb_detail_nota_penjualan.id_nota','=',0);
+                $query->where("$detTable.id_nota",'=',0);
             } else {
-                $query->where('tb_detail_nota_penjualan.id_nota','=',$request->id);
+                $query->where("$detTable.id_nota",'=',$request->id);
             }
             
         })
-        ->orderBy('tb_detail_nota_penjualan.id', 'ASC');
+        ->orderBy("$detTable.id", 'ASC');
         
         $datatables = Datatables::of($data);
         return $datatables
-        /*->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_detail_nota_penjualan.id','LIKE','%'.$request->get('search')['value'].'%');
+        /*->filter(function($query) use($request, $detTable){
+            $query->where(function($query) use($request, $detTable){
+                $query->orwhere("$detTable.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  */
         ->editcolumn('action', function($data) use($request, $is_access, $penjualan){
@@ -8198,6 +8300,10 @@ printer_close($printer);
     }
 
     public function AddItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $penjualan = new TransaksiPenjualan;
@@ -8255,6 +8361,10 @@ printer_close($printer);
     }
 
     public function UpdateItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $id = $request->id;
@@ -8318,6 +8428,10 @@ printer_close($printer);
     }
 
     public function DeleteItem(Request $request, $id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::beginTransaction(); 
         try{
@@ -8439,6 +8553,10 @@ printer_close($printer);
     }
 
     public function destroy($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $apotek = MasterApotek::find(session('id_apotek_active'));

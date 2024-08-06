@@ -9,7 +9,7 @@ use DB;
 class TransaksiTO extends Model
 {
     // ini tabel nota penjualan
-    protected $table = 'tb_nota_transfer_outlet';
+    //protected $table = 'tb_nota_transfer_outlet';
     public $primaryKey = 'id';
     public $timestamps = false;
     protected $fillable = ['id_apotek_nota',
@@ -22,6 +22,20 @@ class TransaksiTO extends Model
                             'deleted_by',
                             'is_from_transfer'
     						];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_nota_transfer_outlet');
+        } else {
+            $this->setTable('tb_nota_transfer_outlet_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
 
     public function validate(){
     	return Validator::make((array)$this->attributes, [
@@ -321,11 +335,17 @@ class TransaksiTO extends Model
     }
 
     public function detail_transfer_total(){
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_transfer_outlet';
+        } else {
+            $detTable = 'tb_detail_nota_transfer_outlet_histori';
+        }
+
         return $this->hasMany('App\TransaksiTODetail', 'id_nota', 'id')
                     ->select([
-                        DB::raw('SUM(tb_detail_nota_transfer_outlet.jumlah * tb_detail_nota_transfer_outlet.harga_outlet) AS total')
+                        DB::raw("SUM($detTable.jumlah * $detTable.harga_outlet) AS total")
                     ])
-                    ->where('tb_detail_nota_transfer_outlet.is_deleted', 0)->limit(1);
+                    ->where("$detTable.is_deleted", 0)->limit(1);
     }
 
     public function apotek_asal(){

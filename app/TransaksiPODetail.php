@@ -8,13 +8,28 @@ use Auth;
 class TransaksiPODetail extends Model
 {
     // ini tabel nota detail po
-    protected $table = 'tb_detail_nota_po';
+    //protected $table = 'tb_detail_nota_po';
     public $primaryKey = 'id';
     protected $fillable = ['id_nota',
     						'id_obat',
     						'harga_jual',
     						'jumlah'
     						];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_detail_nota_po');
+        } else {
+            $this->setTable('tb_detail_nota_po_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
+    
 
     public function validate(){
     	return Validator::make((array)$this->attributes, [

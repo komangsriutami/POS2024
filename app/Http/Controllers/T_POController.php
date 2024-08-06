@@ -60,31 +60,40 @@ class T_POController extends Controller
             $hak_akses = 1;
         }
 
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_po';
+            $table = 'tb_nota_po';
+        } else {
+            $detTable = 'tb_detail_nota_po_histori';
+            $table = 'tb_nota_po_histori';
+            $hak_akses = 0;
+        }
+
         $tanggal = date('Y-m-d');
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPO::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-	            'tb_nota_po.*', 
+	            "$table.*", 
         ])
-        ->where(function($query) use($request, $tanggal){
-            $query->where('tb_nota_po.is_deleted','=','0');
-            $query->where('tb_nota_po.id_apotek_nota','=',session('id_apotek_active'));
-            $query->where('tb_nota_po.id','LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
+        ->where(function($query) use($request, $tanggal, $table, $detTable){
+            $query->where("$table.is_deleted",'=','0');
+            $query->where("$table.id_apotek_nota",'=',session('id_apotek_active'));
+            $query->where("$table.id",'LIKE',($request->id > 0 ? $request->id : '%'.$request->id.'%'));
             if($request->tgl_awal != "") {
                 $tgl_awal       = date('Y-m-d H:i:s',strtotime($request->tgl_awal));
-                $query->whereDate('tb_nota_po.created_at','>=', $tgl_awal);
+                $query->whereDate("$table.created_at",'>=', $tgl_awal);
             }
 
             if($request->tgl_akhir != "") {
                 $tgl_akhir      = date('Y-m-d H:i:s',strtotime($request->tgl_akhir));
-                $query->whereDate('tb_nota_po.created_at','<=', $tgl_akhir);
+                $query->whereDate("$table.created_at",'<=', $tgl_akhir);
             }
         });
         
         $datatables = Datatables::of($data);
         return $datatables
-        ->filter(function($query) use($request){
-            $query->where(function($query) use($request){
+        ->filter(function($query) use($request, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
             });
         })
         ->editcolumn('created_by', function($data) {
@@ -123,6 +132,10 @@ class T_POController extends Controller
     }
 
     public function create() {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         $tanggal = date('Y-m-d');
@@ -133,6 +146,10 @@ class T_POController extends Controller
     }
 
     public function store(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $obat_operasional = new TransaksiPO;
@@ -205,6 +222,10 @@ class T_POController extends Controller
     }
 
     public function destroy_($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $apotek = MasterApotek::find(session('id_apotek_active'));
@@ -271,6 +292,10 @@ class T_POController extends Controller
     }
 
     public function hapus_detail($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $detail_obat_operasional = TransaksiPODetail::find($id);
@@ -629,12 +654,21 @@ class T_POController extends Controller
     }
 
     public function list_pencarian_obat(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_po';
+            $table = 'tb_nota_po';
+        } else {
+            $detTable = 'tb_detail_nota_po_histori';
+            $table = 'tb_nota_po_histori';
+            $hak_akses = 0;
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
-        $data = TransaksiPODetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_detail_nota_po.*', 'a.nama'])
-        ->join('tb_m_obat as a', 'a.id', 'tb_detail_nota_po.id_obat')
-        ->join('tb_nota_po as b', 'b.id', 'tb_detail_nota_po.id_nota')
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_po.is_deleted','=','0');
+        $data = TransaksiPODetail::select([DB::raw('@rownum  := @rownum  + 1 AS no'),"$detTable.*", 'a.nama'])
+        ->join('tb_m_obat as a', 'a.id', "$detTable.id_obat")
+        ->join("$table as b", 'b.id', "$detTable.id_nota")
+        ->where(function($query) use($request, $table){
+            $query->where("$detTable.is_deleted",'=','0');
             $query->where('b.id_apotek_nota','=',session('id_apotek_active'));
         })
         ->orderBy('b.id', 'DESC');
@@ -781,27 +815,37 @@ class T_POController extends Controller
             $counter = count($po->detail_po);
         }
 
+
+        if(session('id_tahun_active') == date('Y')) {
+            $detTable = 'tb_detail_nota_po';
+            $table = 'tb_nota_po';
+        } else {
+            $detTable = 'tb_detail_nota_po_histori';
+            $table = 'tb_nota_po';
+            $hak_akses = 0;
+        }
+
         DB::statement(DB::raw('set @rownum = 0'));
         $data = TransaksiPODetail::select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'),
-                'tb_detail_nota_po.*', 
+                "$detTable.*", 
         ])
-        ->where(function($query) use($request){
-            $query->where('tb_detail_nota_po.is_deleted','=','0');
+        ->where(function($query) use($request, $table, $detTable){
+            $query->where("$detTable.is_deleted",'=','0');
             if(is_null($request->id)) {
-                $query->where('tb_detail_nota_po.id_nota','=',0);
+                $query->where("$detTable.id_nota",'=',0);
             } else {
-                $query->where('tb_detail_nota_po.id_nota','=',$request->id);
+                $query->where("$detTable.id_nota",'=',$request->id);
             }
             
         })
-        ->orderBy('tb_detail_nota_po.id', 'ASC');
+        ->orderBy("$detTable.id", 'ASC');
         
         $datatables = Datatables::of($data);
         return $datatables
-        /*->filter(function($query) use($request){
-            $query->where(function($query) use($request){
-                $query->orwhere('tb_detail_nota_penjualan.id','LIKE','%'.$request->get('search')['value'].'%');
+        /*->filter(function($query) use($request, $table, $detTable){
+            $query->where(function($query) use($request, $table, $detTable){
+                $query->orwhere("$detTable.id",'LIKE','%'.$request->get('search')['value'].'%');
             });
         })  */
         ->editcolumn('action', function($data) use($request, $is_access, $po){
@@ -849,6 +893,10 @@ class T_POController extends Controller
     }
 
     public function AddItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $po = new TransaksiPO;
@@ -885,6 +933,10 @@ class T_POController extends Controller
     }
 
     public function UpdateItem(Request $request) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $id = $request->id;
@@ -926,6 +978,10 @@ class T_POController extends Controller
     }
 
     public function DeleteItem(Request $request, $id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         # yang bisa didelete adalah | yang belum dikonfirm
         DB::beginTransaction(); 
         try{
@@ -1025,6 +1081,10 @@ class T_POController extends Controller
     }
 
     public function destroy($id) {
+        if(session('id_tahun_active') == date('Y')) {
+        } else {
+            return view('page_not_authorized');
+        }
         DB::beginTransaction(); 
         try{
             $apotek = MasterApotek::find(session('id_apotek_active'));

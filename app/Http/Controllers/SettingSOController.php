@@ -59,6 +59,9 @@ class SettingSOController extends Controller
         $data = SettingStokOpnam::select([DB::raw('@rownum  := @rownum  + 1 AS no'),'tb_setting_stok_opnam.*'])
         ->where(function($query) use($request){
             $query->where('tb_setting_stok_opnam.is_deleted','=','0');
+            if(session('id_role_active') != 1) {
+                $query->where('tb_setting_stok_opnam.id_apotek', session('id_apotek_active'));
+            }
         })->orderBy('id', 'ASC');
         
         $datatables = Datatables::of($data);

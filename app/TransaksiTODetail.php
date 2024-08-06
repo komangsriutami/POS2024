@@ -8,7 +8,7 @@ use Auth;
 class TransaksiTODetail extends Model
 {
     // ini tabel nota detail penjualan
-    protected $table = 'tb_detail_nota_transfer_outlet';
+    //protected $table = 'tb_detail_nota_transfer_outlet';
     public $primaryKey = 'id';
     protected $fillable = ['id_nota',
     						'id_obat',
@@ -17,6 +17,20 @@ class TransaksiTODetail extends Model
                             'id_histori_stok',
                             'id_histori_stok_detail'
     						];
+
+    public function __construct()
+    {
+        if(session('id_tahun_active') == date('Y')) {
+            $this->setTable('tb_detail_nota_transfer_outlet');
+        } else {
+            $this->setTable('tb_detail_nota_transfer_outlet_histori');
+        }
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+    }
 
     public function validate(){
     	return Validator::make((array)$this->attributes, [
