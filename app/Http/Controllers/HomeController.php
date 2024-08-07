@@ -6162,7 +6162,7 @@ class HomeController extends Controller
 
     function cari_info(Request $request) {
 
-        $alls = MasterApotek::where('is_deleted', 0)->get();
+        $alls = MasterApotek::where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
 
         $awal = $request->tgl_awal;
 
