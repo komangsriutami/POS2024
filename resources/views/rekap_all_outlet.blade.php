@@ -209,6 +209,9 @@ Rekap Data
                 updateProgressBar();
                 if (currentLoop < totalLoops) {
                     getData(); // Call getData again until totalLoops is reached
+                } else {
+                    overlay.classList.remove('overlay-wrapper');
+                    overlaybody.classList.remove('overlay');
                 }
             },
             error: function(data) {
