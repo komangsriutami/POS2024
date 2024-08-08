@@ -7,9 +7,9 @@ use App\DataTables\TesDataTable;
 use App\DataTables\TesDataTableEditor;
 class TesController extends Controller
 {
-    public function index(TesDataTable $dataTable)
+    public function index()
     {
-        return $dataTable->render('users.index');
+        return view('test');
     }
 
     public function store(TesDataTableEditor $editor)

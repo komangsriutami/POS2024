@@ -6146,13 +6146,8 @@ class HomeController extends Controller
 
 
     public function rekap_all_outlet() {
-        //echo "Sedang maintenance";exit();
-
         $first_day = date('Y-m-d');
-
-
-
-        $apoteks = MasterApotek::where('is_deleted', 0)->limit(1)->get();
+        $apoteks = MasterApotek::where('is_deleted', 0)->get();
 
         return view('rekap_all_outlet')->with(compact('apoteks', 'first_day'));
 
@@ -6161,8 +6156,7 @@ class HomeController extends Controller
 
 
     function cari_info(Request $request) {
-
-        $alls = MasterApotek::where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
+        $alls = MasterApotek::where('is_deleted', 0)->where('id', $request->id_apotek)->get();
 
         $awal = $request->tgl_awal;
 
@@ -6173,39 +6167,6 @@ class HomeController extends Controller
         $tgl_akhir_baru = $akhir.' 23:59:59';
 
         $data_ = '';
-
-        $data_ .= '<table class="table table-bordered table-striped table-hover">
-
-                    <thead>
-
-                        <tr>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">APOTEK</th>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PEMBELIAN</th>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PENJUALLAN</th>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">TOTAL PENJUALAN NON KREDIT</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PENJUALAN KREDIT</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL TT PENJUALAN</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBAYARAN PENJUALAN KREDIT</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBELIAN</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PIUTANG PEMBELIAN</th>
-
-                            <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN TERBAYAR</th>
-
-                            <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN JATUH TEMPO</th>
-
-                        </tr>
-
-                    </thead><tbody>';
-
 
         foreach ($alls as $x => $xyz) {
 
@@ -6281,9 +6242,6 @@ class HomeController extends Controller
                         </tr>
                 ';
         }
-         $data_ .= '                      
-                    </tbody>
-                </table>';
     
 
 
