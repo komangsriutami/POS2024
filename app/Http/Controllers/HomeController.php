@@ -5677,8 +5677,8 @@ class HomeController extends Controller
     public function export_pareto(Request $request) 
 
     {
-        set_time_limit(120);
-        ini_set('memory_limit', '-1'); 
+        //set_time_limit(120);
+        //ini_set('memory_limit', '-1'); 
 
         list($tgl_awal, $tgl_akhir) = HomeController::getDateFilter($request->id_pencarian, $request->tanggal);
         
@@ -5700,8 +5700,8 @@ class HomeController extends Controller
 
     public function export_pembelian(Request $request)
     {
-        set_time_limit(120);
-        ini_set('memory_limit', '-1'); 
+        //set_time_limit(120);
+        //ini_set('memory_limit', '-1'); 
 
         list($tgl_awal, $tgl_akhir) = HomeController::getDateFilter($request->id_pencarian, $request->tanggal);
         
@@ -5719,8 +5719,8 @@ class HomeController extends Controller
     public function export_pareto_all(Request $request) 
 
     {
-        set_time_limit(120);
-        ini_set('memory_limit', '-1'); 
+        //set_time_limit(120);
+        ///ini_set('memory_limit', '-1'); 
 
         list($tgl_awal, $tgl_akhir) = HomeController::getDateFilter($request->id_pencarian, $request->tanggal);
         
