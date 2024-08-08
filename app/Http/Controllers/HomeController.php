@@ -6198,7 +6198,7 @@ class HomeController extends Controller
 
             $total_pembelian_blm_terbayar = $total_pembelian-$total_pembelian_terbayar;
             
-            $getPembelianJT = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $getPembelianJT = DB::select('CALL getSumDetailPembelianJT(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
             $total_pembelian_jatuh_tempo = $getPembelianJT[0]->sum_total2;
 
             $penjualan_closing = DB::select('CALL getSumClosingPenjualan(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
