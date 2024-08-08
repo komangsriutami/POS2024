@@ -6230,21 +6230,20 @@ class HomeController extends Controller
 
             $detail_penjualan_cn = DB::select('CALL getSumDetailPenjualanCn(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-
             $getPembelian = DB::select('CALL getSumDetailPembelian(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
-            $total_pembelian = $getPembelian->sum_total2;
+            $total_pembelian = $getPembelian[0]->sum_total2;
 
             $getPembelianTerbayar = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
-            $total_pembelian_terbayar = $getPembelianTerbayar->sum_total2;
+            $total_pembelian_terbayar = $getPembelianTerbayar[0]->sum_total2;
 
             $total_pembelian_blm_terbayar = $total_pembelian-$total_pembelian_terbayar;
             
             $getPembelianJT = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
-            $total_pembelian_jatuh_tempo = $getPembelianJT->sum_total2;
+            $total_pembelian_jatuh_tempo = $getPembelianJT[0]->sum_total2;
 
             $penjualan_closing = DB::select('CALL getSumClosingPenjualan(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
 
-            $total_tt = $penjualan_closing->total;
+            $total_tt = $penjualan_closing[0]->total;
             $diskon_penjualan_kredit = $detail_penjualan_kredit->total_diskon_persen_vendor + $detail_penjualan_kredit->total_diskon_persen;  
             $total_cash_kredit =  $detail_penjualan_kredit->total - $detail_penjualan_kredit->total_diskon_persen_vendor - $detail_penjualan_kredit->total_diskon_persen;
             $total_cash_kredit_format = number_format($total_cash_kredit,0,',',',');
