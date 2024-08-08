@@ -6207,7 +6207,6 @@ class HomeController extends Controller
                     </thead><tbody>';
 
 
-
         foreach ($alls as $x => $xyz) {
 
             $result = DB::select('SELECT getCountPenjualan(?, ?, ?) AS hit_penjualan', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
@@ -6230,31 +6229,31 @@ class HomeController extends Controller
 
             $detail_penjualan_cn = DB::select('CALL getSumDetailPenjualanCn(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-            $getPembelian = DB::select('CALL getSumDetailPembelian(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $getPembelian = DB::select('CALL getSumDetailPembelian(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
             $total_pembelian = $getPembelian[0]->sum_total2;
 
-            $getPembelianTerbayar = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $getPembelianTerbayar = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
             $total_pembelian_terbayar = $getPembelianTerbayar[0]->sum_total2;
 
             $total_pembelian_blm_terbayar = $total_pembelian-$total_pembelian_terbayar;
             
-            $getPembelianJT = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $getPembelianJT = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
             $total_pembelian_jatuh_tempo = $getPembelianJT[0]->sum_total2;
 
-            $penjualan_closing = DB::select('CALL getSumClosingPenjualan(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $penjualan_closing = DB::select('CALL getSumClosingPenjualan(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
 
             $total_tt = $penjualan_closing[0]->total;
-            $diskon_penjualan_kredit = $detail_penjualan_kredit->total_diskon_persen_vendor + $detail_penjualan_kredit->total_diskon_persen;  
-            $total_cash_kredit =  $detail_penjualan_kredit->total - $detail_penjualan_kredit->total_diskon_persen_vendor - $detail_penjualan_kredit->total_diskon_persen;
+            $diskon_penjualan_kredit = $detail_penjualan_kredit[0]->total_diskon_persen_vendor + $detail_penjualan_kredit[0]->total_diskon_persen;  
+            $total_cash_kredit =  $detail_penjualan_kredit[0]->total - $detail_penjualan_kredit[0]->total_diskon_persen_vendor - $detail_penjualan_kredit[0]->total_diskon_persen;
             $total_cash_kredit_format = number_format($total_cash_kredit,0,',',',');
-            $total_cn = 0 + $detail_penjualan_cn->total - $detail_penjualan_cn->total_diskon_persen;
+            $total_cn = 0 + $detail_penjualan_cn[0]->total - $detail_penjualan_cn[0]->total_diskon_persen;
 
-            $total_diskon = $detail_penjualan->total_diskon_persen + $penjualan2->total_diskon_rp;
-            $total_3 = $detail_penjualan->total-$total_diskon-$total_cn;
+            $total_diskon = $detail_penjualan[0]->total_diskon_persen + $penjualan2[0]->total_diskon_rp;
+            $total_3 = $detail_penjualan[0]->total-$total_diskon-$total_cn;
             $total_3_format = number_format($total_3,0,',',',');
 
-            $total_cash_kredit_terbayar = ($detail_penjualan_kredit_terbayar->total + $penjualan_kredit_terbayar->total_jasa_dokter + $penjualan_kredit_terbayar->total_jasa_resep) - $penjualan_kredit_terbayar->total_debet-$detail_penjualan_kredit_terbayar->total_diskon_vendor;
-            $total_penjualan_kredit_terbayar = $penjualan_kredit_terbayar->total_debet+$total_cash_kredit_terbayar;
+            $total_cash_kredit_terbayar = ($detail_penjualan_kredit_terbayar[0]->total + $penjualan_kredit_terbayar[0]->total_jasa_dokter + $penjualan_kredit_terbayar[0]->total_jasa_resep) - $penjualan_kredit_terbayar[0]->total_debet-$detail_penjualan_kredit_terbayar[0]->total_diskon_vendor;
+            $total_penjualan_kredit_terbayar = $penjualan_kredit_terbayar[0]->total_debet+$total_cash_kredit_terbayar;
             $total_penjualan_kredit_terbayar_format = number_format($total_penjualan_kredit_terbayar,0,',',',');
 
             $total_tf_masuk = number_format($total_penjualan_kredit_terbayar,0,',',',');
