@@ -179,6 +179,11 @@ Rekap Data
         progressBar.css('width', width + '%');
         progressBar.attr('aria-valuenow', width);
         progressBar.text(Math.round(width) + '%');
+
+        if(width == 100) {
+            overlay.classList.remove('overlay-wrapper');
+            overlaybody.classList.remove('overlay');
+        }
     }
 
 
@@ -201,10 +206,6 @@ Rekap Data
                 $("#data_rekap_global tbody").append(data);
             },
             complete: function(data) {
-                if(currentLoop == 100) {
-                    overlay.classList.remove('overlay-wrapper');
-                    overlaybody.classList.remove('overlay');
-                }
                 updateProgressBar();
                 if (currentLoop < totalLoops) {
                     getData(); // Call getData again until totalLoops is reached
