@@ -149,7 +149,19 @@ Rekap Data
             e.preventDefault();
             overlay.classList.add('overlay-wrapper');
             overlaybody.classList.add('overlay');
-            getData();
+            swal({
+                title: "Apakah anda akan yakin melihat rekap data?",
+                text: 'Proses ini akan memerlukan waktu yang cukup lama, mohon bersabar sampai proses selesai. Anda dapat melihat progres load data pada halaman ini.',
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "Ya",
+                cancelButtonText: "Tidak",
+                closeOnConfirm: true
+            },
+            function(){
+                getData();
+            });
         });
 
         $('#tgl_awal, #tgl_akhir').datepicker({
@@ -172,46 +184,34 @@ Rekap Data
 
 
     function getData() {
-        swal({
-            title: "Apakah anda akan yakin melihat rekap datta?",
-            text: 'Proses ini akan memerlukan waktu yang cukup lama, mohon bersabar sampai proses selesai. Anda dapat melihat progres load data pada halaman ini.',
-            type: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#DD6B55",
-            confirmButtonText: "Ya",
-            cancelButtonText: "Tidak",
-            closeOnConfirm: true
-        },
-        function(){
-            $.ajax({
-                type: "GET",
-                url: '{{ url("home/cari_info") }}',
-                async: true,
-                data: {
-                    _token: token,
-                    tgl_awal: $("#tgl_awal").val(),
-                    tgl_akhir: $("#tgl_akhir").val(),
-                    id_apotek:apoteks[currentLoop].id
-                },
-                beforeSend: function(data) {
-                    // replace dengan fungsi loading
-                },
-                success: function(data) {
-                    $("#data_rekap_global tbody").append(data);
-                },
-                complete: function(data) {
-                    updateProgressBar();
-                    if (currentLoop < totalLoops) {
-                        getData(); // Call getData again until totalLoops is reached
-                    }
-
-                    overlay.classList.remove('overlay-wrapper');
-                    overlaybody.classList.remove('overlay');
-                },
-                error: function(data) {
-                    swal("Error!", "Ajax occured.", "error");
+        $.ajax({
+            type: "GET",
+            url: '{{ url("home/cari_info") }}',
+            async: true,
+            data: {
+                _token: token,
+                tgl_awal: $("#tgl_awal").val(),
+                tgl_akhir: $("#tgl_akhir").val(),
+                id_apotek:apoteks[currentLoop].id
+            },
+            beforeSend: function(data) {
+                // replace dengan fungsi loading
+            },
+            success: function(data) {
+                $("#data_rekap_global tbody").append(data);
+            },
+            complete: function(data) {
+                updateProgressBar();
+                if (currentLoop < totalLoops) {
+                    getData(); // Call getData again until totalLoops is reached
                 }
-            });
+
+                overlay.classList.remove('overlay-wrapper');
+                overlaybody.classList.remove('overlay');
+            },
+            error: function(data) {
+                swal("Error!", "Ajax occured.", "error");
+            }
         });
     }
 </script>
