@@ -206,8 +206,10 @@ Rekap Data
                     getData(); // Call getData again until totalLoops is reached
                 }
 
-                overlay.classList.remove('overlay-wrapper');
-                overlaybody.classList.remove('overlay');
+                if(currentLoop == 100) {
+                    overlay.classList.remove('overlay-wrapper');
+                    overlaybody.classList.remove('overlay');
+                }
             },
             error: function(data) {
                 swal("Error!", "Ajax occured.", "error");
