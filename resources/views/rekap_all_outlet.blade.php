@@ -201,14 +201,13 @@ Rekap Data
                 $("#data_rekap_global tbody").append(data);
             },
             complete: function(data) {
-                updateProgressBar();
-                if (currentLoop < totalLoops) {
-                    getData(); // Call getData again until totalLoops is reached
-                }
-
                 if(currentLoop == 100) {
                     overlay.classList.remove('overlay-wrapper');
                     overlaybody.classList.remove('overlay');
+                }
+                updateProgressBar();
+                if (currentLoop < totalLoops) {
+                    getData(); // Call getData again until totalLoops is reached
                 }
             },
             error: function(data) {
