@@ -5,11 +5,6 @@ Rekap Data
 @endsection
 
 @section('breadcrumb')
-<!-- <ol class="breadcrumb float-sm-right">
-    <li class="breadcrumb-item"><a href="#">Transaksi</a></li>
-    <li class="breadcrumb-item"><a href="#">Data Transfer Outlet</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Index</li>
-</ol> -->
 @endsection
 
 @section('content')
@@ -64,11 +59,11 @@ Rekap Data
                                 </div>
                             </div>
                         </form>
-                        <br>
+                        <hr>
                         <div class="progress" style="height: 30px;">
                             <div id="progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div> 
                         </div>
-                        <br>
+                        <hr>
                         <div class="card card-secondary">
                             <div class="card-header border-transparent">
                                 <h3 class="card-title text-center">REKAP SELURUH TRANSAKSI</h3>
@@ -81,42 +76,39 @@ Rekap Data
                                     </button>
                                 </div>
                             </div>
+                            <table class="table table-bordered table-striped table-hover" id="data_rekap_global">
+                                <thead>
+                                    <tr>
+
+                                        <th class="text-center text-white" style="background-color:#00bcd4;">APOTEK</th>
+
+                                        <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PEMBELIAN</th>
+
+                                        <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PENJUALLAN</th>
+
+                                        <th class="text-center text-white" style="background-color:#00bcd4;">TOTAL PENJUALAN NON KREDIT</th>
+
+                                        <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PENJUALAN KREDIT</th>
+
+                                        <th class="text-center text-white" style="background-color:#00acc1;">TOTAL TT PENJUALAN</th>
+
+                                        <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBAYARAN PENJUALAN KREDIT</th>
+
+                                        <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBELIAN</th>
+
+                                        <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PIUTANG PEMBELIAN</th>
+
+                                        <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN TERBAYAR</th>
+
+                                        <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN JATUH TEMPO</th>
+
+                                    </tr>
+
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
                         </div>
-                        <table class="table table-bordered table-striped table-hover" id="data_rekap_global">
-
-                            <thead>
-
-                                <tr>
-
-                                    <th class="text-center text-white" style="background-color:#00bcd4;">APOTEK</th>
-
-                                    <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PEMBELIAN</th>
-
-                                    <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PENJUALLAN</th>
-
-                                    <th class="text-center text-white" style="background-color:#00bcd4;">TOTAL PENJUALAN NON KREDIT</th>
-
-                                    <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PENJUALAN KREDIT</th>
-
-                                    <th class="text-center text-white" style="background-color:#00acc1;">TOTAL TT PENJUALAN</th>
-
-                                    <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBAYARAN PENJUALAN KREDIT</th>
-
-                                    <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBELIAN</th>
-
-                                    <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PIUTANG PEMBELIAN</th>
-
-                                    <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN TERBAYAR</th>
-
-                                    <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN JATUH TEMPO</th>
-
-                                </tr>
-
-                            </thead>
-                            <tbody>
-                                <div id="data_rekap_global"></div>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -125,11 +117,6 @@ Rekap Data
 @endsection
 
 @section('script')
-
-{!! Html::script('assets/qz-tray/dependencies/rsvp-3.1.0.min.js') !!}
-{!! Html::script('assets/qz-tray/dependencies/sha-256.min.js') !!}
-{!! Html::script('assets/qz-tray/qz-tray.js') !!}
-{!! Html::script('assets/qz-tray/qz_print_script.js') !!}
 <script type="text/javascript">
     var token = '{{csrf_token()}}';
     let progressBar = $('#progress-bar');
@@ -140,7 +127,6 @@ Rekap Data
     var apoteks = @json($apoteks);
     var overlay = document.getElementById('overlay-wrapper-id');
     var overlaybody = document.getElementById('overlay-id');
-    var tableBody = document.querySelector('#data_rekap_global tbody');
 
     $(document).ready(function(){
         overlay.classList.remove('overlay-wrapper');

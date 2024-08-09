@@ -6147,7 +6147,12 @@ class HomeController extends Controller
 
     public function rekap_all_outlet() {
         $first_day = date('Y-m-d');
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        $id_role_active = session('id_role_active');
+        if($id_role_active == 1) {
+            $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        } else {
+            $apoteks = MasterApotek::where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
+        }
 
         return view('rekap_all_outlet')->with(compact('apoteks', 'first_day'));
 
@@ -6252,13 +6257,13 @@ class HomeController extends Controller
 
 
     public function rekap_penjualan() {
-
         $first_day = date('Y-m-d');
-
-
-
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
-
+        $id_role_active = session('id_role_active');
+        if($id_role_active == 1) {
+            $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        } else {
+            $apoteks = MasterApotek::where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
+        }
         return view('rekap_penjualan')->with(compact('apoteks', 'first_day'));
 
     }
@@ -6266,8 +6271,7 @@ class HomeController extends Controller
 
 
     function cari_info_penjualan(Request $request) {
-
-        $alls = MasterApotek::where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->get();
+        $alls = MasterApotek::where('id', $request->id_apotek)->where('is_deleted', 0)->get();
 
         $awal = $request->tgl_awal;
 
@@ -6279,423 +6283,44 @@ class HomeController extends Controller
 
         $data_ = '';
 
-        $data_ .= '<table class="table table-bordered table-striped table-hover">
-
-                    <thead>
-
-                        <tr>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">APOTEK</th>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PENJUALLAN</th>
-
-                            <th class="text-center text-white" style="background-color:#FBC02D;">TOTAL PENJUALAN</th>
-
-                            <th class="text-center text-white" style="background-color:#FBC02D;">TOTAL DISKON</th>
-
-                            <th class="text-center text-white" style="background-color:#FBC02D;">TOTAL RETUR</th>
-
-                            <th class="text-center text-white" style="background-color:#FBC02D;">TOTAL PENJULAN FINAL</th>
-
-                            <th class="text-center text-white" style="background-color:#FBC02D;">TOTAL HPP</th>
-
-                             <th class="text-center text-white" style="background-color:#FBC02D;">TOTAL LABA</th>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">TOTAL PENJUALAN NON KREDIT</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PENJUALAN KREDIT</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL TT PENJUALAN</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBAYARAN PENJUALAN KREDIT</th>
-
-                        </tr>
-
-                    </thead><tbody>';
-
         $hit_total_kunjungan_penjualan = 0; $hit_total_penjualan = 0; $hit_total_diskon = 0; $hit_total_retur = 0; $hit_total_penjualan_final = 0; $hit_total_hpp = 0; $hit_total_laba = 0; $hit_penjualan_non_kredit = 0; $hit_total_penjualan_kredit = 0; $hit_total_tt = 0; $hit_total_pembayaran_penjualan_kredit = 0;
 
         foreach ($alls as $x => $xyz) {
+            $result = DB::select('SELECT getCountPenjualan(?, ?, ?) AS hit_penjualan', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
+            $hit_penjualan = $result[0]->hit_penjualan;
 
-            $hit_penjualan = TransaksiPenjualan::where('is_deleted', 0)
+            $detail_penjualan_kredit = DB::select('CALL getSumDetailPenjualanKredit(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
+            $penjualan_kredit =  DB::select('CALL getSumPenjualanKredit(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-                                ->where('id_apotek_nota', $xyz->id)
+            $detail_penjualan = DB::select('CALL getSumDetailPenjualan(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
+            $penjualan2 =  DB::select('CALL getSumPenjualan(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-                                ->whereDate('created_at','>=', $tgl_awal_baru)
+            $detail_penjualan_kredit_terbayar = DB::select('CALL getSumDetailPenjualanKreditTerbayar(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
+            $penjualan_kredit_terbayar =  DB::select('CALL getSumPenjualanKreditTerbayar(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-                                ->whereDate('created_at','<=', $tgl_akhir_baru)
+            $detail_penjualan_cn = DB::select('CALL getSumDetailPenjualanCn(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-                                ->count();
+            $penjualan_closing = DB::select('CALL getSumClosingPenjualan(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
 
-            $detail_penjualan_kredit = DB::table('tb_detail_nota_penjualan')
+            $detail_penjualanAll = DB::select('CALL getSumDetailPenjualanAll(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-                            ->select(
+            $penjualanAll =  DB::select('CALL getSumPenjualanAll(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-                                    DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
+            $detail_penjualan_Allcn = DB::select('CALL getSumDetailPenjualanAllCn(?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
 
-                                    DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
+            $total_cnAll = 0 + $detail_penjualan_Allcn[0]->total - $detail_penjualan_Allcn[0]->total_diskon_persen;
 
-                                    DB::raw('SUM((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) - tb_detail_nota_penjualan.diskon) AS total'),
+            $total_diskonAll = $detail_penjualanAll[0]->total_diskon_persen + $penjualanAll[0]->total_diskon_rp;
 
-                                    DB::raw('SUM(b.diskon_persen/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah)- tb_detail_nota_penjualan.diskon)) AS total_diskon_persen'),
+            $total_All_final = $detail_penjualanAll[0]->total-$total_diskonAll-$total_cnAll;
 
-                                     DB::raw('SUM(a.diskon/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah)- tb_detail_nota_penjualan.diskon)) AS total_diskon_persen_vendor')
+            $total_All_format = number_format($detail_penjualanAll[0]->total,0,',',',');
 
-                                )
-
-                            ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
-
-                            ->leftjoin('tb_vendor_kerjasama as a','a.id','=','b.id_vendor')
-
-                            ->whereDate('b.tgl_nota','>=', $tgl_awal_baru)
-
-                            ->whereDate('b.tgl_nota','<=', $tgl_akhir_baru)
-
-                            ->where('b.id_apotek_nota','=',$xyz->id)
-
-                            ->where('b.is_deleted', 0)
-
-                            ->where('b.is_kredit', 1)
-
-                            ->where('tb_detail_nota_penjualan.is_cn', 0)
-
-                            ->where('tb_detail_nota_penjualan.is_deleted', 0)
-
-                            ->first();
-
-
-
-            /*if($xyz->id == 6) {
-
-                print_r($detail_penjualan_kredit);exit();
-
-            }*/
-
-
-
-            $penjualan_kredit =  DB::table('tb_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
-
-                                DB::raw('SUM(a.biaya) AS total_jasa_resep'),
-
-                                DB::raw('SUM(tb_nota_penjualan.diskon_rp) AS total_diskon_rp'),
-
-                                DB::raw('SUM(tb_nota_penjualan.debet) AS total_debet'))
-
-                        ->join('tb_m_jasa_resep as a','a.id','=','tb_nota_penjualan.id_jasa_resep')
-
-                        ->whereDate('tb_nota_penjualan.tgl_nota','>=', $tgl_awal_baru)
-
-                        ->whereDate('tb_nota_penjualan.tgl_nota','<=', $tgl_akhir_baru)
-
-                        ->where('tb_nota_penjualan.id_apotek_nota','=',$xyz->id)
-
-                        ->where('tb_nota_penjualan.is_deleted', 0)
-
-                        ->where('tb_nota_penjualan.is_kredit', 1)
-
-                        ->first();
-
-
-
-            $detail_penjualan = DB::table('tb_detail_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
-
-                                DB::raw('SUM((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) - tb_detail_nota_penjualan.diskon) AS total'),
-
-                                DB::raw('SUM(b.diskon_persen/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah)- tb_detail_nota_penjualan.diskon)) AS total_diskon_persen'))
-
-                        ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
-
-                        ->whereDate('b.created_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('b.created_at','<=', $tgl_akhir_baru)
-
-                        ->where('b.id_apotek_nota','=',$xyz->id)
-
-                        ->where('b.is_deleted', 0)
-
-                        ->where('b.is_kredit', 0)
-
-                        ->where('tb_detail_nota_penjualan.is_deleted', 0)
-
-                        ->first();
-
-
-
-            $penjualan2 =  DB::table('tb_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
-
-                                DB::raw('SUM(a.biaya) AS total_jasa_resep'),
-
-                                DB::raw('SUM(tb_nota_penjualan.debet) AS total_debet'),
-
-                                DB::raw('SUM(tb_nota_penjualan.harga_wd) AS total_paket_wd'),
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_lab) AS total_lab'),
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_apd) AS total_apd'),
-
-                                DB::raw('SUM(tb_nota_penjualan.diskon_rp) AS total_diskon_rp'))
-
-                        ->join('tb_m_jasa_resep as a','a.id','=','tb_nota_penjualan.id_jasa_resep')
-
-                        ->whereDate('tb_nota_penjualan.created_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('tb_nota_penjualan.created_at','<=', $tgl_akhir_baru)
-
-                        ->where('tb_nota_penjualan.id_apotek_nota','=',$xyz->id)
-
-                        ->where('tb_nota_penjualan.is_deleted', 0)
-
-                        ->where('tb_nota_penjualan.is_kredit', 0)
-
-                        ->first();
-
-
-
-            $detail_penjualan_kredit_terbayar = DB::table('tb_detail_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
-
-                                DB::raw('SUM((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) - tb_detail_nota_penjualan.diskon) AS total'),
-
-                                DB::raw('SUM(b.diskon_persen/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah)- tb_detail_nota_penjualan.diskon)) AS total_diskon_persen'),
-
-                                DB::raw('SUM(b.diskon_vendor/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah)- tb_detail_nota_penjualan.diskon)) AS total_diskon_vendor')
-
-                            )
-
-                        ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
-
-                        ->whereDate('b.is_lunas_pembayaran_kredit_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('b.is_lunas_pembayaran_kredit_at','<=', $tgl_akhir_baru)
-
-                        ->where('b.id_apotek_nota','=',$xyz->id)
-
-                        ->where('b.is_deleted', 0)
-
-                        ->where('b.is_kredit', 1)
-
-                        ->where('b.is_lunas_pembayaran_kredit', 1)
-
-                        ->where('tb_detail_nota_penjualan.is_cn', 0)
-
-                        ->where('tb_detail_nota_penjualan.is_deleted', 0)
-
-                        ->first();
-
-        
-
-            $penjualan_kredit_terbayar =  DB::table('tb_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
-
-                                DB::raw('SUM(a.biaya) AS total_jasa_resep'),
-
-                                DB::raw('SUM(tb_nota_penjualan.diskon_rp) AS total_diskon_rp'),
-
-                                DB::raw('SUM(tb_nota_penjualan.debet) AS total_debet'))
-
-                        ->join('tb_m_jasa_resep as a','a.id','=','tb_nota_penjualan.id_jasa_resep')
-
-                        ->whereDate('tb_nota_penjualan.is_lunas_pembayaran_kredit_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('tb_nota_penjualan.is_lunas_pembayaran_kredit_at','<=', $tgl_akhir_baru)
-
-                        ->where('tb_nota_penjualan.id_apotek_nota','=',$xyz->id)
-
-                        ->where('tb_nota_penjualan.is_deleted', 0)
-
-                        ->where('tb_nota_penjualan.is_kredit', 1)
-
-                        ->where('tb_nota_penjualan.is_lunas_pembayaran_kredit', 1)
-
-                        //->groupBy('tb_nota_penjualan.id')
-
-                        ->first();
-
-
-
-            $detail_penjualan_cn = DB::table('tb_detail_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan'),
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
-
-                                DB::raw('SUM((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) - tb_detail_nota_penjualan.diskon) AS total'),
-
-                                DB::raw('SUM(b.diskon_persen/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn)- tb_detail_nota_penjualan.diskon)) AS total_diskon_persen'))
-
-                        ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
-
-                        ->whereDate('tb_detail_nota_penjualan.cn_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('tb_detail_nota_penjualan.cn_at','<=', $tgl_akhir_baru)
-
-                        ->where('b.id_apotek_nota','=',$xyz->id)
-
-                        ->where('b.is_deleted', 0)
-
-                        ->where('tb_detail_nota_penjualan.is_cn', 1)
-
-                        ->where('tb_detail_nota_penjualan.is_approved', 1)
-
-                        ->where('tb_detail_nota_penjualan.is_deleted', 0)
-
-                        ->where('b.is_kredit', 0)
-
-                        ->first();
-
-
-
-            $penjualan_closing = TransaksiPenjualanClosing::select([DB::raw('SUM(jumlah_tt) as total')])
-
-                                        ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
-
-                                            //$query->where('is_deleted','=','0');
-
-                                            $query->whereDate('tanggal','>=', $tgl_awal_baru);
-
-                                            $query->whereDate('tanggal','<=', $tgl_akhir_baru);
-
-                                            $query->where('id_apotek_nota','=',$xyz->id);
-
-                                        })->first();
-
-            
-
-            $detail_penjualanAll = DB::table('tb_detail_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) AS total_penjualan'),
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
-
-                                DB::raw('SUM((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) - tb_detail_nota_penjualan.diskon) AS total'),
-
-                                DB::raw('SUM(((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah)) - (tb_detail_nota_penjualan.jumlah * tb_detail_nota_penjualan.hb_ppn)) AS total_laba'),
-
-                                DB::raw('SUM((tb_detail_nota_penjualan.jumlah * tb_detail_nota_penjualan.hb_ppn)) AS total_hpp'),
-
-                                DB::raw('SUM(((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) - tb_detail_nota_penjualan.diskon) - (tb_detail_nota_penjualan.jumlah * tb_detail_nota_penjualan.hb_ppn)) as total_laba'),
-
-                                DB::raw('SUM(b.diskon_persen/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah)- tb_detail_nota_penjualan.diskon)) AS total_diskon_persen'))
-
-                        ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
-
-                        ->whereDate('b.created_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('b.created_at','<=', $tgl_akhir_baru)
-
-                        ->where('b.id_apotek_nota','=',$xyz->id)
-
-                        ->where('b.is_deleted', 0)
-
-                        ->where('tb_detail_nota_penjualan.is_deleted', 0)
-
-                        ->first();
-
-
-
-            $penjualanAll =  DB::table('tb_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_jasa_dokter) AS total_jasa_dokter'),
-
-                                DB::raw('SUM(a.biaya) AS total_jasa_resep'),
-
-                                DB::raw('SUM(tb_nota_penjualan.debet) AS total_debet'),
-
-                                DB::raw('SUM(tb_nota_penjualan.harga_wd) AS total_paket_wd'),
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_lab) AS total_lab'),
-
-                                DB::raw('SUM(tb_nota_penjualan.biaya_apd) AS total_apd'),
-
-                                DB::raw('SUM(tb_nota_penjualan.diskon_rp) AS total_diskon_rp'))
-
-                        ->join('tb_m_jasa_resep as a','a.id','=','tb_nota_penjualan.id_jasa_resep')
-
-                        ->whereDate('tb_nota_penjualan.created_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('tb_nota_penjualan.created_at','<=', $tgl_akhir_baru)
-
-                        ->where('tb_nota_penjualan.id_apotek_nota','=',$xyz->id)
-
-                        ->where('tb_nota_penjualan.is_deleted', 0)
-
-                        ->first();
-
-
-
-            $detail_penjualan_Allcn = DB::table('tb_detail_nota_penjualan')
-
-                        ->select(
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) AS total_penjualan'),
-
-                                DB::raw('SUM(tb_detail_nota_penjualan.diskon) AS total_diskon'),
-
-                                DB::raw('SUM((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn) - tb_detail_nota_penjualan.diskon) AS total'),
-
-                                DB::raw('SUM(b.diskon_persen/100 * ((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah_cn)- tb_detail_nota_penjualan.diskon)) AS total_diskon_persen'))
-
-                        ->join('tb_nota_penjualan as b','b.id','=','tb_detail_nota_penjualan.id_nota')
-
-                        ->whereDate('tb_detail_nota_penjualan.cn_at','>=', $tgl_awal_baru)
-
-                        ->whereDate('tb_detail_nota_penjualan.cn_at','<=', $tgl_akhir_baru)
-
-                        ->where('b.id_apotek_nota','=',$xyz->id)
-
-                        ->where('b.is_deleted', 0)
-
-                        ->where('tb_detail_nota_penjualan.is_cn', 1)
-
-                        ->where('tb_detail_nota_penjualan.is_approved', 1)
-
-                        ->where('tb_detail_nota_penjualan.is_deleted', 0)
-
-                        ->first();
-
-
-
-            $total_cnAll = 0 + $detail_penjualan_Allcn->total - $detail_penjualan_Allcn->total_diskon_persen;
-
-            $total_diskonAll = $detail_penjualanAll->total_diskon_persen + $penjualanAll->total_diskon_rp;
-
-            $total_All_final = $detail_penjualanAll->total-$total_diskonAll-$total_cnAll;
-
-            $total_All_format = number_format($detail_penjualanAll->total,0,',',',');
-
-            $total_hpp = $detail_penjualanAll->total_hpp-$total_diskonAll-$total_cnAll;
+            $total_hpp = $detail_penjualanAll[0]->total_hpp-$total_diskonAll-$total_cnAll;
 
             $total_All_hpp_format = number_format($total_hpp,0,',',',');
 
-            $total_All_laba_format = number_format($detail_penjualanAll->total_laba,0,',',',');
+            $total_All_laba_format = number_format($detail_penjualanAll[0]->total_laba,0,',',',');
 
             $total_All_final_format = number_format($total_All_final,0,',',',');
 
@@ -6705,31 +6330,31 @@ class HomeController extends Controller
 
 
 
-            $total_tt = $penjualan_closing->total;
+            $total_tt = $penjualan_closing[0]->total;
 
-            $diskon_penjualan_kredit = $detail_penjualan_kredit->total_diskon_persen_vendor + $detail_penjualan_kredit->total_diskon_persen;  
+            $diskon_penjualan_kredit = $detail_penjualan_kredit[0]->total_diskon_persen_vendor + $detail_penjualan_kredit[0]->total_diskon_persen;  
 
-            $total_cash_kredit =  $detail_penjualan_kredit->total - $detail_penjualan_kredit->total_diskon_persen_vendor - $detail_penjualan_kredit->total_diskon_persen;
+            $total_cash_kredit =  $detail_penjualan_kredit[0]->total - $detail_penjualan_kredit[0]->total_diskon_persen_vendor - $detail_penjualan_kredit[0]->total_diskon_persen;
 
             $total_cash_kredit_format = number_format($total_cash_kredit,0,',',',');
 
 
 
-            $total_cn = 0 + $detail_penjualan_cn->total - $detail_penjualan_cn->total_diskon_persen;
+            $total_cn = 0 + $detail_penjualan_cn[0]->total - $detail_penjualan_cn[0]->total_diskon_persen;
 
 
 
-            $total_diskon = $detail_penjualan->total_diskon_persen + $penjualan2->total_diskon_rp;
+            $total_diskon = $detail_penjualan[0]->total_diskon_persen + $penjualan2[0]->total_diskon_rp;
 
-            $total_3 = $detail_penjualan->total-$total_diskon-$total_cn;
+            $total_3 = $detail_penjualan[0]->total-$total_diskon-$total_cn;
 
             $total_3_format = number_format($total_3,0,',',',');
 
 
 
-            $total_cash_kredit_terbayar = ($detail_penjualan_kredit_terbayar->total + $penjualan_kredit_terbayar->total_jasa_dokter + $penjualan_kredit_terbayar->total_jasa_resep) - $penjualan_kredit_terbayar->total_debet-$detail_penjualan_kredit_terbayar->total_diskon_vendor;
+            $total_cash_kredit_terbayar = ($detail_penjualan_kredit_terbayar[0]->total + $penjualan_kredit_terbayar[0]->total_jasa_dokter + $penjualan_kredit_terbayar[0]->total_jasa_resep) - $penjualan_kredit_terbayar[0]->total_debet-$detail_penjualan_kredit_terbayar[0]->total_diskon_vendor;
 
-            $total_penjualan_kredit_terbayar = $penjualan_kredit_terbayar->total_debet+$total_cash_kredit_terbayar;
+            $total_penjualan_kredit_terbayar = $penjualan_kredit_terbayar[0]->total_debet+$total_cash_kredit_terbayar;
 
             $total_penjualan_kredit_terbayar_format = number_format($total_penjualan_kredit_terbayar,0,',',',');
 
@@ -6741,7 +6366,7 @@ class HomeController extends Controller
 
             $hit_total_kunjungan_penjualan = $hit_total_kunjungan_penjualan + $hit_penjualan; 
 
-            $hit_total_penjualan = $hit_total_penjualan + $detail_penjualanAll->total; 
+            $hit_total_penjualan = $hit_total_penjualan + $detail_penjualanAll[0]->total; 
 
             $hit_total_diskon = $hit_total_diskon + $total_diskonAll; 
 
@@ -6751,7 +6376,7 @@ class HomeController extends Controller
 
             $hit_total_hpp = $hit_total_hpp + $total_hpp; 
 
-            $hit_total_laba = $hit_total_laba + $detail_penjualanAll->total_laba; 
+            $hit_total_laba = $hit_total_laba + $detail_penjualanAll[0]->total_laba; 
 
             $hit_penjualan_non_kredit = $hit_penjualan_non_kredit + $total_3; 
 
@@ -6799,7 +6424,7 @@ class HomeController extends Controller
 
 
 
-        $data_ .= '
+        /*$data_ .= '
 
                         <tr>
 
@@ -6837,7 +6462,7 @@ class HomeController extends Controller
 
                     </tbody>
 
-                </table>';
+                </table>';*/
 
 
 
@@ -6848,12 +6473,14 @@ class HomeController extends Controller
 
 
     public function rekap_pembelian() {
-
         $first_day = date('Y-m-d');
 
-
-
-        $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        $id_role_active = session('id_role_active');
+        if($id_role_active == 1) {
+            $apoteks = MasterApotek::where('is_deleted', 0)->get();
+        } else {
+            $apoteks = MasterApotek::where('is_deleted', 0)->where('id', session('id_apotek_active'))->get();
+        }
 
         return view('rekap_pembelian')->with(compact('apoteks', 'first_day'));
 
@@ -6863,7 +6490,7 @@ class HomeController extends Controller
 
     public function cari_info_pembelian(Request $request) {
 
-       $alls = MasterApotek::where('id_group_apotek', Auth::user()->id_group_apotek)->where('is_deleted', 0)->get();
+       $alls = MasterApotek::where('id', $request->id_apotek)->where('is_deleted', 0)->get();
 
         $awal = $request->tgl_awal;
 
@@ -6875,250 +6502,21 @@ class HomeController extends Controller
 
         $data_ = '';
 
-        $data_ .= '<table class="table table-bordered table-striped table-hover">
-
-                    <thead>
-
-                        <tr>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">APOTEK</th>
-
-                            <th class="text-center text-white" style="background-color:#00bcd4;">COUNT PEMBELIAN</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PEMBELIAN</th>
-
-                            <th class="text-center text-white" style="background-color:#00acc1;">TOTAL PIUTANG PEMBELIAN</th>
-
-                            <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN TERBAYAR</th>
-
-                            <th class="text-center text-white" style="background-color:#0097a7;">TOTAL PEMBELIAN JATUH TEMPO</th>
-
-                        </tr>
-
-                    </thead><tbody>';
-
         foreach ($alls as $x => $xyz) {
 
-            $hit_pembelian = TransaksiPembelian::where('is_deleted', 0)
-
-                                ->where('id_apotek_nota', $xyz->id)
-
-                                ->whereDate('tgl_faktur','>=', $tgl_awal_baru)
-
-                                ->whereDate('tgl_faktur','<=', $tgl_akhir_baru)
-
-                                ->count();
-
-
-
-
-
-            $pembelians = TransaksiPembelian::select([
-
-                            'tb_nota_pembelian.*'])
-
-                            ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
-
-                                $query->where('tb_nota_pembelian.is_deleted','=','0');
-
-                                $query->whereDate('tgl_faktur','>=', $tgl_awal_baru);
-
-                                $query->whereDate('tgl_faktur','<=', $tgl_akhir_baru);
-
-                                $query->where('id_apotek_nota','=',$xyz->id);
-
-                            })
-
-                            ->orderBy('tgl_jatuh_tempo','asc')
-
-                            ->orderBy('id_suplier')
-
-                            ->groupBy('tb_nota_pembelian.id')
-
-                            ->get();
-
-
-
-            $collection = collect();
-
-            $no = 0;
-
-            $total_pembelian=0;
-
-            foreach($pembelians as $rekap) {
-
-                $no++;
-
-                $x = $rekap->detail_pembelian_total[0];
-
-                $total1 = $x->jumlah - ($rekap->diskon1 + $rekap->diskon2);
-
-                $total2 = $total1 + ($total1 * $rekap->ppn/100);
-
-
-
-               $total_pembelian = $total_pembelian + $total2;
-
-            }
-
-
-
-            $pembelians_terbayar = TransaksiPembelian::select([
-
-                            'tb_nota_pembelian.*'])
-
-                            ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
-
-                                $query->where('tb_nota_pembelian.is_lunas','=','1');
-
-                                $query->where('tb_nota_pembelian.is_deleted','=','0');
-
-                                $query->whereDate('lunas_at','>=', $tgl_awal_baru);
-
-                                $query->whereDate('lunas_at','<=', $tgl_akhir_baru);
-
-                                $query->where('id_apotek_nota','=',$xyz->id);
-
-                            })
-
-                            ->orderBy('tgl_jatuh_tempo','asc')
-
-                            ->orderBy('id_suplier')
-
-                            ->groupBy('tb_nota_pembelian.id')
-
-                            ->get();
-
-
-
-            $collection = collect();
-
-            $no = 0;
-
-            $total_pembelian_terbayar=0;
-
-            foreach($pembelians_terbayar as $rekap) {
-
-                $no++;
-
-                $x = $rekap->detail_pembelian_total[0];
-
-                $total1 = $x->jumlah - ($rekap->diskon1 + $rekap->diskon2);
-
-                $total2 = $total1 + ($total1 * $rekap->ppn/100);
-
-
-
-               $total_pembelian_terbayar = $total_pembelian_terbayar + $total2;
-
-            }
-
-
-
-
-
-            $pembelians_blm_terbayar = TransaksiPembelian::select([
-
-                            'tb_nota_pembelian.*'])
-
-                            ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
-
-                                $query->where('tb_nota_pembelian.is_lunas','=','0');
-
-                                $query->where('tb_nota_pembelian.is_deleted','=','0');
-
-                                $query->where('id_apotek_nota','=',$xyz->id);
-
-                            })
-
-                            ->orderBy('tgl_jatuh_tempo','asc')
-
-                            ->orderBy('id_suplier')
-
-                            ->groupBy('tb_nota_pembelian.id')
-
-                            ->get();
-
-
-
-            $collection = collect();
-
-            $no = 0;
-
-            $total_pembelian_blm_terbayar=0;
-
-            foreach($pembelians_blm_terbayar as $rekap) {
-
-                $no++;
-
-                $x = $rekap->detail_pembelian_total[0];
-
-                $total1 = $x->jumlah - ($rekap->diskon1 + $rekap->diskon2);
-
-                $total2 = $total1 + ($total1 * $rekap->ppn/100);
-
-
-
-               $total_pembelian_blm_terbayar = $total_pembelian_blm_terbayar + $total2;
-
-            }
-
-
-
-
-
-            $pembelians_jatuh_tempo = TransaksiPembelian::select([
-
-                            'tb_nota_pembelian.*'])
-
-                            ->where(function($query) use($tgl_awal_baru, $tgl_akhir_baru, $xyz){
-
-                                $query->where('tb_nota_pembelian.is_lunas','=','0');
-
-                                $query->where('tb_nota_pembelian.is_deleted','=','0');
-
-                                $query->whereDate('tgl_jatuh_tempo','>=', $tgl_awal_baru);
-
-                                $query->whereDate('tgl_jatuh_tempo','<=', $tgl_akhir_baru);
-
-                                $query->where('id_apotek_nota','=',$xyz->id);
-
-                            })
-
-                            ->orderBy('tgl_jatuh_tempo','asc')
-
-                            ->orderBy('id_suplier')
-
-                            ->groupBy('tb_nota_pembelian.id')
-
-                            ->get();
-
-
-
-            $collection = collect();
-
-            $no = 0;
-
-            $total_pembelian_jatuh_tempo=0;
-
-            foreach($pembelians_jatuh_tempo as $rekap) {
-
-                $no++;
-
-                $x = $rekap->detail_pembelian_total[0];
-
-                $total1 = $x->jumlah - ($rekap->diskon1 + $rekap->diskon2);
-
-                $total2 = $total1 + ($total1 * $rekap->ppn/100);
-
-
-
-               $total_pembelian_jatuh_tempo = $total_pembelian_jatuh_tempo + $total2;
-
-            }
-
-
-
+            $result = DB::select('SELECT getCountPembelian(?, ?, ?) AS hit_pembelian', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru]);
+            $hit_pembelian = $result[0]->hit_pembelian;
+
+            $getPembelian = DB::select('CALL getSumDetailPembelian(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $total_pembelian = $getPembelian[0]->sum_total2;
+
+            $getPembelianTerbayar = DB::select('CALL getSumDetailPembelianTerbayar(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $total_pembelian_terbayar = $getPembelianTerbayar[0]->sum_total2;
+
+            $total_pembelian_blm_terbayar = $total_pembelian-$total_pembelian_terbayar;
+            
+            $getPembelianJT = DB::select('CALL getSumDetailPembelianJT(?, ?, ?, ?)', [$xyz->id, $tgl_awal_baru, $tgl_akhir_baru, session('id_tahun_active')]);
+            $total_pembelian_jatuh_tempo = $getPembelianJT[0]->sum_total2;
             
 
             $total_pembelian = number_format($total_pembelian,0,',',',');
@@ -7129,40 +6527,25 @@ class HomeController extends Controller
 
             $total_pembelian_jatuh_tempo = number_format($total_pembelian_jatuh_tempo,0,',',',');
 
-            
-
             $data_ .= '
+                    <tr>
 
-                        <tr>
+                        <td>'.$xyz->nama_singkat.'</td>
 
-                            <td>'.$xyz->nama_singkat.'</td>
+                        <td><span class="text-info">'.$hit_pembelian.' invoices</span></td>
 
-                            <td><span class="text-info">'.$hit_pembelian.' invoices</span></td>
+                        <td>'.$total_pembelian.'</td>
 
-                            <td>'.$total_pembelian.'</td>
+                        <td>'.$total_pembelian_blm_terbayar.'</td>
 
-                            <td>'.$total_pembelian_blm_terbayar.'</td>
+                        <td>'.$total_pembelian_terbayar.'</td>
 
-                            <td>'.$total_pembelian_terbayar.'</td>
+                        <td>'.$total_pembelian_jatuh_tempo.'</td>
 
-                            <td>'.$total_pembelian_jatuh_tempo.'</td>
-
-                        </tr>
+                    </tr>
 
                 ';
-
-
-
-           
-
         }
-
-         $data_ .= '                      
-
-                    </tbody>
-
-                </table>';
-
 
 
         return response()->json($data_); 

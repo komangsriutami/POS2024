@@ -5585,7 +5585,8 @@ try {
         $tahun = date('Y');
         $bulan = date('m');
         $first_day = date('Y-m-d');
-        return view('rekap.hpp')->with(compact('tahun', 'bulan', 'first_day'));
+        $jum_obat = MasterObat::count();
+        return view('rekap.hpp')->with(compact('tahun', 'bulan', 'first_day', 'jum_obat'));
     }
 
     public function list_hpp(Request $request) {

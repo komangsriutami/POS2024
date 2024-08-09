@@ -1,4 +1,4 @@
-@extends('layout.app_penjualan')
+@extends('layout.app')
 
 @section('title')
 Harga Pokok Penjualan (HPP)
@@ -13,22 +13,24 @@ Harga Pokok Penjualan (HPP)
 @endsection
 
 @section('content')
-	<style type="text/css">
-        /*custom style, untuk hide datatable length dan search value*/
-        .dataTables_filter{
-            display: none;
-        }
+	    <style type="text/css">
         .select2 {
           width: 100%!important; /* overrides computed width, 100px in your demo */
         }
     </style>
-
-	<div class="card card-info card-outline mb-12 border-left-primary">
-	    <div class="card-body">
-	      	<h4><i class="fa fa-info"></i> Informasi</h4>
-	      	<p>Untuk pencarian, isikan kata yang ingin dicari pada kolom seacrh, lalu tekan enter.</p>
-	    </div>
-	</div>
+    <style type="text/css">
+        #divfix {
+           bottom: 0;
+           right: 0;
+           position: fixed;
+           z-index: 3000;
+            }
+        .format_total {
+            font-size: 18px;
+            font-weight: bold;
+            color:#D81B60;
+        }
+    </style>
 
 	<div class="card card-info card-outline" id="main-box" style="">
   		<div class="card-header">
@@ -38,70 +40,39 @@ Harga Pokok Penjualan (HPP)
         	</h3>
       	</div>
         <div class="card-body">
-        	<form role="form" id="searching_form">
-                <!-- text input -->
-                <div class="row">
-                    <!-- <div class="form-group col-md-3">
-				        {!! Form::label('tahun', 'Pilih Tahun') !!}
-				        <select id="tahun" name="tahun" class="form-control input_select">
-				        	<option value="2020" {!!( "2020" == $tahun ? 'selected' : '')!!}>2020</option>
-				        	<option value="2021" {!!( "2021" == $tahun ? 'selected' : '')!!}>2021</option>
-				        	<option value="2022" {!!( "2022" == $tahun ? 'selected' : '')!!}>2022</option>
-				        </select>
-				    </div>
-				    <div class="form-group col-md-3">
-				        {!! Form::label('bulan', 'Pilih Bulan') !!}
-				        <select id="bulan" name="bulan" class="form-control input_select">
-				        	<option value="1" {!!( "1" == $bulan ? 'selected' : '')!!}>Januari</option>
-				        	<option value="2" {!!( "2" == $bulan ? 'selected' : '')!!}>Februari</option>
-				        	<option value="3" {!!( "3" == $bulan ? 'selected' : '')!!}>Maret</option>
-				        	<option value="4" {!!( "4" == $bulan ? 'selected' : '')!!}>April</option>
-				        	<option value="5" {!!( "5" == $bulan ? 'selected' : '')!!}>Mei</option>
-				        	<option value="6" {!!( "6" == $bulan ? 'selected' : '')!!}>Juni</option>
-				        	<option value="7" {!!( "7" == $bulan ? 'selected' : '')!!}>Juli</option>
-				        	<option value="8" {!!( "8" == $bulan ? 'selected' : '')!!}>Agustus</option>
-				        	<option value="9" {!!( "9" == $bulan ? 'selected' : '')!!}>September</option>
-				        	<option value="10" {!!( "10" == $bulan ? 'selected' : '')!!}>Oktober</option>
-				        	<option value="11" {!!( "11" == $bulan ? 'selected' : '')!!}>November</option>
-				        	<option value="12" {!!( "12" == $bulan ? 'selected' : '')!!}>Desember</option>
-				        </select>
-				    </div> -->
-				    <div class="form-group  col-md-2">
-                        <label>Dari Tanggal</label>
-                        <input type="text" name="tgl_awal"  id="tgl_awal" class="datepicker form-control" autocomplete="off" value="{{ $first_day }}">
-                    </div>
-                    <div class="form-group  col-md-2">
-                        <label>Sampai Tanggal</label>
-                        <input type="text" name="tgl_akhir" id="tgl_akhir" class="datepicker form-control" autocomplete="off" value="{{ $first_day }}">
-                    </div>
-                    <div class="col-lg-12" style="text-align: center;">
-                        <button type="submit" class="btn btn-primary" id="datatable_filter"><i class="fa fa-search"></i> Cari</button>
-                        <span class="btn bg-olive" onClick="export_data()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export</span> 
-                        <!-- <span class="btn bg-olive" onClick="export_data_versi1()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export V2</span>  -->
-                        <!-- <span class="btn bg-olive" onClick="export_data_versi2()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export V2</span>  -->
-                    </div>
+        	<div class="overlay-wrapper" id="overlay-wrapper-hpp-id">
+                <div class="overlay" id="overlay-hpp-id">
                 </div>
-            </form>
-			<hr>
-			<table  id="tb_data_hpp" class="table table-bordered table-striped table-hover" width="100%">
-		    	<thead>
-			        <tr>
-			            <th width="3%" class="text-center">No.</th>
-			            <th width="7%" class="text-center">Tanggal</th>
-			            <th width="7%" class="text-center">Diskon</th>
-			            <th width="20%" class="text-center">Nama Obat</th> 
-			            <th width="7%" class="text-center">Jumlah</th>
-			            <th width="10%" class="text-center">Harga Jual</th>
-			            <th width="10%" class="text-center">Total HJ</th>
-                        <th width="10%" class="text-center">Harga Pokok</th>
-                        <th width="10%" class="text-center">Total HP</th>
-                        <th width="8%" class="text-center">Laba</th>
-                        <th width="8%" class="text-center">% Laba</th>
-			        </tr>
-		        </thead>
-		        <tbody>
-		        </tbody>
-			</table>
+	        	<form role="form" id="searching_form">
+	                <!-- text input -->
+	                <input type="hidden" name="jum_obat" id="jum_obat" value="{{$jum_obat}}">
+	                <?php
+                		$nama_apotek_active = session('nama_apotek_active');
+                	?>
+                	<input type="hidden" name="nama_apotek" id="nama_apotek" value="{{ $nama_apotek_active }}">
+	                <div class="row">
+					    <div class="form-group  col-md-2">
+	                        <label>Dari Tanggal</label>
+	                        <input type="text" name="tgl_awal"  id="tgl_awal" class="datepicker form-control" autocomplete="off" value="{{ $first_day }}">
+	                    </div>
+	                    <div class="form-group  col-md-2">
+	                        <label>Sampai Tanggal</label>
+	                        <input type="text" name="tgl_akhir" id="tgl_akhir" class="datepicker form-control" autocomplete="off" value="{{ $first_day }}">
+	                    </div>
+	                    <div class="col-lg-12" style="text-align: center;">
+	                       <!--  <button type="submit" class="btn btn-primary" id="datatable_filter"><i class="fa fa-search"></i> Cari</button> -->
+	                        <span class="btn bg-olive" onClick="export_data()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export</span> 
+	                        <!-- <span class="btn bg-olive" onClick="export_data_versi1()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export V2</span>  -->
+	                        <!-- <span class="btn bg-olive" onClick="export_data_versi2()"  data-toggle="modal" data-placement="top" title="Export Data"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export V2</span>  -->
+	                    </div>
+	                </div>
+	            </form>
+				<hr>
+	            <div class="progress" style="height: 30px;">
+	                <div id="progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div> 
+	            </div>
+	            <hr>
+	        </div>
         </div>
   	</div>
 @endsection
@@ -109,55 +80,19 @@ Harga Pokok Penjualan (HPP)
 @section('script')
 <script type="text/javascript">
 	var token = '{{csrf_token()}}';
-	var tb_data_hpp = $('#tb_data_hpp').dataTable( {
-			processing: true,
-	        serverSide: true,
-	        stateSave: true,
-	        ajax:{
-			        url: '{{url("penjualan/list_hpp")}}',
-			        data:function(d){
-                        d.tgl_awal = $("#tgl_awal").val();
-                        d.tgl_akhir = $("#tgl_akhir").val();
-				    }
-			     },
-	        columns: [
-	            {data: 'no', name: 'no',width:"2%", class:'text-center'},
-	            {data: 'tgl_nota', name: 'tgl_nota', class:'text-center'},
-	            {data: 'diskon', name: 'diskon', class:'text-center'},
-	            {data: 'id_obat', name: 'id_obat'},
-	            {data: 'jumlah', name: 'jumlah'},
-                {data: 'harga_jual', name: 'harga_jual', class:'text-center'},
-                {data: 'total', name: 'total', class:'text-center'},
-                {data: 'harga_beli_ppn', name: 'harga_beli_ppn', class:'text-center'},
-                {data: 'total_hp', name: 'total_hp', class:'text-center'},
-	            {data: 'laba', name: 'laba', orderable: false, searchable: true},
-                {data: 'persentase_laba', name: 'persentase_laba', orderable: false, searchable: true}
-	        ],
-	        rowCallback: function( row, data, iDisplayIndex ) {
-	            var api = this.api();
-	            var info = api.page.info();
-	            var page = info.page;
-	            var length = info.length;
-	            var index = (page * length + (iDisplayIndex +1));
-	            $('td:eq(0)', row).html(index);
-	        },
-	        stateSaveCallback: function(settings,data) {
-				localStorage.setItem( 'DataTables_' + settings.sInstance, JSON.stringify(data) )
-			},
-			stateLoadCallback: function(settings) {
-			    return JSON.parse( localStorage.getItem( 'DataTables_' + settings.sInstance ) )
-			},
-			drawCallback: function( settings ) {
-		        var api = this.api();
-		    }
- 		});
+	let progressBar = $('#progress-bar');
+	let width = 0;
+	const totalLoops = 1; //ini cukup 1 kali loop $("#jum_obat").val(); // Total items, e.g., 12000
+	//const itemsPerBatch = 1000; // Number of items to process per batch
+	//const totalLoops = Math.ceil(totalItems / itemsPerBatch); // Total number of loops required
+	const increment = 100 / totalLoops;
+    let currentLoop = 0;
+    var overlay = document.getElementById('overlay-wrapper-hpp-id');
+    var overlaybody = document.getElementById('overlay-hpp-id');
 
 	$(document).ready(function(){
-        $("#searching_form").submit(function(e){
-            e.preventDefault();
-            tb_data_hpp.fnDraw(false);
-        });
-
+		overlay.classList.remove('overlay-wrapper');
+        overlaybody.classList.remove('overlay');
         $('#tgl_awal, #tgl_akhir').datepicker({
             autoclose:true,
             format:"yyyy-mm-dd",
@@ -169,8 +104,94 @@ Harga Pokok Penjualan (HPP)
         $('body').addClass('sidebar-collapse');
 	})
 
-    function export_data(){
-        window.open("{{ url('penjualan/export_hpp') }}"+ "?tgl_awal="+$('#tgl_awal').val()+"&tgl_akhir="+$('#tgl_akhir').val(),"_blank");
+   
+
+    function export_data() {
+		swal({
+		  	title: "Apakah anda akan melakukan download data persedian?",
+		  	text: 'Proses ini akan memerlukan waktu yang cukup lama, mohon bersabar sampai proses selesai.',
+		  	type: "warning",
+		  	showCancelButton: true,
+		  	confirmButtonColor: "#DD6B55",
+		  	confirmButtonText: "Ya",
+		  	cancelButtonText: "Tidak",
+		  	closeOnConfirm: true
+		},
+		function(){
+			overlay.classList.add('overlay-wrapper');
+            overlaybody.classList.add('overlay');
+			getData();
+		});
+	}
+
+    function updateProgressBar() {
+        currentLoop++;
+        width += increment;
+        progressBar.css('width', width + '%');
+        progressBar.attr('aria-valuenow', width);
+        progressBar.text(Math.round(width) + '%');
+
+        if(width == 100) {
+            overlay.classList.remove('overlay-wrapper');
+            overlaybody.classList.remove('overlay');
+        }
+    }
+
+    function getData() {
+    	$.ajax({
+        xhrFields: {
+            responseType: 'blob',
+        },
+        type: "GET",
+        url: '{{url("penjualan/export_hpp")}}',
+        async: true,
+        data: {
+            _token: token,
+            tgl_awal: $("#tgl_awal").val(),
+            tgl_akhir: $("#tgl_akhir").val()
+        },
+        beforeSend: function(data){
+            // Optional: Show loading spinner
+        },
+        success: function(result, status, xhr) {
+            updateProgressBar();
+            if (currentLoop < totalLoops) {
+                getData(); // Call getData again until totalLoops is reached
+            } else {
+                var dateObj = new Date();
+                var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                var day = String(dateObj.getDate()).padStart(2, '0');
+                var year = dateObj.getFullYear();
+                var today = day + month + year;
+
+                var namafile = "HPP_" + $("#nama_apotek").val() + "_" + $("#tgl_awal").val() + "-sd-" + $("#tgl_akhir").val() + "_" + today + ".xlsx";
+                var disposition = xhr.getResponseHeader('content-disposition');
+                var matches = /"([^"]*)"/.exec(disposition);
+                var filename = (matches != null && matches[1] ? matches[1] : namafile);
+
+                // Actual download
+                var blob = new Blob([result], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                });
+                var link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = filename;
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                overlay.classList.remove('overlay-wrapper');
+                overlaybody.classList.remove('overlay');
+            }
+        },
+        complete: function(data){
+            // Optional: Hide loading spinner
+        },
+        error: function(data) {
+            swal("Error!", "Ajax occured.", "error");
+        }
+    });
     }
 
     function export_data_versi1(){
@@ -179,6 +200,10 @@ Harga Pokok Penjualan (HPP)
 
     function export_data_versi2(){
         window.open("{{ url('penjualan/export_hpp_v2') }}"+ "?tgl_awal="+$('#tgl_awal').val()+"&tgl_akhir="+$('#tgl_akhir').val(),"_blank");
+    }
+
+     function export_data_backup(){
+        window.open("{{ url('penjualan/export_hpp') }}"+ "?tgl_awal="+$('#tgl_awal').val()+"&tgl_akhir="+$('#tgl_akhir').val(),"_blank");
     }
 </script>
 @endsection

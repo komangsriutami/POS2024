@@ -1102,7 +1102,8 @@ class D_ObatController extends Controller
         $tahun = date('Y');
         $bulan = date('m');
         $first_day = date('Y-m-d');
-        return view('data_obat.persediaan')->with(compact('tahun', 'bulan', 'first_day'));
+        $jum_obat = MasterObat::count();
+        return view('data_obat.persediaan')->with(compact('tahun', 'bulan', 'first_day', 'jum_obat'));
     }
 
     public function list_persediaan(Request $request) {
@@ -1405,542 +1406,110 @@ class D_ObatController extends Controller
         }
     }
 
-    public function reload_export_persediaan(Request $request) {
-        ini_set('memory_limit', '-1'); 
+    function getIdIterasi($iterasi) {
+        if($iterasi == 1) {
+            return array('iterasi' => 1, 'id_awal' => 1, 'id_akhir' => 10);
+        } else if($iterasi == 2) {
+            return array('iterasi' => 2, 'id_awal' => 11, 'id_akhir' => 20);
+        } else if($iterasi == 3) {
+            return array('iterasi' => 3, 'id_awal' => 2001, 'id_akhir' => 3000);
+        } else if($iterasi == 4) {
+            return array('iterasi' => 4, 'id_awal' => 3001, 'id_akhir' => 4000);
+        } else if($iterasi == 5) {
+            return array('iterasi' => 5, 'id_awal' => 4001, 'id_akhir' => 5000);
+        } else if($iterasi == 6) {
+            return array('iterasi' => 6, 'id_awal' => 5001, 'id_akhir' => 6000);
+        } else if($iterasi == 7) {
+            return array('iterasi' => 7, 'id_awal' => 6001, 'id_akhir' => 7000);
+        } else if($iterasi == 8) {
+            return array('iterasi' => 8, 'id_awal' => 7001, 'id_akhir' => 8000);
+        } else if($iterasi == 9) {
+            return array('iterasi' => 9, 'id_awal' => 8001, 'id_akhir' => 9000);
+        } else if($iterasi == 10) {
+            return array('iterasi' => 10, 'id_awal' => 9001, 'id_akhir' => 10000);
+        } else if($iterasi == 11) {
+            return array('iterasi' => 11, 'id_awal' => 10001, 'id_akhir' => 11000);
+        } else if($iterasi == 12) {
+            return array('iterasi' => 12, 'id_awal' => 11001, 'id_akhir' => 12000);
+        } else if($iterasi == 13) {
+            return array('iterasi' => 13, 'id_awal' => 12001, 'id_akhir' => 13000);
+        } else if($iterasi == 14) {
+            return array('iterasi' => 14, 'id_awal' => 13001, 'id_akhir' => 14000);
+        } else if($iterasi == 15) {
+            return array('iterasi' => 15, 'id_awal' => 14001, 'id_akhir' => 15000);
+        }
+    }
 
+    public function reload_export_persediaan(Request $request) {
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $obat = MasterObat::select(DB::raw('MAX(id) as id_obat_last'))->where('is_deleted', 0)->first();
-        $max_id_obat = $obat->id_obat_last;
+        $iterasi = $request->iterasi+1;
+        $getIdIterasi = $this->getIdIterasi($iterasi);
+        $tgl_awal = $request->tgl_awal;
+        $tgl_akhir = $request->tgl_akhir;
 
+        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        $data_all = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+
+        $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial, $getIdIterasi['id_awal'], $getIdIterasi['id_akhir']]);
+        $x = 0;
+
+        $collection = collect();
+        foreach($rekaps as $rekap) {
+            $x++;
+
+            if($rekap->stok_awal_ == 0) {
+                $stok_awal = '0';
+            } else {
+                $stok_awal = $rekap->stok_awal_;
+            }
+
+            if($rekap->stok_akhir_ == 0) {
+                $stok_akhir = '0';
+            } else {
+                $stok_akhir = $rekap->stok_akhir_;
+            }
+
+            if($rekap->hbppn == 0) {
+                $hbppn = '0';
+            } else {
+                $hbppn = $rekap->hbppn;
+            }
+
+            if($rekap->harga_jual == 0) {
+                $harga_jual = '0';
+            } else {
+                $harga_jual = $rekap->harga_jual;
+            }
+
+            $collection[] = array(
+                $x, //a
+                $rekap->id_obat, //b
+                $rekap->barcode, //b
+                $rekap->nama, //c
+                $stok_awal, //d
+                $stok_akhir,
+                $hbppn,
+                $harga_jual
+            );
+        }
+
+        if(isset($data_all)) {
+            $mergedCollection = $data_all->merge($collection);
+        } else {
+            $mergedCollection = $collection;
+        }
         $expiresAt = now()->addDay(1);
 
-        $data_all = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
-        if(isset($data_all)) {
-            $collection = collect();
-            $nomor = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_data_'.$apotek->id);
-            if(isset($data_all)) {
-                $nomor = $nomor+1;
-                $last = $nomor+999;
-            } else {
-                $nomor = 1;
-                $last = $nomor+999;
-            }
-
-            if($nomor < $max_id_obat) {
-                $rekaps = $data_all->whereBetween('id_obat', [$nomor, $last]);
-                $no = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_no_'.$apotek->id);
-                if(isset($data_all)) {
-                    $no = $no+1;
-                } else {
-                    $no = 1;
-                }
-               
-                foreach($rekaps as $rekap) {
-                    $awal = $rekap->akhiran_stok;
-                    $akhir = $rekap->akhiran_stok;
-                    $harga_pokok = $rekap->harga_beli_ppn;
-                    $keterangan = 'last hbppn master -'.$rekap->id_histori_awal.' - '.$rekap->id_histori_akhir;
-                    $first_so = '0';
-                    $last_so = '0';
-                    
-                    if(!empty($rekap->id_histori_awal)) {
-                        $cek_awal = $this->cari_stok(1, $rekap->id_histori_awal);
-                        $awal = $cek_awal['stok'];
-                        $awal_id_jenis_transaksi = $cek_awal['id_jenis_transaksi'];
-                        if($awal_id_jenis_transaksi == 11) {
-                            $first_so = 1;
-                        }
-
-                        if(empty($rekap->id_histori_akhir)) {
-                            $cari_data_awal = DB::table('tb_histori_stok_'.$inisial.'')
-                                                    ->select([
-                                                        DB::raw('tb_histori_stok_'.$inisial.'.*')
-                                                    ])
-                                                    ->where(function($query) use($request, $rekap){
-                                                        $tglLast = date("Y-m-d", strtotime($request->tgl_awal."- 1 day"));
-                                                        $tglLast = $tglLast. '00:00:01';
-                                                        $tglLast = date('Y-m-d H:i:s', strtotime($tglLast));
-                                                        $query->whereRaw('DATE(created_at) <= "'.$tglLast.'"');
-                                                        $query->whereRaw('id_obat ='.$rekap->id_obat.'');
-                                                    })
-                                                    ->orderBy('id', 'ASC')
-                                                    ->first();
-
-                            $cari_data_akhir = DB::table('tb_histori_stok_'.$inisial.'')
-                                                    ->select([
-                                                        DB::raw('tb_histori_stok_'.$inisial.'.*')
-                                                    ])
-                                                    ->where(function($query) use($request, $rekap){
-                                                        $tglLast = date("Y-m-d", strtotime($request->tgl_akhir));
-                                                        $tglLast = $tglLast. '23:59:59';
-                                                        $tglLast = date('Y-m-d H:i:s', strtotime($tglLast));
-                                                        $query->whereRaw('DATE(created_at) <= "'.$tglLast.'"');
-                                                        $query->whereRaw('id_obat ='.$rekap->id_obat.'');
-                                                    })
-                                                    ->orderBy('id', 'ASC')
-                                                    ->first();
-
-                            $keterangan = 'hbppn histori -';
-                            if(empty($cari_data_awal)) {
-                                $awal = 0;
-                                $awal_id_jenis_transaksi = 0;
-                            } else {
-                                $awal = $cari_data_awal->stok_akhir;
-                                $awal_id_jenis_transaksi = $cari_data_awal->id_jenis_transaksi;
-                                if($awal_id_jenis_transaksi == 11) {
-                                    $first_so = 1;
-                                }
-
-                                $keterangan .= $cari_data_awal->id;
-                            }
-
-                            if(empty($cari_data_akhir)) {
-                                $akhir = 0;
-                                $akhir_id_jenis_transaksi = 0;
-                            } else {
-                                $akhir = $cari_data_akhir->stok_akhir;
-                                $akhir_id_jenis_transaksi = $cari_data_akhir->id_jenis_transaksi;
-                                $harga_pokok = $cari_data_akhir->hb_ppn;
-                                if($akhir_id_jenis_transaksi == 11) {
-                                    $last_so = 1;
-                                }
-
-                                $keterangan .= ' - '.$cari_data_akhir->id;
-                            }
-                        } else {
-                            $cek_akhir = $this->cari_stok(2, $rekap->id_histori_akhir);
-                            $akhir = $cek_akhir['stok'];
-                            $harga_pokok = $cek_akhir['hb_ppn'];
-                            $keterangan = 'hbppn histori -'.$rekap->id_histori_awal.' - '.$rekap->id_histori_akhir;
-                            $akhir_id_jenis_transaksi = $cek_akhir['id_jenis_transaksi'];
-
-                            if($akhir_id_jenis_transaksi == 11) {
-                                $last_so = 1;
-                            }
-                        }
-                    } else {
-                        if(empty($rekap->id_histori_akhir)) {
-                            $cari_data_awal = DB::table('tb_histori_stok_'.$inisial.'')
-                                                    ->select([
-                                                        DB::raw('tb_histori_stok_'.$inisial.'.*')
-                                                    ])
-                                                    ->where(function($query) use($request, $rekap){
-                                                        $tglLast = date("Y-m-d", strtotime($request->tgl_awal."- 1 day"));
-                                                        $tglLast = $tglLast. '00:00:01';
-                                                        $tglLast = date('Y-m-d H:i:s', strtotime($tglLast));
-                                                        $query->whereRaw('DATE(created_at) <= "'.$tglLast.'"');
-                                                        $query->whereRaw('id_obat ='.$rekap->id_obat.'');
-                                                    })
-                                                    ->orderBy('id', 'DESC')
-                                                    ->first();
-
-                            $cari_data_akhir = DB::table('tb_histori_stok_'.$inisial.'')
-                                                    ->select([
-                                                        DB::raw('tb_histori_stok_'.$inisial.'.*')
-                                                    ])
-                                                    ->where(function($query) use($request, $rekap){
-                                                        $tglLast = date("Y-m-d", strtotime($request->tgl_akhir));
-                                                        $tglLast = $tglLast. '23:59:59';
-                                                        $tglLast = date('Y-m-d H:i:s', strtotime($tglLast));
-                                                        $query->whereRaw('DATE(created_at) <= "'.$tglLast.'"');
-                                                        $query->whereRaw('id_obat ='.$rekap->id_obat.'');
-                                                    })
-                                                    ->orderBy('id', 'DESC')
-                                                    ->first();
-
-                            $keterangan = 'hbppn histori -';
-                            if(empty($cari_data_awal)) {
-                                $awal = 0;
-                                $awal_id_jenis_transaksi = 0;
-                            } else {
-                                $awal = $cari_data_awal->stok_akhir;
-                                $awal_id_jenis_transaksi = $cari_data_awal->id_jenis_transaksi;
-                                if($awal_id_jenis_transaksi == 11) {
-                                    $first_so = 1;
-                                }
-
-                                $keterangan .= $cari_data_awal->id;
-                            }
-
-                            if(empty($cari_data_akhir)) {
-                                $akhir = 0;
-                                $akhir_id_jenis_transaksi = 0;
-                            } else {
-                                $akhir = $cari_data_akhir->stok_akhir;
-                                $akhir_id_jenis_transaksi = $cari_data_akhir->id_jenis_transaksi;
-                                $harga_pokok = $cari_data_akhir->hb_ppn;
-                                if($akhir_id_jenis_transaksi == 11) {
-                                    $last_so = 1;
-                                }
-
-                                $keterangan .= ' - '.$cari_data_akhir->id;
-                            }
-                        } else {
-                            $cek_akhir = $this->cari_stok(2, $rekap->id_histori_akhir);
-                            $akhir = $cek_akhir['stok'];
-                            $harga_pokok = $cek_akhir['hb_ppn'];
-                            $keterangan = 'hbppn histori -'.$rekap->id_histori_awal.' - '.$rekap->id_histori_akhir;
-                            $akhir_id_jenis_transaksi = $cek_akhir['id_jenis_transaksi'];
-                            if($akhir_id_jenis_transaksi == 11) {
-                                $last_so = 1;
-                            }
-                        }
-                    }
-                    
-                    $jumlah = $rekap->total_jual;
-                    $total = $jumlah * $rekap->harga_jual;
-                    $total_hp = $jumlah*$harga_pokok;
-                    $laba = $total-$total_hp;
-                   
-
-                    // | 5/9/2021 | Sri Utami
-                    /*if($laba < 0) {
-                        $harga_pokok = $rekap->harga_beli;
-                        $keterangan = 'harga beli + ppn tidak sesuai (dihitung dari harga beli). jika masih tidak sesuai, maka sesuaikan harga di data master.';
-                    } */
-                    /*$harga_pokok_cek = $harga_pokok*5;
-                    if($harga_pokok == '' || $harga_pokok_cek < $rekap->harga_jual) {
-                        $harga_pokok = $rekap->harga_beli;
-                        $keterangan = 'harga beli + ppn tidak sesuai (dihitung dari harga beli). jika masih tidak sesuai, maka sesuaikan harga di data master.';
-                    }*/
-
-                    if($awal == 0) {
-                        $awal = '0';
-                    }
-
-                    if($akhir == 0) {
-                        $akhir = '0';
-                    }
-
-                    if($rekap->total_jual == 0) {
-                        $rekap->total_jual = '0';
-                    }
-
-                    if($rekap->total_beli == 0) {
-                        $rekap->total_beli = '0';
-                    }
-
-                    if($rekap->total_transfer_keluar == 0) {
-                        $rekap->total_transfer_keluar = '0';
-                    }
-
-                    if($rekap->total_transfer_masuk == 0) {
-                        $rekap->total_transfer_masuk = '0';
-                    }
-
-                    if($rekap->total_plus == 0) {
-                        $rekap->total_plus = '0';
-                    }
-
-                    if($rekap->total_min == 0) {
-                        $rekap->total_min = '0';
-                    }
-
-                    if($rekap->total_retur == 0) {
-                        $rekap->total_retur = '0';
-                    }
-
-                    /*if($rekap->total_jual > 0 || $rekap->total_retur > 0 || $rekap->total_beli > 0 || $rekap->total_transfer_masuk > 0 || $rekap->total_transfer_keluar > 0 || $rekap->total_plus > 0 || $rekap->total_min > 0) {
-                        $awal = $akhir;
-                    } else {
-                        $awal = $akhir;
-                    }*/
-
-                    $collection[] = array(
-                        $no, //a
-                        $rekap->id_obat, //b
-                        $rekap->barcode, //b
-                        $rekap->nama, //c
-                        $awal, //d
-                        $rekap->total_jual, //e
-                        $rekap->total_retur, 
-                        $rekap->total_beli,  //f
-                        $rekap->total_transfer_keluar, //g
-                        $rekap->total_transfer_masuk, //h
-                        $rekap->total_plus, //i
-                        $rekap->total_min, //j
-                        $akhir, //k
-                        $first_so, //n
-                        $last_so, //o
-                        $harga_pokok, //l | 5/9/2021 | Sri Utami
-                        $rekap->harga_jual, //m
-                        $keterangan //p
-                    );
-
-                    //dd($collection);
-                    $no++;
-                }
-
-                $cek_ = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
-                if(isset($cek_)) {
-                    $merged = $cek_->merge($collection); 
-                    Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
-                    Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id, $merged, $expiresAt);
-                    Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_data_'.$apotek->id);
-                    Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_data_'.$apotek->id, $last, $expiresAt);
-                    Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_no_'.$apotek->id);
-                    Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_no_'.$apotek->id, $no, $expiresAt);
-                } else {
-                    Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
-                    Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id, $collection, $expiresAt);
-                    Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_data_'.$apotek->id);
-                    Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_data_'.$apotek->id, $last, $expiresAt);
-                    Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_no_'.$apotek->id);
-                    Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_no_'.$apotek->id, $no, $expiresAt);
-                }
-
-                echo 0;
-            } else {
-                echo 1;
-            }
-        } else {
-            $awal = DB::table('tb_histori_stok_'.$inisial.'')
-                        ->select([
-                            DB::raw('MIN(tb_histori_stok_'.$inisial.'.id) as id'),
-                            'tb_histori_stok_'.$inisial.'.id_obat'
-                        ])
-                        ->where(function($query) use($request){
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal.' 00:00:01';
-                                $tgl_awal       = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir.' 23:59:59';
-                                $tgl_akhir      = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $akhir = DB::table('tb_histori_stok_'.$inisial.'')
-                        ->select([
-                            DB::raw('MAX(tb_histori_stok_'.$inisial.'.id) as id'),
-                            'tb_histori_stok_'.$inisial.'.id_obat'
-                        ])
-                        ->where(function($query) use($request){
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal.' 00:00:01';
-                                $tgl_awal       = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir.' 23:59:59';
-                                $tgl_akhir      = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $p_plus = DB::table('tb_histori_stok_'.$inisial.'')
-                        ->select([
-                            DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_plus'),
-                            'tb_histori_stok_'.$inisial.'.id_obat'
-                        ])
-                        ->where(function($query) use($request){
-                            $query->whereRaw('id_jenis_transaksi = 9');
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal.' 00:00:01';
-                                $tgl_awal       = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir.' 23:59:59';
-                                $tgl_akhir      = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $p_min = DB::table('tb_histori_stok_'.$inisial.'')
-                        ->select([
-                            DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_min'),
-                            'tb_histori_stok_'.$inisial.'.id_obat'
-                        ])
-                        ->where(function($query) use($request){
-                            $query->whereRaw('id_jenis_transaksi = 10');
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal.' 00:00:01';
-                                $tgl_awal       = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir.' 23:59:59';
-                                $tgl_akhir      = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $penjualan = DB::table('tb_detail_nota_penjualan')
-                        ->select([
-                            DB::raw('SUM(jumlah) as total_jual'),
-                            'id_obat'
-                        ])
-                        ->join('tb_nota_penjualan as a', 'a.id', 'tb_detail_nota_penjualan.id_nota')
-                        ->where(function($query) use($request){
-                            $query->whereRaw('a.is_deleted = 0');
-                            $query->whereRaw('a.id_apotek_nota = '.session('id_apotek_active').'');
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal;
-                                $tgl_awal       = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir;
-                                $tgl_akhir      = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $retur = DB::table('tb_histori_stok_'.$inisial.'')
-                        ->select([
-                            DB::raw('SUM(tb_histori_stok_'.$inisial.'.jumlah) as total_retur'),
-                            'tb_histori_stok_'.$inisial.'.id_obat'
-                        ])
-                        ->where(function($query) use($request){
-                            $query->whereRaw('id_jenis_transaksi = 5');
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal.' 00:00:01';
-                                $tgl_awal       = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir.' 23:59:59';
-                                $tgl_akhir      = date('Y-m-d H:i:s',strtotime($dd));
-                                $query->whereRaw('DATE(created_at) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $pembelian = DB::table('tb_detail_nota_pembelian')
-                        ->select([
-                            DB::raw('SUM(jumlah) as total_beli'),
-                            'id_obat'
-                        ])
-                        ->join('tb_nota_pembelian as a', 'a.id', 'tb_detail_nota_pembelian.id_nota')
-                        ->where(function($query) use($request){
-                            $query->whereRaw('a.is_deleted = 0');
-                            $query->whereRaw('a.id_apotek_nota = '.session('id_apotek_active').'');
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal;
-                                $tgl_awal       = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir;
-                                $tgl_akhir      = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $transfer_keluar = DB::table('tb_detail_nota_transfer_outlet')
-                        ->select([
-                            DB::raw('SUM(jumlah) as total_transfer'),
-                            'id_obat'
-                        ])
-                        ->join('tb_nota_transfer_outlet as a', 'a.id', 'tb_detail_nota_transfer_outlet.id_nota')
-                        ->where(function($query) use($request){
-                            $query->whereRaw('a.is_deleted = 0');
-                            $query->whereRaw('a.id_apotek_nota = '.session('id_apotek_active').'');
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal;
-                                $tgl_awal       = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir;
-                                $tgl_akhir      = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $transfer_masuk = DB::table('tb_detail_nota_transfer_outlet')
-                        ->select([
-                            DB::raw('SUM(jumlah) as total_transfer'),
-                            'id_obat'
-                        ])
-                        ->join('tb_nota_transfer_outlet as a', 'a.id', 'tb_detail_nota_transfer_outlet.id_nota')
-                        ->where(function($query) use($request){
-                            $query->whereRaw('a.is_deleted = 0');
-                            $query->whereRaw('a.id_apotek_tujuan = '.session('id_apotek_active').'');
-                            if($request->tgl_awal != "") {
-                                $dd = $request->tgl_awal;
-                                $tgl_awal       = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) >= "'.$tgl_awal.'"');
-                            }
-
-                            if($request->tgl_akhir != "") {
-                                $dd = $request->tgl_akhir;
-                                $tgl_akhir      = date('Y-m-d',strtotime($dd));
-                                $query->whereRaw('DATE(a.tgl_nota) <= "'.$tgl_akhir.'"');
-                            }
-                        })
-                        ->groupBy('id_obat');
-
-            $rekaps = DB::table('tb_m_stok_harga_'.$inisial.'')
-                        ->select([
-                            'tb_m_stok_harga_'.$inisial.'.id',
-                            'tb_m_stok_harga_'.$inisial.'.id_obat',
-                            'tb_m_stok_harga_'.$inisial.'.harga_jual',
-                            'tb_m_stok_harga_'.$inisial.'.harga_beli',
-                            'tb_m_stok_harga_'.$inisial.'.harga_beli_ppn',
-                            'tb_m_stok_harga_'.$inisial.'.stok_awal as awalan_stok',
-                            'tb_m_stok_harga_'.$inisial.'.stok_akhir as akhiran_stok',
-                            'tb_m_obat.nama', 
-                            'tb_m_obat.barcode',
-                            'a.id as id_histori_awal',
-                            'b.id as id_histori_akhir',
-                            'c.total_jual',
-                            'd.total_beli',
-                            'e.total_transfer as total_transfer_keluar',
-                            'f.total_transfer as total_transfer_masuk',
-                            'g.total_plus',
-                            'h.total_min',
-                            'i.total_retur'
-                        ])
-                        ->join('tb_m_obat', 'tb_m_obat.id', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$awal->toSql()}) as a"), 'a.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$akhir->toSql()}) as b"), 'b.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$penjualan->toSql()}) as c"), 'c.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$retur->toSql()}) as i"), 'i.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$pembelian->toSql()}) as d"), 'd.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$transfer_keluar->toSql()}) as e"), 'e.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$transfer_masuk->toSql()}) as f"), 'f.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$p_plus->toSql()}) as g"), 'g.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->leftjoin(DB::raw("({$p_min->toSql()}) as h"), 'h.id_obat', '=', 'tb_m_stok_harga_'.$inisial.'.id_obat')
-                        ->where(function($query) use($request, $inisial){
-                            $query->whereRaw('tb_m_stok_harga_'.$inisial.'.is_deleted = 0');
-                            $query->whereRaw('tb_m_obat.is_deleted = 0');
-                        })
-                        ->orderBy('tb_m_stok_harga_'.$inisial.'.id_obat', 'ASC')
-                        ->get();
-
-            Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
-            Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id, $rekaps, $expiresAt);
-            echo 0;
-        }   
+        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id, $mergedCollection, $expiresAt);
+        echo 0;
     }
 
     public function clear_cache_persediaan(Request $request) {
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_data_'.$apotek->id);
-        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
         Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
-        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_last_no_'.$apotek->id);
     }
 
     public function export_persediaan(Request $request) 
@@ -1950,7 +1519,7 @@ class D_ObatController extends Controller
 
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
-        $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial]);
+       /* $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial]);
         $x = 0;
         $collection = collect();
         foreach($rekaps as $rekap) {
@@ -1990,11 +1559,10 @@ class D_ObatController extends Controller
                     $hbppn,
                     $harga_jual
                 );
-        }
+        }*/
 
 
-        //$collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_data_all_'.$apotek->id);
-
+        $collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
         $now = date('YmdHis'); // WithColumnFormatting
         $tgl_awal = date('Ymd', strtotime($request->tgl_awal));
         $tgl_akhir = date('Ymd', strtotime($request->tgl_akhir));

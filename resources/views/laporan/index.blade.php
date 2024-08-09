@@ -35,9 +35,10 @@ Laporan
 	            <li class="nav-item">
 	                <a class="nav-link active" id="custom-content-below-home-tab" data-toggle="pill" href="#custom-content-below-home" role="tab" aria-controls="custom-content-below-home" aria-selected="true">Sekilas Bisnis</a>
 	            </li>
-	            <!-- <li class="nav-item">
+	            <li class="nav-item">
 	                <a class="nav-link" id="custom-content-below-penjualan-tab" data-toggle="pill" href="#custom-content-below-penjualan" role="tab" aria-controls="custom-content-below-penjualan" aria-selected="false">Penjualan</a>
 	            </li>
+	            <!-- 
 	            <li class="nav-item">
 	                <a class="nav-link" id="custom-content-below-pembelian-tab" data-toggle="pill" href="#custom-content-below-pembelian" role="tab" aria-controls="custom-content-below-pembelian" aria-selected="false">Pembelian</a>
 	            </li>
@@ -58,24 +59,9 @@ Laporan
 	            <div class="tab-pane fade active show" id="custom-content-below-home" role="tabpanel" aria-labelledby="custom-content-below-home-tab">
 	            	@include('laporan._form_home')
 	            </div>
-	            <!-- <div class="tab-pane fade" id="custom-content-below-penjualan" role="tabpanel" aria-labelledby="custom-content-below-penjualan-tab">
-	            	@include('laporan._form_penjualan')
+	            <div class="tab-pane fade" id="custom-content-below-penjualan" role="tabpanel" aria-labelledby="custom-content-below-penjualan-tab">
+	                @include('laporan._form_penjualan')
 	            </div>
-	            <div class="tab-pane fade" id="custom-content-below-pembelian" role="tabpanel" aria-labelledby="custom-content-below-pembelian-tab">
-	                @include('laporan._form_pembelian')
-	            </div>
-	            <div class="tab-pane fade" id="custom-content-below-produk" role="tabpanel" aria-labelledby="custom-content-below-produk-tab">
-	                @include('laporan._form_produk')
-	            </div>
-	            <div class="tab-pane fade" id="custom-content-below-aset" role="tabpanel" aria-labelledby="custom-content-below-aset-tab">
-	                @include('laporan._form_aset')
-	            </div>
-	            <div class="tab-pane fade" id="custom-content-below-bank" role="tabpanel" aria-labelledby="custom-content-below-bank-tab">
-	                @include('laporan._form_bank')
-	            </div>
-	            <div class="tab-pane fade" id="custom-content-below-pajak" role="tabpanel" aria-labelledby="custom-content-below-pajak-tab">
-	                @include('laporan._form_pajak')
-	            </div> -->
 	        </div>
 	    </div>
 	    <!-- /.card -->
