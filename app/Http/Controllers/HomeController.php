@@ -4236,7 +4236,7 @@ class HomeController extends Controller
 
     public function resume_pareto_load_view(Request $request) {
 
-        ini_set('memory_limit', '-1'); 
+       // ini_set('memory_limit', '-1'); 
 
 
 
@@ -4978,8 +4978,8 @@ class HomeController extends Controller
     public function list_pareto_penjualan(Request $request)
 
     {
-        set_time_limit(120);
-        ini_set('memory_limit', '-1'); 
+       /* set_time_limit(120);
+        ini_set('memory_limit', '-1'); */
         $order = $request->get('order');
         $columns = $request->get('columns');
         $order_column = $columns[$order[0]['column']]['data'];
@@ -5648,7 +5648,7 @@ class HomeController extends Controller
     }
 
     public function clear_cache() {
-        ini_set('memory_limit', '-1');
+       // ini_set('memory_limit', '-1');
         $super_admin = session('super_admin');
         $all_apotek = MasterApotek::where(function($query) use($super_admin){
             $query->where('tb_m_apotek.is_deleted', '=', '0');
@@ -5769,7 +5769,7 @@ class HomeController extends Controller
 
     {
 
-        ini_set('memory_limit', '-1'); 
+      //  ini_set('memory_limit', '-1'); 
 
 
 
@@ -5799,7 +5799,7 @@ class HomeController extends Controller
 
     {
 
-        ini_set('memory_limit', '-1'); 
+       // ini_set('memory_limit', '-1'); 
 
 
 
@@ -5875,7 +5875,7 @@ class HomeController extends Controller
 
     {
 
-        ini_set('memory_limit', '-1'); 
+       // ini_set('memory_limit', '-1'); 
 
         $order = $request->get('order');
 

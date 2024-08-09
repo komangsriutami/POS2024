@@ -1007,7 +1007,7 @@ class D_ObatController extends Controller
 
     public function export(Request $request) 
     {
-        ini_set('memory_limit', '-1'); 
+        //ini_set('memory_limit', '-1'); 
         
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
@@ -3674,7 +3674,7 @@ class D_ObatController extends Controller
 
 
     public function reload_data_histori_data() {
-        ini_set('memory_limit', '-1'); 
+      //  ini_set('memory_limit', '-1'); 
         $obats = MasterObat::where('is_deleted', 0)->whereBetween('id', [101, 200])->get();
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $id_apotek = $apotek->id;
