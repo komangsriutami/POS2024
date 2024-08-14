@@ -74,9 +74,9 @@ Persediaan Obat
 	var token = '{{csrf_token()}}';
 	let progressBar = $('#progress-bar');
 	let width = 0;
-	const totalItems = 1;//$("#jum_obat").val(); // Total items, e.g., 12000
-	const itemsPerBatch = 1000; // Number of items to process per batch
-	const totalLoops = 1;//Math.ceil(totalItems / itemsPerBatch); // Total number of loops required
+	const totalItems = $("#jum_obat").val(); // Total items, e.g., 12000
+	const itemsPerBatch = 200; // Number of items to process per batch
+	const totalLoops = Math.ceil(totalItems / itemsPerBatch); // Total number of loops required
 	const increment = 100 / totalLoops;
     let currentLoop = 0;
     var overlay = document.getElementById('overlay-wrapper-persediaan-id');
@@ -98,7 +98,7 @@ Persediaan Obat
 
 
 	function export_data() {
-		//alert(totalLoops);
+		alert(totalLoops);
 		swal({
 		  	title: "Apakah anda akan melakukan download data persedian?",
 		  	text: 'Proses ini akan memerlukan waktu yang cukup lama, mohon bersabar sampai proses selesai.',
@@ -143,7 +143,6 @@ Persediaan Obat
 			},
 			error: function(data) {
 				swal("Error!", "Ajax occured.", "error");
-				clear_cache();
 			}
 		});
 	}
@@ -228,7 +227,7 @@ Persediaan Obat
 	            overlaybody.classList.remove('overlay');
 		    },
 			complete: function(data){
-				
+				clear_cache();
 			},
 			error: function(data) {
 				swal("Error!", "Ajax occured.", "error");

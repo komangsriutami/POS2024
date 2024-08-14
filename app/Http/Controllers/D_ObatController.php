@@ -1407,37 +1407,11 @@ class D_ObatController extends Controller
     }
 
     function getIdIterasi($iterasi) {
-        if($iterasi == 1) {
-            return array('iterasi' => 1, 'id_awal' => 1, 'id_akhir' => 10);
-        } else if($iterasi == 2) {
-            return array('iterasi' => 2, 'id_awal' => 11, 'id_akhir' => 20);
-        } else if($iterasi == 3) {
-            return array('iterasi' => 3, 'id_awal' => 2001, 'id_akhir' => 3000);
-        } else if($iterasi == 4) {
-            return array('iterasi' => 4, 'id_awal' => 3001, 'id_akhir' => 4000);
-        } else if($iterasi == 5) {
-            return array('iterasi' => 5, 'id_awal' => 4001, 'id_akhir' => 5000);
-        } else if($iterasi == 6) {
-            return array('iterasi' => 6, 'id_awal' => 5001, 'id_akhir' => 6000);
-        } else if($iterasi == 7) {
-            return array('iterasi' => 7, 'id_awal' => 6001, 'id_akhir' => 7000);
-        } else if($iterasi == 8) {
-            return array('iterasi' => 8, 'id_awal' => 7001, 'id_akhir' => 8000);
-        } else if($iterasi == 9) {
-            return array('iterasi' => 9, 'id_awal' => 8001, 'id_akhir' => 9000);
-        } else if($iterasi == 10) {
-            return array('iterasi' => 10, 'id_awal' => 9001, 'id_akhir' => 10000);
-        } else if($iterasi == 11) {
-            return array('iterasi' => 11, 'id_awal' => 10001, 'id_akhir' => 11000);
-        } else if($iterasi == 12) {
-            return array('iterasi' => 12, 'id_awal' => 11001, 'id_akhir' => 12000);
-        } else if($iterasi == 13) {
-            return array('iterasi' => 13, 'id_awal' => 12001, 'id_akhir' => 13000);
-        } else if($iterasi == 14) {
-            return array('iterasi' => 14, 'id_awal' => 13001, 'id_akhir' => 14000);
-        } else if($iterasi == 15) {
-            return array('iterasi' => 15, 'id_awal' => 14001, 'id_akhir' => 15000);
-        }
+        $range= 200;
+        $id_awal = ($iterasi - 1) * $range + 1;
+        $id_akhir = $iterasi * $range;
+    
+        return array('iterasi' => $iterasi, 'id_awal' => $id_awal, 'id_akhir' => $id_akhir);
     }
 
     public function reload_export_persediaan(Request $request) {
@@ -1448,10 +1422,18 @@ class D_ObatController extends Controller
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
 
-        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        if($iterasi == 1) {
+            Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        }
+        
         $data_all = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
 
-        $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial, $getIdIterasi['id_awal'], $getIdIterasi['id_akhir']]);
+        $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial, $getIdIterasi['id_awal'], $getIdIterasi['id_akhir'], $apotek->id]);
+         //dd($rekaps);exit();
+
+        /*if($iterasi == 2) {
+            dd($rekaps);exit();
+        }*/
         $x = 0;
 
         $collection = collect();
@@ -1482,6 +1464,43 @@ class D_ObatController extends Controller
                 $harga_jual = $rekap->harga_jual;
             }
 
+           /* $penjualan = DB::select('SELECT getJumlahItemPenjualan(?, ?, ?, ?) AS total_jual', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $pembelian =  DB::select('SELECT getJumlahItemPembelian(?, ?, ?, ?) AS total_beli', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $toMasuk = DB::select('SELECT getJumlahItemTOMasuk(?, ?, ?, ?) AS total_to_masuk', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $toKeluar =  DB::select('SELECT getJumlahItemTOKeluar(?, ?, ?, ?) AS total_to_keluar', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $penjualanRetur =  DB::select('SELECT getJumlahItemPenjualanRetur(?, ?, ?, ?) AS total_retur', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);*/
+
+            $jum_penjualan = '0';
+            $jum_pembelian = '0';
+            $jum_to_masuk  = '0';
+            $jum_to_keluar = '0';
+            $jum_retur = '0';
+            $jum_po = '0';
+
+            if($rekap->total_jual != null) {
+                $jum_penjualan = $rekap->total_jual;
+            }
+
+            if($rekap->total_beli != null) {
+                $jum_pembelian = $rekap->total_beli;
+            }
+
+            if($rekap->total_to_masuk != null) {
+                $jum_to_masuk = $rekap->total_to_masuk;
+            }
+
+            if($rekap->total_to_keluar != null) {
+                $jum_to_keluar = $rekap->total_to_keluar;
+            }
+
+            if($rekap->total_retur != null) {
+                $jum_retur = $rekap->total_retur;
+            }
+
+            if($rekap->total_po != null) {
+                $jum_po = $rekap->total_po;
+            }
+
             $collection[] = array(
                 $x, //a
                 $rekap->id_obat, //b
@@ -1490,7 +1509,13 @@ class D_ObatController extends Controller
                 $stok_awal, //d
                 $stok_akhir,
                 $hbppn,
-                $harga_jual
+                $harga_jual,
+                $jum_penjualan,
+                $jum_pembelian,
+                $jum_to_masuk,
+                $jum_to_keluar,
+                $jum_retur,
+                $jum_po
             );
         }
 
@@ -1500,8 +1525,6 @@ class D_ObatController extends Controller
             $mergedCollection = $collection;
         }
         $expiresAt = now()->addDay(1);
-
-        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
         Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id, $mergedCollection, $expiresAt);
         echo 0;
     }
@@ -1586,6 +1609,12 @@ class D_ObatController extends Controller
                                 'Stok Akhir', //f
                                 'HB+PPN', //e
                                 'Harga Jual', //f
+                                'Penjualan', //f
+                                'Retur', //g
+                                'Pembelian', //h
+                                'T.Keluar', //i
+                                'T.Masuk', //j
+                                'T.Operasional', //j
                                
                             ];
 
