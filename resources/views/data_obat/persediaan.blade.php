@@ -98,7 +98,7 @@ Persediaan Obat
 
 
 	function export_data() {
-		alert(totalLoops);
+		//alert(totalLoops);
 		swal({
 		  	title: "Apakah anda akan melakukan download data persedian?",
 		  	text: 'Proses ini akan memerlukan waktu yang cukup lama, mohon bersabar sampai proses selesai.',
