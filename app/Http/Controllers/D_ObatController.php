@@ -1542,50 +1542,9 @@ class D_ObatController extends Controller
 
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
-       /* $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial]);
-        $x = 0;
-        $collection = collect();
-        foreach($rekaps as $rekap) {
-            $x++;
-
-            if($rekap->stok_awal_ == 0) {
-                $stok_awal = '0';
-            } else {
-                $stok_awal = $rekap->stok_awal_;
-            }
-
-            if($rekap->stok_akhir_ == 0) {
-                $stok_akhir = '0';
-            } else {
-                $stok_akhir = $rekap->stok_akhir_;
-            }
-
-            if($rekap->hbppn == 0) {
-                $hbppn = '0';
-            } else {
-                $hbppn = $rekap->hbppn;
-            }
-
-            if($rekap->harga_jual == 0) {
-                $harga_jual = '0';
-            } else {
-                $harga_jual = $rekap->harga_jual;
-            }
-
-            $collection[] = array(
-                    $x, //a
-                    $rekap->id_obat, //b
-                    $rekap->barcode, //b
-                    $rekap->nama, //c
-                    $stok_awal, //d
-                    $stok_akhir,
-                    $hbppn,
-                    $harga_jual
-                );
-        }*/
-
 
         $collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        dd($collection);exit();
         $now = date('YmdHis'); // WithColumnFormatting
         $tgl_awal = date('Ymd', strtotime($request->tgl_awal));
         $tgl_akhir = date('Ymd', strtotime($request->tgl_akhir));
