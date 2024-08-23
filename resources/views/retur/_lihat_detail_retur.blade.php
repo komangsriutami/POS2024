@@ -67,7 +67,7 @@
                             </tr>
                             @endif
                             <?php 
-                                $total_1 = $detail_penjualan->jumlah * $detail_penjualan->harga_jual;
+                                $total_1 = $detail_penjualan->jumlah_cn * $detail_penjualan->harga_jual;
                                 $total_2 = $total_1 - $detail_penjualan->diskon;
                                 $harga_jual = number_format($detail_penjualan->harga_jual,0,',',',');
                                 $diskon = number_format($detail_penjualan->diskon,0,',',',');
@@ -89,7 +89,7 @@
                             <tr class="bg-info">
                                 <td width="27%"></td>
                                 <td width="2%"></td>
-                                <td width="70%"><b class="text-red">{{ $detail_penjualan->jumlah }}</b>&nbsp;x&nbsp;{{ $harga_jual }} (-{{ $diskon }})&nbsp;=&nbsp;Rp&nbsp;{{ $total_2 }}</td>
+                                <td width="70%"><b class="text-red">{{ $detail_penjualan->jumlah_cn }}</b>&nbsp;x&nbsp;{{ $harga_jual }} (-{{ $diskon }})&nbsp;=&nbsp;Rp&nbsp;{{ $total_2 }}</td>
                             </tr>
                             <tr>
                                 <td colspan="3"><hr style="border: 1px solid #004d40; padding: 0px; margin-top: 0px; margin-bottom: 10px;"></td>
