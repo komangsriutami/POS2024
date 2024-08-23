@@ -125,7 +125,8 @@ Persediaan Obat
 				_token:token,
 				tgl_awal : $("#tgl_awal").val(),
                 tgl_akhir : $("#tgl_akhir").val(),
-                iterasi: currentLoop
+                iterasi: currentLoop,
+                iterasi_last:totalLoops
 			},
 			beforeSend: function(data){
 				// replace dengan fungsi loading

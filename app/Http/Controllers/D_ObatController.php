@@ -46,6 +46,11 @@ use App\Imports\HJStaticImport;
 use App\Exports\DataObatExport;
 use App\Exports\DataObatExport2;
 
+use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
+use Box\Spout\Common\Type;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 class D_ObatController extends Controller
 {
     /*
@@ -1421,22 +1426,35 @@ class D_ObatController extends Controller
         $getIdIterasi = $this->getIdIterasi($iterasi);
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
+        $collection = collect();
+        $tempFilePath = storage_path('app/temp_inventory.xlsx');
 
-        if($iterasi == 1) {
-            Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
-        }
+        // Membuat writer untuk file Excel
+        $writer = WriterEntityFactory::createXlsxWriter();
+        $writer->openToFile($tempFilePath);
         
-        $data_all = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        if($iterasi == 1) {
+            //Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+            $tempFilePath = storage_path('app/temp/inventory.xlsx');
+
+            // Hapus file setelah pengiriman selesai
+            if (file_exists($tempFilePath)) {
+                unlink($tempFilePath); // Menghapus file secara manual
+            }
+
+            $row = 
+                ['No', 'ID', 'Barcode', 'Nama Obat', 'Stok Awal', 'Stok Akhir', 'HB+PPN', 'Harga Jual', 'Penjualan', 'Retur', 'Pembelian', 'T.Keluar', 'T.Masuk', 'T.Operasional'];
+
+            $writer->addRow(WriterEntityFactory::createRowFromArray($row));
+        }
+       
+        //$data_all = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
 
         $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial, $getIdIterasi['id_awal'], $getIdIterasi['id_akhir'], $apotek->id]);
-         //dd($rekaps);exit();
-
-        /*if($iterasi == 2) {
-            dd($rekaps);exit();
-        }*/
+       
         $x = 0;
 
-        $collection = collect();
+        
         foreach($rekaps as $rekap) {
             $x++;
 
@@ -1500,8 +1518,8 @@ class D_ObatController extends Controller
             if($rekap->total_po != null) {
                 $jum_po = $rekap->total_po;
             }
-
-            $collection[] = array(
+            //collection[]
+            $row = array(
                 $x, //a
                 $rekap->id_obat, //b
                 $rekap->barcode, //b
@@ -1517,26 +1535,44 @@ class D_ObatController extends Controller
                 $jum_retur,
                 $jum_po
             );
+
+            $writer->addRow(WriterEntityFactory::createRowFromArray($row));
         }
 
-        if(isset($data_all)) {
+        //if($request->iterasi_last == $iterasi) {
+            $writer->close();
+        //}
+
+
+
+        /*if(isset($data_all)) {
             $mergedCollection = $data_all->merge($collection);
         } else {
             $mergedCollection = $collection;
         }
         $expiresAt = now()->addDay(1);
-        Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id, $mergedCollection, $expiresAt);
+        Cache::put('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id, $mergedCollection, $expiresAt);*/
         echo 0;
     }
 
     public function clear_cache_persediaan(Request $request) {
-        $apotek = MasterApotek::find(session('id_apotek_active'));
+        /*$apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);*/
+
+        $tempFilePath = storage_path('app/temp/inventory.xlsx');
+
+        // Hapus file setelah pengiriman selesai
+        if (file_exists($tempFilePath)) {
+            unlink($tempFilePath); // Menghapus file secara manual
+        }
     }
 
     public function export_persediaan(Request $request) 
     {
+        $tempFilePath = storage_path('app/temp_inventory.xlsx');
+        return response()->download($tempFilePath, 'inventory.xlsx');//->deleteFileAfterSend(true);
+
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
@@ -1544,7 +1580,6 @@ class D_ObatController extends Controller
         $tgl_akhir = $request->tgl_akhir;
 
         $collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
-        dd($collection);exit();
         $now = date('YmdHis'); // WithColumnFormatting
         $tgl_awal = date('Ymd', strtotime($request->tgl_awal));
         $tgl_akhir = date('Ymd', strtotime($request->tgl_akhir));
@@ -1566,14 +1601,14 @@ class D_ObatController extends Controller
                                 'Nama Obat',  //d
                                 'Stok Awal', //e
                                 'Stok Akhir', //f
-                                'HB+PPN', //e
-                                'Harga Jual', //f
-                                'Penjualan', //f
-                                'Retur', //g
-                                'Pembelian', //h
-                                'T.Keluar', //i
-                                'T.Masuk', //j
-                                'T.Operasional', //j
+                                'HB+PPN', //g
+                                'Harga Jual', //h
+                                'Penjualan', //i
+                                'Retur', //j
+                                'Pembelian', //k
+                                'T.Keluar', //l
+                                'T.Masuk', //m
+                                'T.Operasional', //n
                                
                             ];
 
@@ -1624,10 +1659,10 @@ class D_ObatController extends Controller
                             'L' => 20,
                             'M' => 15,
                             'N' => 10,
-                            'O' => 10,
+                            /*'O' => 10,
                             'P' => 15,
                             'Q' => 15,
-                            'R' => 70,
+                            'R' => 70,*/
                         ];
                     }
 
@@ -1646,8 +1681,8 @@ class D_ObatController extends Controller
                             'K'  => ['alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER]],
                             'L'  => ['alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER]],
                             'N'  => ['alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER]],
-                            'P'  => ['alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT]],
-                            'Q'  => ['alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT]],
+                            /*'P'  => ['alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT]],
+                            'Q'  => ['alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT]],*/
                         ];
                     }
 
