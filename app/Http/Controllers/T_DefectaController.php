@@ -313,7 +313,7 @@ class T_DefectaController extends Controller
     }
 
     public function input() {
-        ini_set('memory_limit', '-1'); 
+       // ini_set('memory_limit', '-1'); 
         $active_defecta = session('active_defecta');
         if(empty($active_defecta)) {
             $active_defecta = null;
@@ -328,7 +328,7 @@ class T_DefectaController extends Controller
     }
 
     public function list_defecta_input(Request $request) {
-        ini_set('memory_limit', '-1'); 
+        //ini_set('memory_limit', '-1'); 
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
@@ -974,6 +974,7 @@ class T_DefectaController extends Controller
     }
 
     public function getAnalisaPembelian() {
+        return view('page_not_maintenance');
         //echo "sementara ditutup, sampai so selesai";exit();
         $first_day = date('Y-m-d');
         //return view('page_not_maintenance');
@@ -989,7 +990,7 @@ class T_DefectaController extends Controller
     */
     public function getAmountProduct(Request $request) {
         //echo "sementara ditutup, sampai so selesai";exit();
-        ini_set('memory_limit', '-1');
+       // ini_set('memory_limit', '-1');
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $cached_resume = Cache::get('analisa_pembelian_'.$request->referensi.'_'.Auth::user()->id.'_resume_'.$apotek->id);
         if($cached_resume == null){
@@ -1047,8 +1048,8 @@ class T_DefectaController extends Controller
     }
 
     public function getDataAnalisaPembelian(Request $request) {
-        set_time_limit(0);
-        ini_set('memory_limit', '-1'); 
+        /*set_time_limit(0);
+        ini_set('memory_limit', '-1'); */
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $cached_data = Cache::get('analisa_pembelian_'.$request->referensi.'_'.Auth::user()->id.'_list_data_'.$apotek->id);
         if($cached_data != null){
@@ -1433,7 +1434,7 @@ class T_DefectaController extends Controller
     }
 
     public function clear_cache() {
-        ini_set('memory_limit', '-1');
+        //ini_set('memory_limit', '-1');
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $value = [null, 1, 2, 3, 4];
         try {
@@ -1836,7 +1837,7 @@ class T_DefectaController extends Controller
 
     public function export_analisa_pembelian(Request $request) 
     {
-        ini_set('memory_limit', '-1');
+        //ini_set('memory_limit', '-1');
         $id_apotek = session('id_apotek_active');
         $apotek = MasterApotek::find($id_apotek);
         $inisial = strtolower($apotek->nama_singkat);
@@ -1848,8 +1849,8 @@ class T_DefectaController extends Controller
 
     public function export_analisa_pembelian_all(Request $request) 
     {
-        set_time_limit(0);
-        ini_set('memory_limit', '-1');
+        /*set_time_limit(0);
+        ini_set('memory_limit', '-1');*/
         $id_apotek = session('id_apotek_active');
         $apoteks = MasterApotek::select(
             'id',

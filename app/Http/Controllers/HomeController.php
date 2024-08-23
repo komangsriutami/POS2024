@@ -137,7 +137,7 @@ class HomeController extends Controller
     public function index()
 
     {
-         return view('home2');
+        return view('home2');
 
         $id_apotek = session('id_apotek_active');
 
@@ -4218,7 +4218,7 @@ class HomeController extends Controller
 
 
     public function resume_pareto() {
-        //return view('page_not_maintenance');
+        return view('page_not_maintenance');
 
         $satuans = MasterSatuan::where('is_deleted', 0)->pluck('satuan', 'id');
 
