@@ -1427,25 +1427,31 @@ class D_ObatController extends Controller
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
         $collection = collect();
-        $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
+        if(env('APP_ENV') == 'local') {
+            $tempFilePath = storage_path('app/temp_inventory.xlsx');
+        } else {
+            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
+        }
 
         // Membuat writer untuk file Excel
         $writer = WriterEntityFactory::createXlsxWriter();
         $writer->openToFile($tempFilePath);
-        
-        if($iterasi == 1) {
-            //Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
-            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
 
-            // Hapus file setelah pengiriman selesai
+        if ($iterasi == 1) {
+            // Hapus file jika sudah ada
             if (file_exists($tempFilePath)) {
                 unlink($tempFilePath); // Menghapus file secara manual
             }
 
-            $row = 
-                ['No', 'ID', 'Barcode', 'Nama Obat', 'Stok Awal', 'Stok Akhir', 'HB+PPN', 'Harga Jual', 'Penjualan', 'Retur', 'Pembelian', 'T.Keluar', 'T.Masuk', 'T.Operasional'];
+            // Membuka file untuk penulisan
+            $writer->openToFile($tempFilePath);
 
-            $writer->addRow(WriterEntityFactory::createRowFromArray($row));
+            // Menambahkan header
+            $header = ['No', 'ID', 'Barcode', 'Nama Obat', 'Stok Awal', 'Stok Akhir', 'HB+PPN', 'Harga Jual', 'Penjualan', 'Retur', 'Pembelian', 'T.Keluar', 'T.Masuk', 'T.Operasional'];
+            $writer->addRow(WriterEntityFactory::createRowFromArray($header));
+        } else {
+            // Membuka file untuk penulisan
+            $writer->openToFile($tempFilePath);
         }
        
         //$data_all = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
@@ -1556,11 +1562,16 @@ class D_ObatController extends Controller
     }
 
     public function clear_cache_persediaan(Request $request) {
+         $apotek = MasterApotek::find(session('id_apotek_active'));
         /*$apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
         Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);*/
 
-        $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
+        if(env('APP_ENV') == 'local') {
+            $tempFilePath = storage_path('app/temp_inventory.xlsx');
+        } else {
+            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
+        }
 
         // Hapus file setelah pengiriman selesai
         if (file_exists($tempFilePath)) {
@@ -1570,8 +1581,13 @@ class D_ObatController extends Controller
 
     public function export_persediaan(Request $request) 
     {
-        $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
-        return response()->download($tempFilePath, 'inventory.xlsx');//->deleteFileAfterSend(true);
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        if(env('APP_ENV') == 'local') {
+            $tempFilePath = storage_path('app/temp_inventory.xlsx');
+        } else {
+            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
+        }
+        return response()->download($tempFilePath, 'app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');//->deleteFileAfterSend(true);
 
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
