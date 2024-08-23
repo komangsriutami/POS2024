@@ -1587,7 +1587,7 @@ class D_ObatController extends Controller
        // } else {
             $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
        // }
-        return response()->download($tempFilePath, 'app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');//->deleteFileAfterSend(true);
+        return response()->download($tempFilePath, 'persediaan_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');//->deleteFileAfterSend(true);
 
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
