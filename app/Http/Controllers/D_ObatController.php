@@ -1427,7 +1427,7 @@ class D_ObatController extends Controller
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
         $collection = collect();
-        $tempFilePath = storage_path('app/temp_inventory.xlsx');
+        $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
 
         // Membuat writer untuk file Excel
         $writer = WriterEntityFactory::createXlsxWriter();
@@ -1435,7 +1435,7 @@ class D_ObatController extends Controller
         
         if($iterasi == 1) {
             //Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
-            $tempFilePath = storage_path('app/temp/inventory.xlsx');
+            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
 
             // Hapus file setelah pengiriman selesai
             if (file_exists($tempFilePath)) {
@@ -1560,7 +1560,7 @@ class D_ObatController extends Controller
         $inisial = strtolower($apotek->nama_singkat);
         Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);*/
 
-        $tempFilePath = storage_path('app/temp/inventory.xlsx');
+        $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
 
         // Hapus file setelah pengiriman selesai
         if (file_exists($tempFilePath)) {
@@ -1570,7 +1570,7 @@ class D_ObatController extends Controller
 
     public function export_persediaan(Request $request) 
     {
-        $tempFilePath = storage_path('app/temp_inventory.xlsx');
+        $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
         return response()->download($tempFilePath, 'inventory.xlsx');//->deleteFileAfterSend(true);
 
         $apotek = MasterApotek::find(session('id_apotek_active'));
