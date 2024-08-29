@@ -50,6 +50,7 @@ use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
 use Box\Spout\Common\Type;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Schema;
 
 class D_ObatController extends Controller
 {
@@ -1419,46 +1420,167 @@ class D_ObatController extends Controller
         return array('iterasi' => $iterasi, 'id_awal' => $id_awal, 'id_akhir' => $id_akhir);
     }
 
-    public function reload_export_persediaan(Request $request) {
+    function getTanggalByIterasi($tgl_awal, $tgl_akhir, $iterasi) {
+        // Konversi tanggal awal dan akhir menjadi timestamp
+        $timestampAwal = strtotime($tgl_awal);
+        $timestampAkhir = strtotime($tgl_akhir);
+
+        // Tambahkan jumlah hari sesuai iterasi ke timestamp awal
+        $timestampIterasi = strtotime("+$iterasi days", $timestampAwal);
+
+        // Jika tgl_awal dan tgl_akhir sama dan iterasi adalah 0, kembalikan tgl_awal
+        if ($timestampAwal == $timestampAkhir && $iterasi == 0) {
+           // return date('Y-m-d', $timestampAwal);
+            return array('iterasi' => $iterasi, 'tgl' => date('Y-m-d',$timestampAwal));
+        }
+
+        // Pastikan timestamp hasil tidak melebihi timestamp akhir
+        if ($timestampIterasi > $timestampAkhir) {
+            return "Iterasi melebihi tanggal akhir yang diberikan.";
+        }
+
+        // Format tanggal hasil iterasi ke dalam format 'Y-m-d'
+        return array('iterasi' => $iterasi, 'tgl' => date('Y-m-d',$tanggalIterasi));
+    }
+
+    public function reload_dw_awal(Request $request) {
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        $iterasi = $request->iterasi+1;
-        $getIdIterasi = $this->getIdIterasi($iterasi);
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
-        $collection = collect();
-       /* if(env('APP_ENV') == 'local') {
-            $tempFilePath = storage_path('app/temp_inventory.xlsx');
-        } else {*/
-            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
-       // }
 
-        // Membuat writer untuk file Excel
-        $writer = WriterEntityFactory::createXlsxWriter();
-        $writer->openToFile($tempFilePath);
+        $iterasi = $request->iterasi;
+        $getIdIterasi = $this->getTanggalByIterasi($tgl_awal, $tgl_awal, $iterasi);
 
-        if ($iterasi == 1) {
-            // Hapus file jika sudah ada
-            if (file_exists($tempFilePath)) {
-                unlink($tempFilePath); // Menghapus file secara manual
+        # cek apakah sudah ada data tgl itu atau blm
+        $count = DB::table('tb_dw')->where('id_apotek', $apotek->id)->where('tgl', $getIdIterasi['tgl'])->count();
+
+        if($count > 0) {
+            DB::table('tb_dw')->where('id_apotek', $apotek->id)->where('tgl', $getIdIterasi['tgl'])->delete();
+        }
+
+        $rekaps = DB::select('CALL getPersediaanPerTanggalApotekAwal(?, ?, ?, ?)', [$getIdIterasi['tgl'], $getIdIterasi['tgl'], 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial]);
+
+       // dd($rekaps);
+
+        $batchSize = 1000; // Ukuran batch yang bisa disesuaikan
+
+        if(count($rekaps) > 0) {
+            $dataToInsert = [];
+            foreach ($rekaps as $rekap) {
+                 $dataToInsert[] = [
+                    'id_obat' => $rekap->id_obat,
+                    'tgl' => $getIdIterasi['tgl'],
+                    'stok_awal_' => $rekap->stok_awal_,
+                    'stok_akhir_' => $rekap->stok_akhir_,
+                    'id_awal' => $rekap->id_awal,
+                    'id_akhir' => $rekap->id_akhir,
+                    'hbppn' => $rekap->hbppn,
+                    'harga_jual' => $rekap->harga_jual,
+                    'id_apotek' => $apotek->id
+                ];
+
+                // Ketika batch penuh, lakukan insert
+                if (count($dataToInsert) >= $batchSize) {
+                    DB::table('tb_dw')->insert($dataToInsert);
+                    // Kosongkan array setelah insert
+                    $dataToInsert = [];
+                }
             }
 
-            // Membuka file untuk penulisan
-            $writer->openToFile($tempFilePath);
-
-            // Menambahkan header
-            $header = ['No', 'ID', 'Barcode', 'Nama Obat', 'Stok Awal', 'Stok Akhir', 'HB+PPN', 'Harga Jual', 'Penjualan', 'Retur', 'Pembelian', 'T.Keluar', 'T.Masuk', 'T.Operasional'];
-            $writer->addRow(WriterEntityFactory::createRowFromArray($header));
-        } else {
-            // Membuka file untuk penulisan
-            $writer->openToFile($tempFilePath);
+            // Insert sisa data yang mungkin belum terinsert
+            if (count($dataToInsert) > 0) {
+                DB::table('tb_dw')->insert($dataToInsert);
+            }
         }
+
+        echo 0;
+    }
+
+    public function reload_dw_pj(Request $request){
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $inisial = strtolower($apotek->nama_singkat);
+        $tgl_awal = $request->tgl_awal;
+        $tgl_akhir = $request->tgl_akhir;
+
+        $iterasi = $request->iterasi;
+        $getIdIterasi = $this->getTanggalByIterasi($tgl_awal, $tgl_awal, $iterasi);
+
+        $rekaps = DB::select('CALL getHppPerTanggalApotek(?, ?)', [$getIdIterasi['tgl'], $apotek->id]);
+
+        if(count($rekaps) > 0) {
+            foreach ($rekaps as $rekap) {
+                $total_penjualan_final = $rekap->total_fix-$rekap->total_diskon_fix;
+                $laba = $total_penjualan_final-$rekap->total_hbppn_fix;
+                DB::table('tb_dw')->where('id_apotek', $apotek->id)->where('tgl', $getIdIterasi['tgl'])->where('id_obat', $rekap->id_obat)->update([
+                        'total_jual' => $rekap->jumlah_fix,
+                        'total_retur' => $rekap->total_retur,
+                        'total_penjualan' => $rekap->total_fix,
+                        'total_diskon' => $rekap->total_diskon_fix,
+                        'total_penjualan_hpp' => $rekap->total_hbppn_fix,
+                        'total_penjualan_final' => $total_penjualan_final,
+                        'laba' => $laba
+                    ]);
+            }
+        }
+
+        echo 0;
+    }
+
+    public function reload_dw_pb(Request $request){
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $inisial = strtolower($apotek->nama_singkat);
+        $tgl_awal = $request->tgl_awal;
+        $tgl_akhir = $request->tgl_akhir;
+
+        $iterasi = $request->iterasi;
+        $getIdIterasi = $this->getTanggalByIterasi($tgl_awal, $tgl_awal, $iterasi);
+
+        $rekaps = DB::select('CALL getPembelianPerTanggalApotek(?, ?)', [$getIdIterasi['tgl'], $apotek->id]);
+        $batchSize = 1000; // Ukuran batch yang bisa disesuaikan
+
+        if(count($rekaps) > 0) {
+            $dataToInsert = [];
+            foreach ($rekaps as $rekap) {
+                $total_diskon_pembelian = $rekap->diskon+$rekap->total_diskon_persen;
+                $total_pembelian_final = $rekap->total_pembelian-($total_diskon_pembelian+$rekap->total_retur)+$total_ppn;
+                DB::table('tb_dw')->where('id_apotek', $apotek->id)->where('tgl', $getIdIterasi['tgl'])->where('id_obat', $rekap->id_obat)->update([
+                        'total_beli' => $rekap->jumlah_fix,
+                        'total_pembelian' => $rekap->total_pembelian,
+                        'total_diskon_pembelian' => $total_diskon_pembelian,
+                        'total_retur_pembelian' => $rekap->total_retur,
+                        'total_lunas' => $rekap->total_lunas,
+                        'total_ppn' => $total_ppn,
+                        'total_pembelian_final' => $total_pembelian_final
+                    ]);
+            }
+        }
+
+        echo 0;
+    }
+
+
+    public function reload_dw(Request $request) {
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $inisial = strtolower($apotek->nama_singkat);
+        $tgl_awal = $request->tgl_awal;
+        $tgl_akhir = $request->tgl_akhir;
+
+        $iterasi = $request->iterasi;
+        $getIdIterasi = $this->getTanggalByIterasi($tgl_awal, $tgl_awal, $iterasi);
+        
+        $collection = collect();
+      
+        if ($iterasi == 0) {
+            // Menambahkan header
+          //  $header = ['No', 'ID', 'Barcode', 'Nama Obat', 'Stok Awal', 'Stok Akhir', 'HB+PPN', 'Harga Jual', 'Penjualan', 'Retur', 'Pembelian', 'T.Keluar', 'T.Masuk', 'T.Operasional'];
+        } 
        
         //$data_all = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
 
-        $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial, $getIdIterasi['id_awal'], $getIdIterasi['id_akhir'], $apotek->id]);
+        //$rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial, $getIdIterasi['id_awal'], $getIdIterasi['id_akhir'], $apotek->id]);
        
-        $x = 0;
+        //$x = 0;
 
         
         foreach($rekaps as $rekap) {
@@ -1561,6 +1683,121 @@ class D_ObatController extends Controller
         echo 0;
     }
 
+    public function reload_export_persediaan(Request $request) {
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $inisial = strtolower($apotek->nama_singkat);
+        $iterasi = $request->iterasi+1;
+        $getIdIterasi = $this->getIdIterasi($iterasi);
+        $tgl_awal = $request->tgl_awal;
+        $tgl_akhir = $request->tgl_akhir;
+        $collection = array();
+        
+        // membuat tabel untuk menampung data
+        if (Schema::hasTable('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.'')) {
+            if($iterasi == 1) {
+                $tableName = 'tb_temp_persediaan_' . $inisial . '_' . Auth::user()->id;
+                \DB::statement('TRUNCATE TABLE ' . $tableName);
+            }
+        } else {
+            \DB::statement('CREATE TABLE tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' LIKE sample_persediaan');
+        }
+        
+        $rekaps = DB::select('CALL getPersediaanPerTanggalApotek(?, ?, ?, ?, ?, ?, ?)', [$tgl_awal, $tgl_akhir, 'tb_histori_stok_'.$inisial, 'tb_m_stok_harga_'.$inisial, $getIdIterasi['id_awal'], $getIdIterasi['id_akhir'], $apotek->id]);
+       
+        $x = 0;
+
+        
+        foreach($rekaps as $rekap) {
+            $x++;
+
+            if($rekap->stok_awal_ == 0) {
+                $stok_awal = '0';
+            } else {
+                $stok_awal = $rekap->stok_awal_;
+            }
+
+            if($rekap->stok_akhir_ == 0) {
+                $stok_akhir = '0';
+            } else {
+                $stok_akhir = $rekap->stok_akhir_;
+            }
+
+            if($rekap->hbppn == 0) {
+                $hbppn = '0';
+            } else {
+                $hbppn = $rekap->hbppn;
+            }
+
+            if($rekap->harga_jual == 0) {
+                $harga_jual = '0';
+            } else {
+                $harga_jual = $rekap->harga_jual;
+            }
+
+           /* $penjualan = DB::select('SELECT getJumlahItemPenjualan(?, ?, ?, ?) AS total_jual', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $pembelian =  DB::select('SELECT getJumlahItemPembelian(?, ?, ?, ?) AS total_beli', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $toMasuk = DB::select('SELECT getJumlahItemTOMasuk(?, ?, ?, ?) AS total_to_masuk', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $toKeluar =  DB::select('SELECT getJumlahItemTOKeluar(?, ?, ?, ?) AS total_to_keluar', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);
+            $penjualanRetur =  DB::select('SELECT getJumlahItemPenjualanRetur(?, ?, ?, ?) AS total_retur', [$apotek->id, $tgl_awal, $tgl_akhir, $rekap->id_obat]);*/
+
+            $jum_penjualan = '0';
+            $jum_pembelian = '0';
+            $jum_to_masuk  = '0';
+            $jum_to_keluar = '0';
+            $jum_retur = '0';
+            $jum_po = '0';
+
+            if($rekap->total_jual != null) {
+                $jum_penjualan = $rekap->total_jual;
+            }
+
+            if($rekap->total_beli != null) {
+                $jum_pembelian = $rekap->total_beli;
+            }
+
+            if($rekap->total_to_masuk != null) {
+                $jum_to_masuk = $rekap->total_to_masuk;
+            }
+
+            if($rekap->total_to_keluar != null) {
+                $jum_to_keluar = $rekap->total_to_keluar;
+            }
+
+            if($rekap->total_retur != null) {
+                $jum_retur = $rekap->total_retur;
+            }
+
+            if($rekap->total_po != null) {
+                $jum_po = $rekap->total_po;
+            }
+            //collection[]
+            $row = array(
+                'tgl_awal' => $tgl_awal,
+                'tgl_akhir' => $tgl_akhir,
+                'id_obat' => $rekap->id_obat, //b
+                'nama' => '', //b
+                'barcode' => '', //c
+                'stok_awal' => $stok_awal, //d
+                'stok_akhir' => $stok_akhir,
+                'hbppn' => $hbppn,
+                'harga_jual' => $harga_jual,
+                'total_penjualan' => $jum_penjualan,
+                'total_pembelian' => $jum_pembelian,
+                'total_to_keluar' => $jum_to_keluar,
+                'total_to_masuk' => $jum_to_masuk,
+                'total_penjualan_retur' => $jum_retur,
+                'total_po' => $jum_po,
+                'id_apotek' => $apotek->id
+            );
+
+            $collection[] = $row;
+        }
+
+        DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.'')->insert($collection);
+   
+        echo 0;
+    }
+
     public function clear_cache_persediaan(Request $request) {
          $apotek = MasterApotek::find(session('id_apotek_active'));
         /*$apotek = MasterApotek::find(session('id_apotek_active'));
@@ -1582,20 +1819,54 @@ class D_ObatController extends Controller
     public function export_persediaan(Request $request) 
     {
         $apotek = MasterApotek::find(session('id_apotek_active'));
-       // if(env('APP_ENV') == 'local') {
-           // $tempFilePath = storage_path('app/temp_inventory.xlsx');
-       // } else {
-            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
-       // }
-        return response()->download($tempFilePath, 'persediaan_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');//->deleteFileAfterSend(true);
-
-        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
 
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
 
-        $collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
+        DB::statement(DB::raw('set @rownum = 0'));
+        $getData = DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as a')
+            ->select([
+                DB::raw('@rownum  := @rownum  + 1 AS no'), 
+                'a.id_obat',
+                'b.nama',
+                'b.barcode',
+                'a.stok_awal',
+                'a.stok_akhir',
+                'a.hbppn',
+                'a.harga_jual',
+                'a.total_penjualan',
+                'a.total_penjualan_retur',
+                'a.total_pembelian',
+                'a.total_to_keluar',
+                'a.total_to_masuk',
+                'a.total_po'
+            ])->join('tb_m_obat as b', 'b.id', '=', 'a.id_obat')
+            ->get();
+        $no = 0;
+        $collection = collect();
+        // Memproses hasil query dan menambahkan ke Collection
+        $getData->each(function ($obj) use (&$collection, &$no) {
+            $no++;
+            $collection->push([
+                $obj->no,
+                $obj->id_obat,
+                $obj->nama,
+                $obj->barcode,
+                $obj->stok_awal,
+                $obj->stok_akhir,
+                $obj->hbppn,
+                $obj->harga_jual,
+                $obj->total_penjualan,
+                $obj->total_penjualan_retur,
+                $obj->total_pembelian,
+                $obj->total_to_keluar,
+                $obj->total_to_masuk,
+                $obj->total_po,
+            ]);
+        });
+
+        //$collection = Cache::get('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);
         $now = date('YmdHis'); // WithColumnFormatting
         $tgl_awal = date('Ymd', strtotime($request->tgl_awal));
         $tgl_akhir = date('Ymd', strtotime($request->tgl_akhir));

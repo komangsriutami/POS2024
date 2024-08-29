@@ -55,6 +55,7 @@ Persediaan Obat
 	                        <input type="text" name="tgl_akhir" id="tgl_akhir" class="datepicker form-control" autocomplete="off" value="{{ $first_day }}">
 	                    </div>
 	                    <div class="col-lg-12" style="text-align: center;">
+	                    		<!-- <span class="btn bg-olive" onClick="reloadData()"  data-toggle="modal" data-placement="top" title="Export Data Transfer"><i class="fa fa-refresh" aria-hidden="true"></i> Reload</span>  -->
 	                        <span class="btn bg-olive" onClick="export_data()"  data-toggle="modal" data-placement="top" title="Export Data Transfer"><i class="fa fa-file-excel-o" aria-hidden="true"></i> Export</span> 
 	                    </div>
 	                </div>
@@ -72,6 +73,22 @@ Persediaan Obat
 @section('script')
 <script type="text/javascript">
 	var token = '{{csrf_token()}}';
+	/*let tgl_awal = new Date($("#tgl_awal").val());
+	let tgl_akhir = new Date($("#tgl_akhir").val());
+	let selisihWaktu = tgl_akhir - tgl_awal;
+	let selisihHari = selisihWaktu / (1000 * 60 * 60 * 24);
+
+	let progressBar = $('#progress-bar');
+	let width = 0;
+	const totalItems = selisihHari; // Total items, e.g., 12000
+	const itemsPerBatch = 1; // Number of items to process per batch
+	const totalLoops = Math.ceil(totalItems / itemsPerBatch); // Total number of loops required
+	const increment = 100 / totalLoops;
+    let currentLoop = 0;
+    var overlay = document.getElementById('overlay-wrapper-persediaan-id');
+    var overlaybody = document.getElementById('overlay-persediaan-id');*/
+
+
 	let progressBar = $('#progress-bar');
 	let width = 0;
 	const totalItems = $("#jum_obat").val(); // Total items, e.g., 12000
@@ -95,6 +112,204 @@ Persediaan Obat
 
         $('body').addClass('sidebar-collapse');
 	})
+
+	function reloadData() {
+		//alert(totalLoops);
+		swal({
+		  	title: "Apakah anda akan melakukan reload data persedian?",
+		  	text: 'Proses ini akan memerlukan waktu yang cukup lama, mohon bersabar sampai proses selesai.',
+		  	type: "warning",
+		  	showCancelButton: true,
+		  	confirmButtonColor: "#DD6B55",
+		  	confirmButtonText: "Ya",
+		  	cancelButtonText: "Tidak",
+		  	closeOnConfirm: true
+		},
+		function(){
+			overlay.classList.add('overlay-wrapper');
+            overlaybody.classList.add('overlay');
+			getReloadDataAwal();
+		});
+	}
+
+	function getReloadDataAwal() {
+		$.ajax({
+			type: "GET",
+			url: '{{url("data_obat/reload_dw_awal")}}',
+			async:true,
+			data: {
+				_token:token,
+				tgl_awal : $("#tgl_awal").val(),
+                tgl_akhir : $("#tgl_akhir").val(),
+                iterasi: currentLoop,
+                iterasi_last:totalLoops
+			},
+			beforeSend: function(data){
+				// replace dengan fungsi loading
+			},
+			success: function(data) {
+				reloadDataPenjualan();
+		    },
+			complete: function(data){
+				
+			},
+			error: function(data) {
+				swal("Error!", "Ajax occured.", "error");
+			}
+		});
+	}
+
+	function reloadDataPenjualan() {
+		$.ajax({
+			type: "GET",
+			url: '{{url("data_obat/reload_dw_pj")}}',
+			async:true,
+			data: {
+				_token:token,
+				tgl_awal : $("#tgl_awal").val(),
+                tgl_akhir : $("#tgl_akhir").val(),
+                iterasi: currentLoop,
+                iterasi_last:totalLoops
+			},
+			beforeSend: function(data){
+				// replace dengan fungsi loading
+			},
+			success: function(data) {
+				//reloadDataPembelian();
+
+				updateProgressBar();
+	            if (currentLoop < totalLoops) {
+	                getReloadDataAwal();
+	            } else {
+	            	stop();
+	            }
+		    },
+			complete: function(data){
+				
+			},
+			error: function(data) {
+				swal("Error!", "Ajax occured.", "error");
+			}
+		});
+	}
+
+	function reloadDataPembelian() {
+		$.ajax({
+			type: "GET",
+			url: '{{url("data_obat/reload_dw_pb")}}',
+			async:true,
+			data: {
+				_token:token,
+				tgl_awal : $("#tgl_awal").val(),
+                tgl_akhir : $("#tgl_akhir").val(),
+                iterasi: currentLoop,
+                iterasi_last:totalLoops
+			},
+			beforeSend: function(data){
+				// replace dengan fungsi loading
+			},
+			success: function(data) {
+				reloadDataTO();
+		    },
+			complete: function(data){
+				
+			},
+			error: function(data) {
+				swal("Error!", "Ajax occured.", "error");
+			}
+		});
+	}
+
+	function reloadDataTO() {
+		$.ajax({
+			type: "GET",
+			url: '{{url("data_obat/reload_dw_to")}}',
+			async:true,
+			data: {
+				_token:token,
+				tgl_awal : $("#tgl_awal").val(),
+                tgl_akhir : $("#tgl_akhir").val(),
+                iterasi: currentLoop,
+                iterasi_last:totalLoops
+			},
+			beforeSend: function(data){
+				// replace dengan fungsi loading
+			},
+			success: function(data) {
+				reloadDataPO();
+		    },
+			complete: function(data){
+				
+			},
+			error: function(data) {
+				swal("Error!", "Ajax occured.", "error");
+			}
+		});
+	}
+
+	function reloadDataPO() {
+		$.ajax({
+			type: "GET",
+			url: '{{url("data_obat/reload_dw_po")}}',
+			async:true,
+			data: {
+				_token:token,
+				tgl_awal : $("#tgl_awal").val(),
+                tgl_akhir : $("#tgl_akhir").val(),
+                iterasi: currentLoop,
+                iterasi_last:totalLoops
+			},
+			beforeSend: function(data){
+				// replace dengan fungsi loading
+			},
+			success: function(data) {
+				updateProgressBar();
+	            if (currentLoop < totalLoops) {
+	                getReloadDataAwal();
+	            } else {
+	            	stop();
+	            }
+		    },
+			complete: function(data){
+				
+			},
+			error: function(data) {
+				swal("Error!", "Ajax occured.", "error");
+			}
+		});
+	}
+
+	function getReloadData() {
+		$.ajax({
+			type: "GET",
+			url: '{{url("data_obat/reload_dw")}}',
+			async:true,
+			data: {
+				_token:token,
+				tgl_awal : $("#tgl_awal").val(),
+                tgl_akhir : $("#tgl_akhir").val(),
+                iterasi: currentLoop,
+                iterasi_last:totalLoops
+			},
+			beforeSend: function(data){
+				// replace dengan fungsi loading
+			},
+			success: function(data) {
+				updateProgressBar();
+	            if (currentLoop < totalLoops) {
+	                getData(); // Call getData again until totalLoops is reached
+	            } else {
+	            	stop();
+	            }
+		    },
+			complete: function(data){
+				
+			},
+			error: function(data) {
+				swal("Error!", "Ajax occured.", "error");
+			}
+		});
+	}
 
 
 	function export_data() {
@@ -148,7 +363,15 @@ Persediaan Obat
 		});
 	}
 
-	function updateProgressBar() {
+	/*function updateProgressBarAwal() {
+        currentLoopAwal++;
+        widthAwal += incrementAwal;
+        progressBarAwal.css('width', widthAwal + '%');
+        progressBarAwal.attr('aria-valuenow', widthAwal);
+        progressBarAwal.text(Math.round(widthAwal) + '%');
+    }*/
+
+    function updateProgressBar() {
         currentLoop++;
         width += increment;
         progressBar.css('width', width + '%');

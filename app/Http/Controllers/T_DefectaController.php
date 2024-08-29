@@ -974,7 +974,7 @@ class T_DefectaController extends Controller
     }
 
     public function getAnalisaPembelian() {
-        return view('page_not_maintenance');
+        //return view('page_not_maintenance');
         //echo "sementara ditutup, sampai so selesai";exit();
         $first_day = date('Y-m-d');
         //return view('page_not_maintenance');
