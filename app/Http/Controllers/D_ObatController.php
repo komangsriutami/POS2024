@@ -1775,8 +1775,6 @@ class D_ObatController extends Controller
                 'tgl_awal' => $tgl_awal,
                 'tgl_akhir' => $tgl_akhir,
                 'id_obat' => $rekap->id_obat, //b
-                'nama' => '', //b
-                'barcode' => '', //c
                 'stok_awal' => $stok_awal, //d
                 'stok_akhir' => $stok_akhir,
                 'hbppn' => $hbppn,
