@@ -1799,20 +1799,29 @@ class D_ObatController extends Controller
     }
 
     public function clear_cache_persediaan(Request $request) {
-         $apotek = MasterApotek::find(session('id_apotek_active'));
-        /*$apotek = MasterApotek::find(session('id_apotek_active'));
+        // $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
-        Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);*/
+        /*Cache::forget('persediaan_'.$request->tgl_awal.'_'.$request->tgl_akhir.'_'.Auth::user()->id.'_rekaps_all_'.$apotek->id);*/
 
        /* if(env('APP_ENV') == 'local') {
             $tempFilePath = storage_path('app/temp_inventory.xlsx');
         } else {*/
-            $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
+           // $tempFilePath = storage_path('app/temp_inventory_'.$apotek->nama_singkat.'_'.Auth::user()->id.'.xlsx');
        // }
 
         // Hapus file setelah pengiriman selesai
-        if (file_exists($tempFilePath)) {
+        /*if (file_exists($tempFilePath)) {
             unlink($tempFilePath); // Menghapus file secara manual
+        }*/
+
+        // Nama tabel dinamis
+        $tableName = 'tb_temp_persediaan_' . $inisial . '_' . Auth::user()->id;
+
+        // Cek apakah tabel ada
+        if (Schema::hasTable($tableName)) {
+            // Hapus tabel jika ada
+            Schema::dropIfExists($tableName);
         }
     }
 
