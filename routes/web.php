@@ -43,10 +43,14 @@ Route::get('page_not_authorized', ['as' => 'page_not_authorized', 'uses' => 'Hom
 Route::get('page_not_found', ['as' => 'page_not_found', 'uses' => 'HomeController@page_not_found']);
 
 Route::get('cek_data', ['as' => 'cek_data', 'uses' => 'HomeController@cek_data']);
-
+Route::get('test_pembelian', ['as' => 'test_pembelian', 'uses' => 'TesController@getPembelian']);
 Route::resource('tes', 'TesController');
-
-
+Route::get('migrasi/list_data', ['as' => 'migrasi.list_data', 'uses' => 'MigrasiController@getListData']);
+Route::get('migrasi/listdetail', ['as'=>'migrasi.listdetail', 'uses'=>'MigrasiController@getListDetail']);
+Route::resource('migrasi', 'MigrasiController');
+Route::post('migrasi/generate', ['as' => 'migrasi.generate', 'uses' => 'MigrasiController@MigrasiGenerateAwal']);
+Route::post('migrasi/init', ['as' => 'migrasi.init', 'uses' => 'MigrasiController@MigrasiInit']);
+Route::post('migrasi/preparation', ['as' => 'migrasi.preparation', 'uses' => 'MigrasiController@PersiapanMigrasi']);
 
 Route::get('send-mail', function () {
 
@@ -611,6 +615,12 @@ Route::group(['middleware' => 'cekakses', 'auth:web'], function () {
 
 	Route::get('data_obat/reload_export_persediaan', ['as' => 'data_obat.reload_export_persediaan', 'uses' => 'D_ObatController@reload_export_persediaan']);
 
+	Route::get('data_obat/reload_dw_awal', ['as' => 'data_obat.reload_dw_awal', 'uses' => 'D_ObatController@reload_dw_awal']);
+	Route::get('data_obat/reload_dw_pj', ['as' => 'data_obat.reload_dw_pj', 'uses' => 'D_ObatController@reload_dw_pj']);
+	Route::get('data_obat/reload_dw_pb', ['as' => 'data_obat.reload_dw_pb', 'uses' => 'D_ObatController@reload_dw_pb']);
+	Route::get('data_obat/reload_dw_to', ['as' => 'data_obat.reload_dw_to', 'uses' => 'D_ObatController@reload_dw_to']);
+	Route::get('data_obat/reload_dw_po', ['as' => 'data_obat.reload_dw_po', 'uses' => 'D_ObatController@reload_dw_po']);
+
 	Route::get('analisa_pembelian/clear_cache', ['as' => 'analisa_pembelian.clear_cache', 'uses' => 'T_DefectaController@clear_cache']);
 
 	Route::get('data_obat/set_status_harga_outlet', ['as' => 'data_obat.set_status_harga_outlet', 'uses' => 'D_ObatController@set_status_harga_outlet']);
@@ -988,6 +998,8 @@ Route::group(['middleware' => 'cekakses', 'auth:web'], function () {
 	Route::get('penjualan/add_member', ['as' => 'penjualan.add_member', 'uses' => 'T_PenjualanController@addMember']);
 
 	Route::get('penjualan/view_closing', ['as' => 'penjualan.view_closing', 'uses' => 'T_PenjualanController@viewClosing']);
+	Route::get('penjualan/search-endpoint', ['as' => 'penjualan.search-endpoint', 'uses' => 'T_PenjualanController@searchEndpoint']);
+
 
 	Route::resource('penjualan', 'T_PenjualanController');
 
