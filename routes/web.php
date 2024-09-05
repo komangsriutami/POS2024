@@ -52,6 +52,7 @@ Route::post('migrasi/generate', ['as' => 'migrasi.generate', 'uses' => 'MigrasiC
 Route::post('migrasi/init', ['as' => 'migrasi.init', 'uses' => 'MigrasiController@MigrasiInit']);
 Route::post('migrasi/preparation', ['as' => 'migrasi.preparation', 'uses' => 'MigrasiController@PersiapanMigrasi']);
 
+
 Route::get('send-mail', function () {
 
 
