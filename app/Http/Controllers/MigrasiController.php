@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\ScheduleMigrasi;
 use App\ScheduleMigrasiDetail;
+use App\ScheduleMigrasiDetailSequences;
 use App\MasterApotek;
 
 use App\TransaksiPenjualanDetail;
@@ -21,7 +22,7 @@ use Auth;
 use Crypt;
 class MigrasiController extends Controller
 {
-    private $squences_limit = 500;
+    private $squences_limit = 200;
     private $table_migrasi = 'tb_nota_penjualan_migrasi';
     private $table_migrasi_detail = 'tb_detail_nota_penjualan_migrasi';
     private $table_kwitansi_migrate_log = 'tb_nota_penjualan_migrasi_log';
@@ -89,7 +90,7 @@ class MigrasiController extends Controller
         ->addcolumn('action', function($data) {
             $action = '';
 
-            $href = url('kwitansi-migrasi/'.Crypt::encrypt($data->id));
+            $href = url('migrasi/'.Crypt::encrypt($data->id));
 
             if($data->status == 0){
                 $action = '<a href="'.$href.'" class="btn btn-info btn-xs" onClick="mulai_migrasi('.Crypt::encrypt($data->id).',\'migrasi kwitansi '.$data->tahun.' bulan'.$data->bulan.'\')" data-toggle="tooltip" data-placement="top" title="Klik untuk melakukan migrasi">[proses]</a>';
@@ -106,15 +107,15 @@ class MigrasiController extends Controller
         ->make(true);  
     }
 
-    public function getDataTrx($tipe, $tgl) {
+    public function getDataTrx($tipe, $inisial, $tgl) {
         if($tipe == "count"){
-            $query = HistoriStok::select(DB::RAW('COUNT(id_obat) as jumlah'))
+            $query = DB::table('tb_histori_stok_'.$inisial)->select(DB::RAW('COUNT(id_obat) as jumlah'))
                     ->whereDate('created_at',$tgl)
                     ->orwhereNull('created_at')
                     ->groupBy('id_obat')
                     ->first();
         } else {
-            $query = HistoriStok::select(DB::RAW('COUNT(id_obat) as jumlah'))
+            $query = DB::table('tb_histori_stok_'.$inisial)->select(['tb_histori_stok_'.$inisial.'.*'])
                     ->whereDate('created_at',$tgl)
                     ->orwhereNull('created_at')
                     ->groupBy('id_obat')
@@ -386,23 +387,18 @@ class MigrasiController extends Controller
 
     public function MigrasiGenerateAwal(Request $request) {
         try {
-            $apotek = MasterApotek::find(session('id_apotek_active'));
-            // tahun awal = 2020, tahun akhir 2024, awal bulan = 1, akhir bulan = bulan now
-
+            $apotek = MasterApotek::all();
             // Tahun awal dan akhir
-            $tahun_awal = 2024;
-            $tahun_akhir = date('Y');
+            $tahun = $request->tahun;
+           // dd($tahun);
+            $bulan = $request->iterasi+1;
 
-            // Bulan awal dan akhir
-            $bulan_awal = 1;
-            $bulan_akhir = 12;//date('n'); // Bulan saat ini
+            if($bulan <= 12) {
 
-            // Loop untuk tahun
-            for ($tahun = $tahun_awal; $tahun <= $tahun_akhir; $tahun++) {
-                // Loop untuk bulan
-                for ($bulan = $bulan_awal; $bulan <= $bulan_akhir; $bulan++) {
-                    // Insert ke tabel m_schedule_migrasi
-                    $stmt = ScheduleMigrasi::where('id_apotek', session('id_apotek_active'))
+                foreach ($apotek as $key => $val) {
+                    $inisial = strtolower($val->nama_singkat);
+                     // Insert ke tabel m_schedule_migrasi
+                    $stmt = ScheduleMigrasi::where('id_apotek', $val->id)
                                         ->where('tahun', $tahun)
                                         ->where('bulan', $bulan)
                                         ->first();
@@ -410,10 +406,9 @@ class MigrasiController extends Controller
                         $stmt = new ScheduleMigrasi;
                         $stmt->tahun = $tahun;
                         $stmt->bulan = $bulan;
-                        $stmt->id_apotek = session('id_apotek_active');
+                        $stmt->id_apotek = $val->id;
                         $stmt->created_at = date('Y-m-d H:i:s');
                         $stmt->save();
-
                     }
 
                     // Ambil ID dari insert terakhir
@@ -421,7 +416,6 @@ class MigrasiController extends Controller
 
                     // Hitung jumlah hari dalam bulan ini
                     $days_in_month = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
-
                     // Loop untuk hari dalam bulan ini
                     $total = 0;
                     for ($day = 1; $day <= $days_in_month; $day++) {
@@ -441,13 +435,13 @@ class MigrasiController extends Controller
                         }
 
                         // check jumlah obat yang aktif pada periode ini
-                        $getDataTrx = $this->getDataTrx('data',$tanggal);
+                        /*$getDataTrx = $this->getDataTrx('data',$inisial, $tanggal);
+
                         if(!$getDataTrx->count()){
-                            /*return json_encode(['status'=>false, "message"=>"Proses Preparation berhenti, Data Transaksi Tanggal ".$tanggal." tidak ada"]);*/
                             $stmt_detail->jml = 0;
                             $stmt_detail->save();
                         } else {
-                            $arraydata = $getDataTrx->sortBy('id')->toArray();
+                            $arraydata = $getDataTrx->sortBy('id_obat')->toArray();
                             $squences = array_chunk($arraydata,$this->squences_limit);
 
                             $stmt_detail->jml = count($squences);
@@ -455,27 +449,30 @@ class MigrasiController extends Controller
 
                             // bersihkan sequences sebelumnya
                             $clean_squences = ScheduleMigrasiDetailSequences::where('id_migrasi_detail',$stmt_detail->id)->delete();
-                            foreach ($squencesPenjualan as $seq => $datachunk) {
+                            foreach ($squences as $seq => $datachunk) {
                                 $new_squences = new ScheduleMigrasiDetailSequences;
                                 $new_squences->id_migrasi_detail = $stmt_detail->id;
                                 $new_squences->sequence = ($seq+1);
-                                $new_squences->id_awal = $datachunk[0]['id'];
+                                $new_squences->id_awal = $datachunk[0]->id_obat;
                                 $data_akhir = last($datachunk);
-                                $new_squences->id_akhir = $data_akhir['id'];
+                                $new_squences->id_akhir = $data_akhir->id_obat;
                                 $new_squences->jml = count($datachunk);
                                 $new_squences->save();
                             }
                         }
 
-                        $total = $total+$stmt_detail->jml;
+                        $total = $total+$stmt_detail->jml;*/
                     }
 
                     $stmt->jml = $total;
                     $stmt->save();
-                }
-            }
 
-            return json_encode(['status'=>true]);
+                }
+
+                return json_encode(['status'=>true]);
+            } else {
+                return json_encode(['status'=>false]);
+            }
 
         } catch (\Throwable $th) {
             return $th->getMessage();

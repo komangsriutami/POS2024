@@ -40,8 +40,48 @@ DW Service
    				List Data
         	</h3>
       	</div>
-        <div class="card-body">
-			<table  id="tb_migrasi" class="table table-bordered table-striped table-hover">
+         <div class="card-body">
+        	<div class="overlay-wrapper" id="overlay-wrapper-dw-id">
+                <div class="overlay" id="overlay-dw-id">
+                </div>
+	        	<table  id="tb_data" class="table table-bordered table-striped table-hover">
+			    	<thead>
+				        <tr>
+				            <th width="5%">No.</th>
+				            <th width="10%">Tahun</th>
+				            <th width="85%">Action</th>
+				        </tr>
+			        </thead>
+			        <tbody>
+			        	<tr>
+			        		<td>1</td>
+			        		<td>2020</td>
+			        		<td><a href="#" class="btn btn-info btn-sm" onClick="generatedetails('2020')" data-toggle="tooltip" data-placement="top" title="Klik untuk melakukan generate details">init</a></td>
+			        	</tr>
+			        	<tr>
+			        		<td>1</td>
+			        		<td>2021</td>
+			        		<td><a href="#" class="btn btn-info btn-sm" onClick="generatedetails('2021')" data-toggle="tooltip" data-placement="top" title="Klik untuk melakukan generate details">init</a></td>
+			        	</tr>
+			        	<tr>
+			        		<td>1</td>
+			        		<td>2022</td>
+			        		<td><a href="#" class="btn btn-info btn-sm" onClick="generatedetails('2022')" data-toggle="tooltip" data-placement="top" title="Klik untuk melakukan generate details">init</a></td>
+			        	</tr>
+			        	<tr>
+			        		<td>1</td>
+			        		<td>2023</td>
+			        		<td><a href="#" class="btn btn-info btn-sm" onClick="generatedetails('2023')" data-toggle="tooltip" data-placement="top" title="Klik untuk melakukan generate details">init</a></td>
+			        	</tr>
+			        	<tr>
+			        		<td>1</td>
+			        		<td>2024</td>
+			        		<td><a href="#" class="btn btn-info btn-sm" onClick="generatedetails('2024')" data-toggle="tooltip" data-placement="top" title="Klik untuk melakukan generate details">init</a></td>
+			        	</tr>
+			        </tbody>
+				</table>
+			</div>
+			<!-- <table  id="tb_migrasi" class="table table-bordered table-striped table-hover">
 		    	<thead>
 			        <tr>
 			            <th width="5%">No.</th>
@@ -55,7 +95,7 @@ DW Service
 		        </thead>
 		        <tbody>
 		        </tbody>
-			</table>
+			</table> -->
         </div>
   	</div>
 @endsection
@@ -65,16 +105,16 @@ DW Service
 
 	let progressBar = $('#progress-bar');
 	let width = 0;
-	const totalItems = 5;//$("#jum_obat").val(); // Total items, e.g., 12000
+	const totalItems = 12;//$("#jum_obat").val(); // Total items, e.g., 12000
 	const itemsPerBatch = 1; // Number of items to process per batch
 	const totalLoops = Math.ceil(totalItems / itemsPerBatch); // Total number of loops required
 	const increment = 100 / totalLoops;
     let currentLoop = 0;
-    var overlay = document.getElementById('overlay-wrapper-persediaan-id');
-    var overlaybody = document.getElementById('overlay-persediaan-id');
+    var overlay = document.getElementById('overlay-wrapper-dw-id');
+    var overlaybody = document.getElementById('overlay-dw-id');
 
 	var token = '{{csrf_token()}}';
-	var tb_migrasi = $('#tb_migrasi').dataTable( {
+	var tb_migrasi_ = $('#tb_migrasi').dataTable( {
 			processing: true,
 	        serverSide: true,
 	        stateSave: true,
@@ -112,6 +152,8 @@ DW Service
  		});
 
 	$(document).ready(function(){
+		overlay.classList.remove('overlay-wrapper');
+        overlaybody.classList.remove('overlay');
 	})
 
 
@@ -134,7 +176,7 @@ DW Service
 		});
 	}
 
-	function setAwal() {
+	function generatedetails(tahun) {
 		//alert(totalLoops);
 		swal({
 		  	title: "Apakah anda akan melakukan generate data ?",
@@ -149,17 +191,18 @@ DW Service
 		function(){
 			overlay.classList.add('overlay-wrapper');
             overlaybody.classList.add('overlay');
-			getData();
+			setAwal(tahun);
 		});
 	}
 
-	function setAwal() {
+	function setAwal(tahun) {
 		$.ajax({
 			type: "POST",
 			url: '{{url("migrasi/generate")}}',
 			async:true,
 			data: {
 				_token:token,
+				tahun:tahun,
                 iterasi: currentLoop,
                 iterasi_last:totalLoops
 			},
@@ -169,7 +212,7 @@ DW Service
 			success: function(data) {
 				updateProgressBar();
 	            if (currentLoop < totalLoops) {
-	                setAwal(); // Call getData again until totalLoops is reached
+	                setAwal(tahun); // Call getData again until totalLoops is reached
 	            } else {
 	            	//stop();
 	            	overlay.classList.remove('overlay-wrapper');
