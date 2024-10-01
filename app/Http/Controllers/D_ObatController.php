@@ -1413,7 +1413,7 @@ class D_ObatController extends Controller
     }
 
     function getIdIterasi($iterasi) {
-        $range= 200;
+        $range = 200;
         $id_awal = ($iterasi - 1) * $range + 1;
         $id_akhir = $iterasi * $range;
     
@@ -1791,7 +1791,7 @@ class D_ObatController extends Controller
             $collection[] = $row;
         }
 
-        DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.'')->insert($collection);
+        DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.'')->insertOrIgnore($collection);
    
         echo 0;
     }
@@ -1850,6 +1850,7 @@ class D_ObatController extends Controller
                 'a.total_po'
             ])->join('tb_m_obat as b', 'b.id', '=', 'a.id_obat')
             ->get();
+
         $no = 0;
         $collection = collect();
         // Memproses hasil query dan menambahkan ke Collection
