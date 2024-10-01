@@ -1869,10 +1869,10 @@ class D_ObatController extends Controller
         } */
 
         DB::statement(DB::raw('set @rownum = 0'));
-        $getData = DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as a')
+        $getData = DB::table('tb_m_obat as b')
             ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'), 
-                'a.id_obat',
+                'b.id',
                 'b.nama',
                 'b.barcode',
                 'a.stok_awal',
@@ -1886,8 +1886,8 @@ class D_ObatController extends Controller
                 DB::raw('IFNULL(a.total_to_masuk, 0) as total_to_masuk'),
                 DB::raw('IFNULL(a.total_po, 0) as total_po')
             ])
-            ->leftjoin('tb_m_obat as b', 'b.id', '=', 'a.id_obat')
-            ->orderBy('id_obat', 'ASC')
+            ->leftjoin('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as a', 'b.id', '=', 'a.id_obat')
+            ->orderBy('b.id', 'ASC')
             ->get();
 
         $no = 0;
