@@ -1872,7 +1872,7 @@ class D_ObatController extends Controller
         $getData = DB::table('tb_m_obat as b')
             ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'), 
-                'b.id',
+                'b.id as id_obat',
                 'b.nama',
                 'b.barcode',
                 'a.stok_awal',
