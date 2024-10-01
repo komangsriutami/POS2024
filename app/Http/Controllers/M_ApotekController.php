@@ -97,6 +97,11 @@ class M_ApotekController extends Controller
                 } else {
                     $btn .= ' <span class="btn btn-info" onClick="add_table_stok_harga('.$data->id.')" data-toggle="tooltip" data-placement="center" title="Membuat Tabel Stok dan Harga"><i class="fa fa-plus"></i></span>';
                 }
+
+
+                if(Auth::user()->id == 1) {
+                    $btn .= ' <span class="btn btn-success" onClick="sync_data('.$data->id.')" data-toggle="tooltip" data-placement="center" title="Sinkronasi"><i class="fa fa-sync"></i></span>';
+                }
                 
                 $btn .= '<span class="btn btn-danger" onClick="delete_apotek('.$data->id.')" data-toggle="tooltip" data-placement="top" title="Hapus Data"><i class="fa fa-times"></i></span>';
             $btn .='</div>';
@@ -361,6 +366,76 @@ class M_ApotekController extends Controller
     public function serializeDate(DateTimeInterface $date)
     {
         return $date->format('Y-m-d H:i:s');
+    }
+
+    public function sync_data(Request $request) {
+        $sync_by = Auth::id();
+        $sync_at = date('Y-m-d H:i:s');
+        $created_at = date('Y-m-d H:i:s');
+
+        $apotek = MasterApotek::find($request->id);
+       /* SELECT id_master FROM  (
+        SELECT a.id AS id_master, b.id_obat FROM tb_m_obat AS a
+        LEFT JOIN tb_m_stok_harga_lv AS b
+        ON b.id_obat = a.id) AS t1 WHERE t1.id_obat IS NULL;*/
+        $subquery = DB::table('tb_m_obat as a')
+            ->leftJoin('tb_m_stok_harga_lv as b', 'b.id_obat', '=', 'a.id')
+            ->select('a.id as id_master', 'b.id_obat');
+
+        // Subquery to get id_master where id_obat is null
+        $query = DB::table(DB::raw("({$subquery->toSql()}) as t1"))
+            ->whereNull('t1.id_obat')
+            ->select('t1.id_master')
+            ->get();
+
+        // Convert query result to array of id_master
+        $id = $query->pluck('id_master')->toArray(); // Pluck id_master column
+
+        // Query to get the MasterObat data
+        $obats = MasterObat::select([
+                'id as id_obat', 
+                'nama as nama', 
+                'barcode as barcode', 
+                DB::raw('0 as stok_awal'), 
+                DB::raw('0 as stok_akhir'), 
+                'harga_beli', 
+                'harga_jual', 
+                DB::raw('"'.$sync_at.'" AS sync_at'), 
+                DB::raw('"'.$sync_by.'" AS sync_by')
+            ])
+            ->whereIn('id', $id) // Use array of id_master in whereIn
+            ->limit(500)
+            ->get()
+            ->toArray();
+
+        if(count($obats) > 0) {
+            $inisial = strtolower($apotek->nama_singkat);
+            DB::table('tb_m_stok_harga_'.$inisial.'')->insert($obats);
+
+            DB::table('tb_m_stok_harga_lv as a')
+                ->join('tb_m_obat as o', 'a.id_obat', '=', 'o.id')
+                //->where('a.stok_akhir', '=', 0) 
+                ->update([
+                    'a.is_deleted' => DB::raw('o.is_deleted')
+                ]);
+
+            $data_terupdate = DB::table('tb_m_stok_harga_'.$inisial.'')->select([DB::raw('COUNT(*) as jum_terupdate'), DB::raw('MAX(id_obat) as sync_last_id')])->first();
+
+            if(!empty($data_terupdate) && $data_terupdate->jum_terupdate > 0) {
+                $apotek->is_sync = 1;
+                $apotek->sync_by = $sync_by;
+                $apotek->sync_at = $sync_at;
+                $apotek->sync_last_id = $data_terupdate->sync_last_id;
+                $apotek->sync_count = $data_terupdate->jum_terupdate;
+                $apotek->save();
+
+                echo 1;
+            } else {
+                echo 0;
+            }
+        } else {
+            echo 2;
+        }
     }
 
     public function sync_data_stok_harga(Request $request) {

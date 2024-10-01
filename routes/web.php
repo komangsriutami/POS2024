@@ -423,6 +423,8 @@ Route::group(['middleware' => 'cekakses', 'auth:web'], function () {
 
 	Route::post('apotek/sync_data_stok_harga', ['as' => 'apotek.sync_data_stok_harga', 'uses' => 'M_ApotekController@sync_data_stok_harga']);
 
+	Route::post('apotek/sync_data', ['as' => 'apotek.sync_data', 'uses' => 'M_ApotekController@sync_data']);
+
 	Route::post('apotek/add_table_stok_harga', ['as' => 'apotek.add_table_stok_harga', 'uses' => 'M_ApotekController@add_table_stok_harga']);
 
 

@@ -311,5 +311,46 @@ Data Apotek
 			});
 		});
   	}
+
+  	function sync_data(id) {
+  		swal({
+		  	title: "Apakah anda yakin melakukan sinkronisasi data stok dan harga obat?",
+		  	type: "warning",
+		  	showCancelButton: true,
+		  	confirmButtonColor: "#DD6B55",
+		  	confirmButtonText: "Ya",
+		  	cancelButtonText: "Tidak",
+		  	closeOnConfirm: false
+		},
+		function(){
+			$.ajax({
+				type: "POST",
+				url : '{{url("apotek/sync_data")}}',
+				async:true,
+				data: {
+					_token:token,
+					id:id
+				},
+				beforeSend: function(data){
+					// replace dengan fungsi loading
+				},
+				success:  function(data){
+					if(data==1){
+						swal("Success!", "Data stok dan harga obat pada apotek ini berhasil disinkronisasi.", "success");
+					} else if(data==2) {
+						swal("Alert!", "Tidak ada data obat baru yang dapat disesuaikan.", "error");
+					} else {
+						swal("Failed!", "Gagal melakukan sinkronisasi data stok dan harga pada apotek ini.", "error");
+					}
+				},
+				complete: function(data){
+					tb_apotek.fnDraw(false);
+				},
+				error: function(data) {
+					swal("Error!", "Ajax occured.", "error");
+				}
+			});
+		});
+  	}
 </script>
 @endsection
