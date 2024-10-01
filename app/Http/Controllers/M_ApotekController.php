@@ -374,12 +374,13 @@ class M_ApotekController extends Controller
         $created_at = date('Y-m-d H:i:s');
 
         $apotek = MasterApotek::find($request->id);
+        $inisial = strtolower($apotek->nama_singkat);
        /* SELECT id_master FROM  (
         SELECT a.id AS id_master, b.id_obat FROM tb_m_obat AS a
         LEFT JOIN tb_m_stok_harga_lv AS b
         ON b.id_obat = a.id) AS t1 WHERE t1.id_obat IS NULL;*/
         $subquery = DB::table('tb_m_obat as a')
-            ->leftJoin('tb_m_stok_harga_'.$inisial.'as b', 'b.id_obat', '=', 'a.id')
+            ->leftJoin('tb_m_stok_harga_'.$inisial.' as b', 'b.id_obat', '=', 'a.id')
             ->select('a.id as id_master', 'b.id_obat');
 
         // Subquery to get id_master where id_obat is null
@@ -409,7 +410,7 @@ class M_ApotekController extends Controller
             ->toArray();
 
         if(count($obats) > 0) {
-            $inisial = strtolower($apotek->nama_singkat);
+            
             DB::table('tb_m_stok_harga_'.$inisial.'')->insert($obats);
 
             DB::table('tb_m_stok_harga_'.$inisial.' as a')
