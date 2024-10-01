@@ -1831,6 +1831,43 @@ class D_ObatController extends Controller
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
 
+        /*$subquery = DB::table('tb_m_obat as a')
+            ->leftJoin('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as b', 'b.id_obat', '=', 'a.id')
+            ->select('a.id as id_master', 'b.id_obat');
+
+        // Subquery to get id_master where id_obat is null
+        $query = DB::table(DB::raw("({$subquery->toSql()}) as t1"))
+            ->whereNull('t1.id_obat')
+            ->select('t1.id_master')
+            ->get();
+
+        // Convert query result to array of id_master
+        $id = $query->pluck('id_master')->toArray(); // Pluck id_master column
+
+        // Query to get the MasterObat data
+        $obats = MasterObat::select([
+                'id as id_obat', 
+                'nama as nama', 
+                'barcode as barcode', 
+                DB::raw('0 as stok_awal'), 
+                DB::raw('0 as stok_akhir'), 
+                'harga_beli as hbppn', 
+                'harga_jual as harga_jual', 
+                DB::raw('0 as total_penjualan'), 
+                DB::raw('0 as total_penjualan_retur'), 
+                DB::raw('0 as total_pembelian'), 
+                DB::raw('0 as total_to_keluar'), 
+                DB::raw('0 as total_to_masuk'), 
+                DB::raw('0 as total_po')
+            ])
+            ->whereIn('id', $id) // Use array of id_master in whereIn
+            ->get()
+            ->toArray();
+
+        if(count($obats) > 0) {
+            DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id)->insert($obats);
+        } */
+
         DB::statement(DB::raw('set @rownum = 0'));
         $getData = DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as a')
             ->select([
@@ -1840,15 +1877,17 @@ class D_ObatController extends Controller
                 'b.barcode',
                 'a.stok_awal',
                 'a.stok_akhir',
-                'a.hbppn',
-                'a.harga_jual',
-                'a.total_penjualan',
-                'a.total_penjualan_retur',
-                'a.total_pembelian',
-                'a.total_to_keluar',
-                'a.total_to_masuk',
-                'a.total_po'
-            ])->join('tb_m_obat as b', 'b.id', '=', 'a.id_obat')
+                DB::raw('IFNULL(a.hbppn, b.harga_beli) as hbppn'),
+                DB::raw('IFNULL(a.harga_jual, b.harga_jual) as harga_jual'),
+                DB::raw('IFNULL(a.total_penjualan, 0) as total_penjualan'),
+                DB::raw('IFNULL(a.total_penjualan_retur, 0) as total_penjualan_retur'),
+                DB::raw('IFNULL(a.total_pembelian, 0) as total_pembelian'),
+                DB::raw('IFNULL(a.total_to_keluar, 0) as total_to_keluar'),
+                DB::raw('IFNULL(a.total_to_masuk, 0) as total_to_masuk'),
+                DB::raw('IFNULL(a.total_po, 0) as total_po')
+            ])
+            ->leftjoin('tb_m_obat as b', 'b.id', '=', 'a.id_obat')
+            ->orderBy('id_obat', 'ASC')
             ->get();
 
         $no = 0;
