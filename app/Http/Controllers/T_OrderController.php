@@ -1270,7 +1270,7 @@ class T_OrderController extends Controller
             //echo '<img src="data:image/jpg;base64, '.$ttd->image.'" width="50" height="50"></a>';exit();
         }
 
-        $path = asset('assets/dist/img/logo.png');//'myfolder/myimage.png';
+        $path = 'https://apotekeren.id/assets/dist/img/logo.png';//asset('assets/dist/img/logo.png');//'myfolder/myimage.png';
         $type = pathinfo($path, PATHINFO_EXTENSION);
         $logo = file_get_contents($path);
         $base64 = '<img src="data:image/' . $type . ';base64,' . base64_encode($logo).'">';
