@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://apotekeren.id/'),
+    'url' => env('APP_URL', 'https://apotekeren.id/'),
 
     'asset_url' => env('ASSET_URL', null),
 
