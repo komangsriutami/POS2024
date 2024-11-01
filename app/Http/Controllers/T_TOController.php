@@ -1735,7 +1735,7 @@ class T_TOController extends Controller
             $apotek2 = MasterApotek::find($transfer_outlet->id_apotek_tujuan);
             $inisial2 = strtolower($apotek2->nama_singkat);
 
-            if($transfer_outlet->id == 73943) {
+            if($transfer_outlet->id == 79934) {
                 $detail_transfer_outlets = TransaksiTODetail::where('is_deleted', 0)->where('id_nota', $transfer_outlet->id)->where('is_status', 0)->get();
                 $i = 0;
                 foreach ($detail_transfer_outlets as $key => $detail_transfer_outlet) { 

@@ -1413,7 +1413,7 @@ class D_ObatController extends Controller
     }
 
     function getIdIterasi($iterasi) {
-        $range= 200;
+        $range = 200;
         $id_awal = ($iterasi - 1) * $range + 1;
         $id_akhir = $iterasi * $range;
     
@@ -1791,7 +1791,7 @@ class D_ObatController extends Controller
             $collection[] = $row;
         }
 
-        DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.'')->insert($collection);
+        DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.'')->insertOrIgnore($collection);
    
         echo 0;
     }
@@ -1831,25 +1831,65 @@ class D_ObatController extends Controller
         $tgl_awal = $request->tgl_awal;
         $tgl_akhir = $request->tgl_akhir;
 
+        /*$subquery = DB::table('tb_m_obat as a')
+            ->leftJoin('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as b', 'b.id_obat', '=', 'a.id')
+            ->select('a.id as id_master', 'b.id_obat');
+
+        // Subquery to get id_master where id_obat is null
+        $query = DB::table(DB::raw("({$subquery->toSql()}) as t1"))
+            ->whereNull('t1.id_obat')
+            ->select('t1.id_master')
+            ->get();
+
+        // Convert query result to array of id_master
+        $id = $query->pluck('id_master')->toArray(); // Pluck id_master column
+
+        // Query to get the MasterObat data
+        $obats = MasterObat::select([
+                'id as id_obat', 
+                'nama as nama', 
+                'barcode as barcode', 
+                DB::raw('0 as stok_awal'), 
+                DB::raw('0 as stok_akhir'), 
+                'harga_beli as hbppn', 
+                'harga_jual as harga_jual', 
+                DB::raw('0 as total_penjualan'), 
+                DB::raw('0 as total_penjualan_retur'), 
+                DB::raw('0 as total_pembelian'), 
+                DB::raw('0 as total_to_keluar'), 
+                DB::raw('0 as total_to_masuk'), 
+                DB::raw('0 as total_po')
+            ])
+            ->whereIn('id', $id) // Use array of id_master in whereIn
+            ->get()
+            ->toArray();
+
+        if(count($obats) > 0) {
+            DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id)->insert($obats);
+        } */
+
         DB::statement(DB::raw('set @rownum = 0'));
-        $getData = DB::table('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as a')
+        $getData = DB::table('tb_m_obat as b')
             ->select([
                 DB::raw('@rownum  := @rownum  + 1 AS no'), 
-                'a.id_obat',
+                'b.id as id_obat',
                 'b.nama',
                 'b.barcode',
                 'a.stok_awal',
                 'a.stok_akhir',
-                'a.hbppn',
-                'a.harga_jual',
-                'a.total_penjualan',
-                'a.total_penjualan_retur',
-                'a.total_pembelian',
-                'a.total_to_keluar',
-                'a.total_to_masuk',
-                'a.total_po'
-            ])->join('tb_m_obat as b', 'b.id', '=', 'a.id_obat')
+                DB::raw('IFNULL(a.hbppn, b.harga_beli) as hbppn'),
+                DB::raw('IFNULL(a.harga_jual, b.harga_jual) as harga_jual'),
+                DB::raw('IFNULL(a.total_penjualan, 0) as total_penjualan'),
+                DB::raw('IFNULL(a.total_penjualan_retur, 0) as total_penjualan_retur'),
+                DB::raw('IFNULL(a.total_pembelian, 0) as total_pembelian'),
+                DB::raw('IFNULL(a.total_to_keluar, 0) as total_to_keluar'),
+                DB::raw('IFNULL(a.total_to_masuk, 0) as total_to_masuk'),
+                DB::raw('IFNULL(a.total_po, 0) as total_po')
+            ])
+            ->leftjoin('tb_temp_persediaan_'.$inisial.'_'.Auth::user()->id.' as a', 'b.id', '=', 'a.id_obat')
+            ->orderBy('b.id', 'ASC')
             ->get();
+
         $no = 0;
         $collection = collect();
         // Memproses hasil query dan menambahkan ke Collection
@@ -2696,29 +2736,34 @@ class D_ObatController extends Controller
         ->editcolumn('created_at', function($data) use ($hak_akses){
             $data_pembelian_ = array(2, 12, 13, 14, 26, 27, 30, 31);
             $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
-
-            if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
-                $id_nota = ' | IDNota : '.$check->nota->id;
-                $hb = $check->harga_beli;
-                $ppn = $check->nota->ppn;
-                $harga_beli_ppn = $check->harga_beli_ppn;
-                $harga_jual = 0;
-                $harga_transfer = 0;
-            } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
-                $hb = 0;
-                $ppn = 0;
-                $harga_beli_ppn = $check->harga_outlet;
-                $harga_jual = 0;
-                $harga_transfer = $check->harga_outlet;
-            } 
-
-            if($hak_akses == 1) {
+            $th  = date('Y', strtotime($data->created_at));
+            if($th != date('Y')) {
                 $btn = '<span class="label" onClick="gunakan_hb('.$data->id.', '.$data->id_obat
-            .', '.$hb.', '.$harga_beli_ppn.')" data-toggle="tooltip" data-placement="top" title="Gunakan ini" style="font-size:10pt;color:#0097a7;">[Terapkan]</span>';
+                .', '.$data->hb_ppn.', '.$data->hb_ppn.')" data-toggle="tooltip" data-placement="top" title="Gunakan ini" style="font-size:10pt;color:#0097a7;">[Terapkan]</span>';
             } else {
-                $btn = '';
+                if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
+                    $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                    $id_nota = ' | IDNota : '.$check->nota->id;
+                    $hb = $check->harga_beli;
+                    $ppn = $check->nota->ppn;
+                    $harga_beli_ppn = $check->harga_beli_ppn;
+                    $harga_jual = 0;
+                    $harga_transfer = 0;
+                } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
+                    $check = TransaksiTODetail::find($data->id_transaksi);
+                    $hb = 0;
+                    $ppn = 0;
+                    $harga_beli_ppn = $check->harga_outlet;
+                    $harga_jual = 0;
+                    $harga_transfer = $check->harga_outlet;
+                } 
+
+                if($hak_akses == 1) {
+                    $btn = '<span class="label" onClick="gunakan_hb('.$data->id.', '.$data->id_obat
+                .', '.$hb.', '.$harga_beli_ppn.')" data-toggle="tooltip" data-placement="top" title="Gunakan ini" style="font-size:10pt;color:#0097a7;">[Terapkan]</span>';
+                } else {
+                    $btn = '';
+                }
             }
             
             return date('d-m-Y', strtotime($data->created_at)).'<br>'.$btn; 
@@ -2729,18 +2774,23 @@ class D_ObatController extends Controller
             $data_pembelian_ = array(2, 12, 13, 14, 26, 27, 30, 31);
             $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
 
-            if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
-                $id_nota = ' | IDNota : '.$check->nota->id;
-                $string = '<b>'.$check->nota->suplier->nama.'</b>';
-            } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
-                $id_nota = ' | IDNota : '.$check->nota->id;
-                $string = '<b>Masuk dari '.$check->nota->apotek_asal->nama_singkat.'</b>';
-            } 
+            $th  = date('Y', strtotime($data->created_at));
+            if($th != date('Y')) {
+                $string = '<br><b>DATA HISTORI</b>';
+            } else {
+                if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
+                    $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                    $id_nota = ' | IDNota : '.$check->nota->id;
+                    $string = '<b>'.$check->nota->suplier->nama.'</b>';
+                } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
+                    $check = TransaksiTODetail::find($data->id_transaksi);
+                    $id_nota = ' | IDNota : '.$check->nota->id;
+                    $string = '<b>Masuk dari '.$check->nota->apotek_asal->nama_singkat.'</b>';
+                } 
 
-            if($string != '') {
-                $string = '<br>'.$string;
+                if($string != '') {
+                    $string = '<br>'.$string;
+                }
             }
 
             return $data->nama_transaksi.$string.'<br>'.'IDdet : '.$data->id_transaksi.$id_nota; 
@@ -2749,53 +2799,63 @@ class D_ObatController extends Controller
             $string = '';
             $data_pembelian_ = array(2, 12, 13, 14, 26, 27, 30, 31);
             $data_tf_masuk_ = array(3, 7, 16, 28, 29, 32, 33);
+
+            $th  = date('Y', strtotime($data->created_at));
+            if($th != date('Y')) {
+                $string.= '<b>DATA HISTORI</b>';
+                $string.= '<br><span style="font-size:9pt;">';
+                $string.= 'HB+PPN : '.$data->hb_ppn;
+                $string.= '</span>';
+            } else {
     
-            if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
-                $check = TransaksiPembelianDetail::find($data->id_transaksi);
-                $id_nota = ' | IDNota : '.$check->nota->id;
-                $hb = $check->harga_beli;
-                $ppn = $check->nota->ppn;
-                $harga_beli_ppn = $check->harga_beli_ppn;
-                $harga_jual = null;
-                $harga_transfer = null;
-            } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
-                $check = TransaksiTODetail::find($data->id_transaksi);
-                $hb = null;
-                $ppn = null;
-                $harga_beli_ppn = $check->harga_outlet;
-                $harga_jual = null;
-                $harga_transfer = $check->harga_outlet;
-            } 
+                if (in_array($data->id_jenis_transaksi, $data_pembelian_)) {
+                    $check = TransaksiPembelianDetail::find($data->id_transaksi);
+                    $id_nota = ' | IDNota : '.$check->nota->id;
+                    $hb = $check->harga_beli;
+                    $ppn = $check->nota->ppn;
+                    $harga_beli_ppn = $check->harga_beli_ppn;
+                    $harga_jual = null;
+                    $harga_transfer = null;
+                } else if (in_array($data->id_jenis_transaksi, $data_tf_masuk_)) {
+                    $check = TransaksiTODetail::find($data->id_transaksi);
+                    $hb = null;
+                    $ppn = null;
+                    $harga_beli_ppn = $check->harga_outlet;
+                    $harga_jual = null;
+                    $harga_transfer = $check->harga_outlet;
+                } 
 
 
-            if($hb == null) {
-                $hb = '-';
+                if($hb == null) {
+                    $hb = '-';
+                }
+
+               
+                if($ppn == null) {
+                    $ppn = '-';
+                }
+
+                if($harga_beli_ppn == null) {
+                    $harga_beli_ppn = '-';
+                }
+
+                if($harga_jual == null) {
+                    $harga_jual = '-';
+                }
+
+                if($harga_transfer == null) {
+                    $harga_transfer = '-';
+                }
+
+                $string.= '<span style="font-size:9pt;">';
+                $string.= 'HB     : '.$hb.'<br>';
+                $string.= 'PPN    : '.$ppn.'<br>';
+                $string.= 'HB+PPN : '.$harga_beli_ppn.'<br>';
+                $string.= 'HJ     : '.$harga_jual.'<br>';
+                $string.= 'HT     : '.$harga_transfer;
+                $string.= '</span>';
             }
 
-           
-            if($ppn == null) {
-                $ppn = '-';
-            }
-
-            if($harga_beli_ppn == null) {
-                $harga_beli_ppn = '-';
-            }
-
-            if($harga_jual == null) {
-                $harga_jual = '-';
-            }
-
-            if($harga_transfer == null) {
-                $harga_transfer = '-';
-            }
-
-            $string.= '<span style="font-size:9pt;">';
-            $string.= 'HB     : '.$hb.'<br>';
-            $string.= 'PPN    : '.$ppn.'<br>';
-            $string.= 'HB+PPN : '.$harga_beli_ppn.'<br>';
-            $string.= 'HJ     : '.$harga_jual.'<br>';
-            $string.= 'HT     : '.$harga_transfer;
-            $string.= '</span>';
             return $string; 
         }) 
         ->editcolumn('masuk', function($data){

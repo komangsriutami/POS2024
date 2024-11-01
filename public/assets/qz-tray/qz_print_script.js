@@ -242,7 +242,7 @@ function print_nota() {
         
         $.ajax({
             type: "GET",
-            url: "http://apotekeren.id/penjualan/load_data_nota_print/"+id,
+            url: "https://apotekeren.id/penjualan/load_data_nota_print/"+id,
             data: {
                 //"id":id,
                 //"_token":_token,
@@ -279,7 +279,7 @@ function print_nota_transfer_internal() {
         
         $.ajax({
             type: "GET",
-            url: "http://apotekeren.id/transfer_outlet/load_data_nota_print/"+id,
+            url: "https://apotekeren.id/transfer_outlet/load_data_nota_print/"+id,
             data: {
                 //"id":id,
                 //"_token":_token,
@@ -316,7 +316,7 @@ function print_nota_transfer_dokter() {
         
         $.ajax({
             type: "GET",
-            url: "http://apotekeren.id/transfer_dokter/load_data_nota_print/"+id,
+            url: "https://apotekeren.id/transfer_dokter/load_data_nota_print/"+id,
             data: {
                 //"id":id,
                 //"_token":_token,
@@ -353,7 +353,7 @@ function print_nota_obat_operasional() {
         
         $.ajax({
             type: "GET",
-            url: "http://apotekeren.id/obat_operasional/load_data_nota_print/"+id,
+            url: "https://apotekeren.id/obat_operasional/load_data_nota_print/"+id,
             data: {
                 //"id":id,
                 //"_token":_token,
@@ -391,7 +391,7 @@ function print_closing_kasir() {
         
         $.ajax({
             type: "GET",
-            url: "http://apotekeren.id/penjualan/load_closing_kasir_print/"+id,
+            url: "https://apotekeren.id/penjualan/load_closing_kasir_print/"+id,
             data: {
                 "id" : id,
                 "tanggal":tanggal,
@@ -426,7 +426,7 @@ function print_nota_by_id(id) {
         
         $.ajax({
             type: "POST",
-            url: "http://apotekeren.id/penjualan/load_data_nota_print",
+            url: "https://apotekeren.id/penjualan/load_data_nota_print",
             data: {"id":id},
             beforeSend: function(){},
             complete: function(){},
