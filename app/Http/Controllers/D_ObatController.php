@@ -520,7 +520,7 @@ class D_ObatController extends Controller
                     }
 
                 })
-                ->whereYear('tb_histori_stok_'.$inisial.'.created_at', session('id_tahun_active'))
+                ->whereYear('tb_histori_stok_'.$inisial.'.created_at', '>=', 2024) //session('id_tahun_active')
                 ->orderBy('tb_histori_stok_'.$inisial.'.id');
         
         $datatables = Datatables::of($data);
@@ -2522,7 +2522,7 @@ class D_ObatController extends Controller
                         $query->whereDate('tb_histori_all_'.$inisial.'.created_at','<=', $tgl_akhir);
                     }
 
-                    $query->whereYear('tb_histori_all_'.$inisial.'.created_at', session('id_tahun_active'));
+                    $query->whereYear('tb_histori_all_'.$inisial.'.created_at', '>=', 2024); //session('id_tahun_active')
                 })
                 ->orderBy('created_at', 'ASC');
         
@@ -2971,7 +2971,7 @@ class D_ObatController extends Controller
                 ->where(function($query) use($request, $inisial){
                     $query->where('tb_histori_all_'.$inisial.'.id_obat', $request->id_obat);
                     $query->whereIn('tb_histori_all_'.$inisial.'.id_jenis_transaksi', [2, 12, 13, 14, 26, 27, 30, 31, 3, 7, 16, 28, 29, 32, 33]);
-                    $query->whereYear('tb_histori_all_'.$inisial.'.created_at', session('id_tahun_active'));
+                    $query->whereYear('tb_histori_all_'.$inisial.'.created_at', '>=', 2024); //session('id_tahun_active')
                 })
                 ->orderBy('created_at', 'ASC');
         
@@ -3188,7 +3188,7 @@ class D_ObatController extends Controller
                         $query->whereDate('tb_histori_all_'.$inisial.'.created_at','<=', $tgl_akhir);
                     }
 
-                    $query->whereYear('tb_histori_all_'.$inisial.'.created_at', session('id_tahun_active'));
+                    $query->whereYear('tb_histori_all_'.$inisial.'.created_at', '>=', 2024); //session('id_tahun_active')
                 })
                 ->orderBy('created_at', 'ASC');
         
