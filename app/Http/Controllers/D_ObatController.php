@@ -1747,31 +1747,48 @@ class D_ObatController extends Controller
             $jum_retur = '0';
             $jum_po = '0';
 
-            if($rekap->total_jual != null) {
+            if($rekap->total_jual != null OR $rekap->total_jual != 0) {
                 $jum_penjualan = $rekap->total_jual;
+            } else {
+                $jum_penjualan = '0';
             }
 
-            if($rekap->total_beli != null) {
+            if($rekap->total_beli != null OR $rekap->total_beli != 0) {
                 $jum_pembelian = $rekap->total_beli;
+            } else {
+                $jum_pembelian = '0';
             }
 
-            if($rekap->total_to_masuk != null) {
+            if($rekap->total_to_masuk != null OR $rekap->total_to_masuk != 0) {
                 $jum_to_masuk = $rekap->total_to_masuk;
+            } else {
+                $jum_to_masuk = '0';
             }
 
-            if($rekap->total_to_keluar != null) {
+            if($rekap->total_to_keluar != null OR $rekap->total_to_keluar != 0) {
                 $jum_to_keluar = $rekap->total_to_keluar;
+            } else {
+                $jum_to_keluar = '0';
             }
 
-            if($rekap->total_retur != null) {
+            if($rekap->total_retur != null OR $rekap->total_retur != 0) {
                 $jum_retur = $rekap->total_retur;
+            } else {
+                $jum_retur = '0';
             }
 
-            if($rekap->total_po != null) {
+            if($rekap->total_po != null OR $rekap->total_po != 0) {
                 $jum_po = $rekap->total_po;
+            } else {
+                $jum_po = '0';
             }
 
             $stok_akhir = $stok_awal-($jum_penjualan+$jum_to_keluar+$jum_po)+($jum_pembelian+$jum_to_masuk+$jum_retur);
+            if($stok_awal != null OR $stok_awal != 0) {
+            } else {
+                $stok_awal = '0';
+            }
+
             //collection[]
             $row = array(
                 'tgl_awal' => $tgl_awal,
