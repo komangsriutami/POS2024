@@ -39,7 +39,7 @@ class StokOpnamController extends Controller
         	$id_apotek = session('id_apotek_active');
         	$now = date('Y-m-d');
             $datenow = date('d-m-Y H:i:s');
-        	$cek = SettingStokOpnam::where('id_apotek', $id_apotek)->where('tgl_so', $now)->first();
+        	$cek = SettingStokOpnam::where('id_apotek', $id_apotek)->where('tgl_so', $now)->where('step',1)->first();
             $total_barang = MasterObat::where('is_deleted', 0)->count();
             $total_so = MasterStokHarga::where('is_deleted', 0)->where('is_so', 1)->count();
             $total = MasterStokHarga::select([
