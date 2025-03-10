@@ -1770,6 +1770,8 @@ class D_ObatController extends Controller
             if($rekap->total_po != null) {
                 $jum_po = $rekap->total_po;
             }
+
+            $stok_akhir = $stok_awal-($jum_penjualan+$jum_to_keluar+$jum_po)+($jum_pembelian+$jum_to_masuk+$jum_retur);
             //collection[]
             $row = array(
                 'tgl_awal' => $tgl_awal,

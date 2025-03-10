@@ -49,6 +49,8 @@ Route::middleware('api')->group( function () {
 
 
 	// API data master
+	Route::get('/getDataSales','API\ServiceAppController@GetDataSales');
+	Route::get('/getDataPurchasing','API\ServiceAppController@GetDataPurchasing');
 	Route::post('/getDataGroupApotek','API\ServiceAppController@GetDataGroupApotek');
 	Route::post('/getDataApotek','API\ServiceAppController@GetDataApotek');
 	Route::post('/getDataUser','API\ServiceAppController@GetDataUser');
@@ -62,4 +64,8 @@ Route::middleware('api')->group( function () {
 	Route::post('/getDataKlinik','API\ServiceAppController@GetDataKlinik');
 	Route::post('/getDataDokter','API\ServiceAppController@GetDataDokter');
 	Route::post('/login', 'API\ServiceAppController@apiLogin');
+	
+
+	
 });
+

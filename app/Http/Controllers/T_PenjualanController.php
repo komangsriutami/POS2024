@@ -77,6 +77,166 @@ class T_PenjualanController extends Controller
         Date    : 07/11/2020
         =======================================================================================
     */
+    public function list_penjualan_(Request $request) {
+        $apotek = MasterApotek::find(session('id_apotek_active'));
+        $apoteker = User::find($apotek->id_apoteker);
+        $id_user = Auth::user()->id;
+
+        $hak_akses = 0;
+        if($apoteker->id == $id_user) {
+            $hak_akses = 1;
+        }
+
+        if(Auth::user()->is_admin == 1) {
+            $hak_akses = 1;
+        }
+
+        $tanggal = date('Y-m-d');
+        DB::statement(DB::raw('set @rownum = 0'));
+        $data = DB::select('CALL getNotaPenjualan(?, ?, ?, ?, ?)', [session('id_apotek_active'), Auth::user()->id, $tanggal, $tanggal, session('id_tahun_active')]);
+        
+        $datatables = Datatables::of($data);
+        return $datatables
+      /*  ->filter(function($query) use($request, $table){
+            $query->where(function($query) use($request, $table){
+                $query->orwhere("$table.id",'LIKE','%'.$request->get('search')['value'].'%');
+            });
+        }) */ 
+        ->editcolumn('created_at', function($data) use($request){
+            $string = '';
+            if($data->is_penjualan_tolak_cn == 1) {
+                $string .='<br><small class="text-red">Penambahan dari penolakan retur</small>';
+            }
+
+            if($data->keterangan != "" OR $data->keterangan != null) {
+                $keterangan = '('.$data->keterangan.')';
+            } else {
+                $keterangan = '';
+            }
+
+            if($data->is_kredit == 1) {
+                $str_ = '';
+                if($data->is_margin_kurang == 1) {
+                    $str_ = '<span class="text-danger text-bold">[ MARGIN < 5% ]</span>';
+                }
+                return Carbon::parse($data->created_at)->format('d/m/Y H:i:s').$string.'<br><small><b>'.$data->vendor->nama.'</b>('.$keterangan.')</small><br>'.$str_;
+            } else {
+                return Carbon::parse($data->created_at)->format('d/m/Y H:i:s').$string;
+            }
+        })
+        ->editcolumn('total_belanja', function($data) use($request){
+            $total = $data->total_;
+            if($total == "" || $total == null) {
+                $total = 0;
+            }
+
+            $diskon = $data->total_diskon_persen_;
+            $str_diskon = '';
+            if($diskon != 0) {
+                $str_diskon = "-(Rp ".number_format($diskon,2).')';
+            }
+
+            $string = '';
+            $total = 0;
+            if($data->total_penjualan_cn_ != 0) {
+                $string = "<br>".'<small><b style="color:red;">-ADA RETUR ITEM OBAT-</b></small>';
+            }
+            return "Rp ".number_format($total,2).$string;
+        })   
+        ->editcolumn('biaya_jasa_dokter', function($data) use($request){
+            return "Rp ".number_format($data->biaya_resep,2).'/'."Rp ".number_format($data->biaya_jasa_dokter,2).'/'."Rp ".number_format($data->harga_wd,2).'/'."Rp ".number_format($data->biaya_lab,2).'/'."Rp ".number_format($data->biaya_apd,2);
+        })   
+        ->editcolumn('total_fix', function($data) use($request){
+            $total = $data->total_;
+            $diskon = 0;
+            if($data->diskon_persen != "" && $data->diskon_persen != null) {
+                $diskon = $data->diskon_persen/100*$total;
+            }
+
+            $diskon_vendor = 0;
+            if($data->diskon_vendor != "" && $data->diskon_vendor != null) {
+                $diskon_vendor = $data->diskon_vendor/100*$total;
+            }
+            if($total == "" || $total == null) {
+                $total = 0;
+            }
+
+            $total_diskon = $diskon+$diskon_vendor;
+            $total_fix = ($total+$data->biaya_resep+$data->biaya_jasa_dokter+$data->harga_wd+$data->biaya_lab+$data->biaya_apd)-$total_diskon;
+
+            $total_diskon = 0;
+            return "("."Rp ".number_format($total_diskon,2).")"."<br><b>"."Rp ".number_format($total_fix,2).'</b>';
+        })   
+        ->editcolumn('is_kredit', function($data) use($request){
+           
+            if($data->is_kredit == 1) {
+                $string = "K";
+            } else {
+                $string = "N";
+            }
+           
+            return $string;
+        }) 
+        ->addcolumn('is_lunas', function($data) use($request){
+           
+            if($data->total_bayar > 0) {
+                $string = "Y";
+            } else {
+                $string = "N";
+            }
+           
+            return $string;
+        })   
+        ->addcolumn('action', function($data) use($hak_akses){
+            $btn = '<div class="btn-group">';
+            //$btn .= '<span class="btn btn-primary btn-sm" onClick="cetak_nota('.$data->id.')" data-toggle="tooltip" data-placement="top" title="Cetak Nota"><i class="fa fa-print"></i> Cetak</span>';
+            $btn .= '<span class="btn btn-primary btn-sm" onClick="pelunasan('.$data->id.')" data-toggle="tooltip" data-placement="top" title="Cetak Nota"><i class="fa fa-clipboard-check"></i> Pelunasan</span>';
+            $btn .= '<a href="'.url('/penjualan/cetak_nota/'.$data->id).'" title="Cetak Nota" target="_blank"  class="btn btn-default btn-sm"><span data-toggle="tooltip" data-placement="top" title="Cetak Nota"><i class="fa fa-print"></i> Cetak</span></a>';
+            $btn .= '<a href="'.url('/penjualan/detail/'.$data->id).'" title="Lihat detail penjualan" class="btn btn-info btn-sm"><span data-toggle="tooltip" data-placement="top" title="Lihat detail penjualan"><i class="fa fa-eye"></i> Detail</span></a>';
+            //$btn .= '<a href="'.url('/penjualan/'.$data->id.'/edit').'" title="Edit Data" class="btn btn-info btn-sm"><span data-toggle="tooltip" data-placement="top" title="Edit Data"><i class="fa fa-edit"></i> Edit</span></a>';
+            //$btn .= '<span class="btn btn-danger btn-sm" onClick="delete_penjualan('.$data->id.')" data-toggle="tooltip" data-placement="top" title="Hapus Data"><i class="fa fa-times"></i> Hapus</span>';
+
+            if($data->total_bayar != 0 AND !is_null($data->total_bayar)) {
+                # jika sudah dibayar
+                if($hak_akses == 1) {
+                    # jika admin
+                    if($data->total_penjualan_cn_ == 0) {
+                        $btn .= '<span class="btn btn-danger btn-sm" onClick="delete_penjualan('.$data->id.')" data-toggle="tooltip" data-placement="top" title="Hapus Data"><i class="fa fa-times"></i> Hapus</span>';
+                    }
+                } else {
+                    //$btn .= '<span class="btn btn-danger btn-sm" onClick="delete_penjualan('.$data->id.')" data-toggle="tooltip" data-placement="top" title="Hapus Data"><i class="fa fa-times"></i> Hapus</span>';
+                }
+            } else {
+                # jika belum dibayar
+                if($data->total_penjualan_cn_ == 0) {
+                    $btn .= '<span class="btn btn-danger btn-sm" onClick="delete_penjualan('.$data->id.')" data-toggle="tooltip" data-placement="top" title="Hapus Data"><i class="fa fa-times"></i> Hapus</span>';
+                }
+               
+            }
+
+            if($data->is_kredit == 1) {
+                $btn .= '<a href="'.url('/penjualan/invoice/'.Crypt::encrypt($data->id)).'" target="_blank" title="Invoice" class="btn btn-warning btn-sm"><span data-toggle="tooltip" data-placement="top" title="Invoice"><i class="fa fa-file-pdf"></i> Invoice</span></a>';
+            }
+
+            $btn .='</div>';
+            return $btn;
+        })    
+        ->setRowClass(function ($data) {
+            if($data->total_bayar < 1 AND $data->is_kredit == 0) {
+                if($data->total_penjualan_cn_ == 0) {
+                    return 'bg-secondary';
+                } else {
+                    return 'bg-info';
+                }
+            } else {
+                return '';
+            }
+        })  
+        ->rawColumns(['action', 'created_at', 'total_fix', 'total_belanja', 'is_lunas'])
+        ->addIndexColumn()
+        ->make(true);  
+    }
+
     public function list_penjualan(Request $request)
     {
         $apotek = MasterApotek::find(session('id_apotek_active'));
@@ -638,7 +798,6 @@ class T_PenjualanController extends Controller
 
     public function cari_obatID(Request $request) {
         $obat = MasterObat::where('id', $request->id_obat)->first();
-
 
         $apotek = MasterApotek::find(session('id_apotek_active'));
         $inisial = strtolower($apotek->nama_singkat);
@@ -8998,5 +9157,19 @@ printer_close($printer);
 
         return view('penjualan.view_closing')->with(compact('jum_penjualan_count', 'jum_penjualan', 'jum_penjualan_paid', 'jum_penjualan_notpaid', 'jum_penjualan_void', 'jum_penjualan_voidaproved', 'jum_penjualan_voidnotaproved'));
     }
+
+    public function searchEndpoint(Request $request) {
+        $search = $request->get('q');
+
+        // Misalnya, Anda mencari data pengguna berdasarkan nama
+        $results = MasterObat::where('barcode', 'LIKE', "%{$search}%")
+                    ->orwhere('nama', 'LIKE', "%{$search}%")
+                    ->get([
+                        'id',
+                        DB::raw("CONCAT('<strong>', IFNULL(barcode, 'TIDAK ADA BARCODE'), '</strong>', ' - ', nama) as text")
+                ]);
+
+        return response()->json($results);
+    }       
 
 }

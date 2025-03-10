@@ -220,12 +220,12 @@
 		});
 
 		$("#barcode").focus();
-		$("#barcode").keypress(function(event){
+		/*$("#barcode").keypress(function(event){
 		    if (event.which == '10' || event.which == '13') {
 		    	cari_obat();
 		        event.preventDefault();
 		    }
-		});
+		});*/
 
 		$("#margin").keypress(function(event){
 		    if (event.which == '10' || event.which == '13') {
@@ -338,6 +338,50 @@
         });
 
         unHideDiskon();
+
+	    $('#barcode').select2({
+		    placeholder: 'Barcode/SKU/Nama Obat',
+		    minimumInputLength: 3,
+		    ajax: {
+		        url: '{{ url("penjualan/search-endpoint") }}',
+		        dataType: 'json',
+		        delay: 250,
+		        data: function(params) {
+		            return {
+		                q: params.term,
+		            };
+		        },
+		        processResults: function(data) {
+		            return {
+		                results: data,
+		            };
+		        },
+		        cache: true
+		    },
+		    escapeMarkup: function(markup) {
+		        return markup; // Tidak meng-escape HTML markup
+		    },
+		    templateResult: function(data) {
+		        return data.text; // Menampilkan text dengan HTML
+		    },
+		    templateSelection: function(data) {
+		        return data.text; // Menampilkan text dengan HTML setelah dipilih
+		    }
+		}).on('select2:select', function (e) {
+		    // Ambil data dari opsi yang dipilih
+		    var data = e.params.data;
+
+		    // Panggil fungsi actionF dengan data yang dipilih
+		    cari_obat();
+		});
+
+		function actionF(selectedData) {
+		    // Implementasi fungsi yang ingin dijalankan setelah opsi dipilih
+		    //console.log('Opsi yang dipilih:', selectedData);
+		    // Misalnya, lakukan sesuatu dengan selectedData.id atau selectedData.text
+		    // Implementasikan logika Anda di sini
+		}
+
 	})
 
 	function goBack() {
@@ -531,11 +575,11 @@
 		var inisial = $("#inisial").val();
 		if(Number.isInteger(barcode)) {
 			$.ajax({
-	            url:'{{url("penjualan/cari_obat")}}',
+	            url:'{{url("penjualan/cari_obatID")}}',
 	            type: 'POST',
 	            data: {
 	                _token      : "{{csrf_token()}}",
-	                barcode: barcode,
+	                id_obat: barcode,
 	                inisial: inisial
 	            },
 	            dataType: 'json',
@@ -568,7 +612,7 @@
 							}
 					    }
 	            	} else {
-	            		show_error("Obat dengan barcode tersebut tidak dapat ditemukan!");
+	            		show_error("Obat tersebut tidak dapat ditemukan!");
 	            		kosongkan_form();
 	            	}
 	            	

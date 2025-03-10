@@ -119,21 +119,22 @@
 <hr style="border: 1px solid #004d40; padding: 0px; margin-top: 0px; margin-bottom: 10px;">
 @if($hak_akses == 1)
 <div class="row">
-    <div class="form-group col-md-2">
+    <div class="form-group col-md-6">
         {!! Form::label('id_obat', 'Kode Obat | Shift') !!}
         <div class="input-group">
             {!! Form::hidden('id_obat', $penjualan->id_obat, array('id' => 'id_obat', 'class' => 'form-control', 'placeholder'=>'Masukan Obat')) !!}
             {!! Form::hidden('stok_obat', $penjualan->stok_obat, array('id' => 'stok_obat', 'class' => 'form-control', 'placeholder'=>'Masukan Obat')) !!}
-            {!! Form::text('barcode', $penjualan->barcode, array('id' => 'barcode', 'class' => 'form-control', 'placeholder'=>'Masukan Barcode', 'autocomplete' => 'off')) !!}
+            {!! Form::select('barcode', [], $penjualan->barcode, array('id' => 'barcode', 'class' => 'form-control', 'autocomplete' => 'off')) !!}
+            <!-- {!! Form::text('barcode', $penjualan->barcode, array('id' => 'barcode', 'class' => 'form-control', 'placeholder'=>'Masukan Barcode', 'autocomplete' => 'off')) !!}
             <div class="input-group-append">
                 <span class="btn btn-primary"  data-toggle="modal" data-placement="top" title="Cari Item Obat" onclick="open_data_obat('')"><i class="fa fa-search"></i> | Ctrl</span>
-            </div>
+            </div> -->
         </div>
     </div>
-    <div class="form-group col-md-4">
+    <!-- <div class="form-group col-md-4">
         {!! Form::label('id_obat', 'Nama Obat') !!}
         {!! Form::text('nama_obat', $penjualan->nama_obat, array('id' => 'nama_obat', 'class' => 'form-control', 'placeholder'=>'nama obat', 'readonly' => 'readonly')) !!}
-    </div>
+    </div> -->
     <div class="form-group col-md-1">
         {!! Form::label('jumlah', 'Jumlah | F4') !!}
         <div class="input-group">

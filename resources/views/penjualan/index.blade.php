@@ -86,7 +86,7 @@ Transaksi Penjualan
 				         }
 			     },
 	        columns: [
-	            {data: 'no', name: 'no',width:"2%", class:'text-center'},
+	            {data: 'DT_RowIndex', name: 'no',width:"2%", class:'text-center'},
 	            {data: 'id', name: 'id', class:'text-center'},
 	            {data: 'created_at', name: 'created_at', class:'text-center'},
 	            {data: 'total_belanja', name: 'total_belanja', class:'text-right'},

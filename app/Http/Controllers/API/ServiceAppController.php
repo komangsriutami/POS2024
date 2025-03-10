@@ -19,6 +19,7 @@ use App\MasterApoteker;
 use App\MasterMember;
 use App\MasterDokter;
 use App\MasterKlinik;
+use App\TransaksiPenjualanDetail;
 use App\User;
 use App\RbacUserApotek;
 use App\Absensi;
@@ -1120,6 +1121,93 @@ class ServiceAppController extends BaseController
             } 
         } else {
             return $this->sendError('Failed.', ['error'=>'Failed get data, key is not found']);
+        }
+    }
+
+    public function GetDataSales(Request $request) {
+        /*$data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
+        if(isset($request->key)) {*/
+       // dd($request->tgl_start);
+        if(isset($request->tgl_start)) {
+            $all = DB::table('tb_detail_nota_penjualan')
+            ->select([
+                'tb_detail_nota_penjualan.id',
+                'tb_detail_nota_penjualan.id_nota',
+                'd.nama_singkat as id_apotek_nota',
+                DB::raw('IFNULL(c.nama, null) as id_pasien'),
+                'a.tgl_nota',
+                'b.nama as id_obat',
+                'tb_detail_nota_penjualan.hb_ppn as hbppn',
+                'tb_detail_nota_penjualan.harga_jual',
+                'tb_detail_nota_penjualan.margin',
+                'tb_detail_nota_penjualan.jumlah',
+                'tb_detail_nota_penjualan.diskon',
+                DB::raw('((tb_detail_nota_penjualan.harga_jual * tb_detail_nota_penjualan.jumlah) - tb_detail_nota_penjualan.diskon) as total'),
+                DB::raw('(tb_detail_nota_penjualan.hb_ppn * tb_detail_nota_penjualan.jumlah) as total_hbppn')
+            ])
+            ->join('tb_nota_penjualan as a', 'a.id', '=', 'tb_detail_nota_penjualan.id_nota')
+            ->join('tb_m_obat as b', 'b.id', '=', 'tb_detail_nota_penjualan.id_obat')
+            ->leftjoin('tb_m_member as c', 'c.id', '=', 'a.id_pasien')
+            ->join('tb_m_apotek as d', 'd.id', '=', 'a.id_apotek_nota')
+            ->whereDate('a.tgl_nota', '>=', $request->tgl_start)
+            ->whereDate('a.tgl_nota', '<=', $request->tgl_end)
+            //->whereBetween('a.id', [1,100])
+            ->where('a.is_deleted', 0)
+            ->where('tb_detail_nota_penjualan.is_deleted', 0)
+            //->limit(100)
+            ->get();
+
+            if(count($all) > 0){ 
+                return $this->sendResponse($all, 'Successfully get data.');
+            } 
+            else{ 
+                return $this->sendError('Failed.', ['error'=>'Failed get data, data is not found']);
+            } 
+        } else {
+            return $this->sendError('Failed.', ['error'=>'Failed get data, data is not found']);
+        }
+    }
+
+    public function GetDataPurchasing(Request $request) {
+        /*$data = (array)json_decode(Crypt::Decrypt($request->data,$request->key));
+        if(isset($request->key)) {*/
+       // dd($request->tgl_start);
+        if(isset($request->tgl_start)) {
+            $all = DB::table('tb_detail_nota_pembelian')
+            ->select([
+                'tb_detail_nota_pembelian.id',
+                'tb_detail_nota_pembelian.id_nota',
+                'd.nama_singkat as id_apotek_nota',
+                DB::raw('IFNULL(c.nama, null) as id_suplier'),
+                'a.tgl_nota',
+                'b.nama as id_obat',
+                'a.ppn',
+                'tb_detail_nota_pembelian.harga_beli as hb',
+                'tb_detail_nota_pembelian.harga_beli as hbppn',
+                'tb_detail_nota_pembelian.jumlah',
+                'tb_detail_nota_pembelian.diskon',
+                DB::raw('((tb_detail_nota_pembelian.harga_beli * tb_detail_nota_pembelian.jumlah) - tb_detail_nota_pembelian.diskon) as total')
+            ])
+            ->join('tb_nota_pembelian as a', 'a.id', '=', 'tb_detail_nota_pembelian.id_nota')
+            ->join('tb_m_obat as b', 'b.id', '=', 'tb_detail_nota_pembelian.id_obat')
+            ->leftjoin('tb_m_suplier as c', 'c.id', '=', 'a.id_suplier')
+            ->join('tb_m_apotek as d', 'd.id', '=', 'a.id_apotek_nota')
+            ->whereDate('a.tgl_nota', '>=', $request->tgl_start)
+            ->whereDate('a.tgl_nota', '<=', $request->tgl_end)
+            //->whereBetween('a.id', [1,100])
+            ->where('a.is_deleted', 0)
+            ->where('tb_detail_nota_pembelian.is_deleted', 0)
+            //->limit(100)
+            ->get();
+
+            if(count($all) > 0){ 
+                return $this->sendResponse($all, 'Successfully get data.');
+            } 
+            else{ 
+                return $this->sendError('Failed.', ['error'=>'Failed get data, data is not found']);
+            } 
+        } else {
+            return $this->sendError('Failed.', ['error'=>'Failed get data, data is not found']);
         }
     }
 }
